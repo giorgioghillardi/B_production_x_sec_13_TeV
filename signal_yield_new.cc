@@ -1,3 +1,6 @@
+#include <TSystem.h>
+#include <vector>
+#include <string>
 #include <TStyle.h>
 #include <TAxis.h>
 #include <TLatex.h>
@@ -37,6 +40,7 @@ using namespace RooFit;
 // channel = 5: Jpsi + pipi
 // channel = 6: Lambda_b -> Jpsi + Lambda
 
+void create_dir(std::vector<std::string> list);
 void plot_pt_dist(RooWorkspace& w, int channel, TString directory);
 void plot_mass_fit(RooWorkspace& w, int channel, TString directory);
 
@@ -55,6 +59,16 @@ int channel_to_nbins(int channel);
 
 void signal_yield_new(int channel)
 {
+  std::vector<std::string> dir_list;
+  dir_list.push_back("full_dataset_mass_fit");
+  dir_list.push_back("full_dataset_mass_pt_histo");
+  dir_list.push_back(static_cast<const char*>("pt_bin_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION)));
+  dir_list.push_back("signal_yield");
+  
+  create_dir(dir_list);
+
+  return;
+
   double ntkp_pt_bin_edges[]={10,20,30,40,50,60,70,80,90,100,120,150};
   double ntkstar_pt_bin_edges[]={0};
   double ntks_pt_bin_edges[]={10,20,30,40,50,60,70};
@@ -665,6 +679,15 @@ int channel_to_nbins(int channel)
     break;
   }
   return nbins;
+}
+
+void create_dir(std::vector<std::string> list)
+{
+  //to create the directories needed to save the output files, like .png and .root
+  for(int i=0 ; i< list.size() ; ++i)
+    {
+      gSystem->Exec(("mkdir -p " + list[i]).c_str());
+    }
 }
 
 /*
