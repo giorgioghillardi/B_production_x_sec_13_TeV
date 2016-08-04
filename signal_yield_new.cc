@@ -31,6 +31,7 @@ using namespace RooFit;
 #define YIELD_SUB_SAMPLES   1
 
 #define VERSION             "v7"
+#define BASE_DIR            "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/"
 //-----------------------------------------------------------------
 // Definition of channel #
 // channel = 1: B+ -> J/psi K+
@@ -67,8 +68,6 @@ void signal_yield_new(int channel)
   
   create_dir(dir_list);
 
-  return;
-
   double ntkp_pt_bin_edges[]={10,20,30,40,50,60,70,80,90,100,120,150};
   double ntkstar_pt_bin_edges[]={0};
   double ntks_pt_bin_edges[]={10,20,30,40,50,60,70};
@@ -79,7 +78,7 @@ void signal_yield_new(int channel)
   
   int nptbins;
   
-  TString data_selection_input_file = "selected_data_" + channel_to_ntuple_name(channel) + ".root";
+  TString data_selection_input_file = TString(BASE_DIR) + "selected_data_" + channel_to_ntuple_name(channel) + ".root";
   
   RooWorkspace* ws = new RooWorkspace("ws","Bmass");
   RooAbsData* data;
@@ -112,7 +111,7 @@ void signal_yield_new(int channel)
       std::cout <<"SIGNAL: "<< signal_res->getVal() << " " << signal_res->getAsymErrorLo() << " +" << signal_res->getAsymErrorHi() << std::endl;
       
       mass_fit_directory = "full_dataset_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION);
-      pt_dist_directory = "full_dataset_pt_dist/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION);
+      pt_dist_directory = "full_dataset_mass_pt_histo/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION);
 
       plot_mass_fit(*ws,channel,mass_fit_directory);
       plot_pt_dist(*ws,channel,pt_dist_directory);
@@ -220,7 +219,7 @@ switch (channel) {
 RooRealVar* pre_filter_efficiency(int channel, double pt_min, double pt_max)
 {
   ReducedGenBranches gen;
-  TString mc_gen_input_file = "myloop_gen_bfilter.root";
+  TString mc_gen_input_file = TString(BASE_DIR) + "myloop_gen_bfilter.root";
   TFile *fin = new TFile(mc_gen_input_file);
   
   TString ntuple = channel_to_ntuple_name(channel) + "_gen";
