@@ -78,7 +78,7 @@ void signal_yield_new(int channel)
   
   int nptbins;
   
-  TString data_selection_input_file = TString(BASE_DIR) + "selected_data_" + channel_to_ntuple_name(channel) + ".root";
+  TString data_selection_input_file = "selected_data_" + channel_to_ntuple_name(channel) + ".root";
   
   RooWorkspace* ws = new RooWorkspace("ws","Bmass");
   RooAbsData* data;
