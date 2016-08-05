@@ -23,9 +23,9 @@
 #include "TMath.h"
 using namespace RooFit;
 
-#define SOURCE1           "myloop_data_run2015D_v4_v1.root"
-#define SOURCE2           "myloop_data_run2015D_v3_v1.root"
-#define SOURCE3           "myloop_data_run2015C_v1_v1.root"
+#define SOURCE1           "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_data_run2015D_v4_v1.root"
+#define SOURCE2           "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_data_run2015D_v3_v1.root"
+#define SOURCE3           "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_data_run2015C_v1_v1.root"
 
 #define SHOW_DIST 0
 #define SIDEBAND_SUB 0
@@ -44,7 +44,7 @@ void plot_mass_dist(RooWorkspace& w, int channel, TString directory);
 void read_data(RooWorkspace& w, TString filename,int channel);
 void read_data_cut(RooWorkspace& w, RooDataSet* data);
 void set_up_workspace_variables(RooWorkspace& w, int channel);
-void data_selection(TString fin1,TString fin2,TString fin3,TString data_selection_output_file,int channel);
+void data_selection(TString fin1,TString fin2,TString fin3,TString data_selection_output_file,int channel,double* cuts);
 TString channel_to_ntuple_name(int channel);
 
 void sideband_sub(RooWorkspace& w, double left, double right);
@@ -59,7 +59,9 @@ void data_selection(int channel)
   TString pt_dist_directory="";
   TString mass_dist_directory="";
 
-  data_selection(SOURCE1,SOURCE2,SOURCE3,data_selection_output_file,channel);
+  double cuts[] = {0.1, 3.0, 0.99, 0.010, 0.05};
+
+  data_selection(SOURCE1,SOURCE2,SOURCE3,data_selection_output_file,channel,cuts);
    
   if(SHOW_DIST)
     {
@@ -176,7 +178,7 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
   w.import(pt);
 }
 
-void data_selection(TString fin1, TString fin2,TString fin3, TString data_selection_output_file,int channel){
+void data_selection(TString fin1, TString fin2,TString fin3, TString data_selection_output_file,int channel, double* cuts){
 
   TFile *fout = new TFile(data_selection_output_file,"recreate");
 
@@ -230,24 +232,24 @@ void data_selection(TString fin1, TString fin2,TString fin3, TString data_select
         
     if (channel==1) { // cuts for B+ -> J/psi K+
       if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
-      if (br.vtxprob<=0.1) continue;
-      if (br.tk1pt<=1.6) continue;
-      if (br.lxy/br.errxy<=3.0) continue;
-      if (br.cosalpha2d<=0.99) continue;
+      if (br.vtxprob<=cuts[0]) continue;//original cut 0.1
+      if (br.tk1pt<=cuts[1]) continue;//original cut 1.6
+      if (br.lxy/br.errxy<=cuts[2]) continue;//original cut 3.0
+      if (br.cosalpha2d<=cuts[3]) continue;//original cut 0.99
             
       _nt1->Fill(br.mass,br.pt,br.eta);
 	    
     }else
       if (channel==2) { // cuts for B0 -> J/psi K*
 	if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
-	if (br.vtxprob<=0.1) continue;
-	if (br.lxy/br.errxy<=3.0) continue;
-	if (br.cosalpha2d<=0.99) continue;
-	if (fabs(br.tktkmass-KSTAR_MASS)>=0.05) continue;
+	if (br.vtxprob<=cuts[0]) continue;//original cut 0.1
+	if (br.lxy/br.errxy<=cuts[1]) continue;//original cut 3.0
+	if (br.cosalpha2d<=cuts[2]) continue;//original cut 0.99
+	if (fabs(br.tktkmass-KSTAR_MASS)>=cuts[3]) continue;//original cut 0.05
             
 	v4_tk1.SetPtEtaPhiM(br.tk1pt,br.tk1eta,br.tk1phi,KAON_MASS);
 	v4_tk2.SetPtEtaPhiM(br.tk2pt,br.tk2eta,br.tk2phi,KAON_MASS);
-	if (fabs((v4_tk1+v4_tk2).Mag()-PHI_MASS)<=0.01) continue;
+	if (fabs((v4_tk1+v4_tk2).Mag()-PHI_MASS)<=cuts[4]) continue;//original cut 0.01
             
 	if (n_br_queued==0) {
 	  memcpy(&br_queue[n_br_queued],&br,sizeof(ReducedBranches));
@@ -289,51 +291,51 @@ void data_selection(TString fin1, TString fin2,TString fin3, TString data_select
       }else
 	if (channel==3) { // cuts for B0 -> J/psi Ks
 	  if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
-	  if (br.vtxprob<=0.1) continue;
-	  if (br.lxy/br.errxy<=3.0) continue;
-	  if (br.tktkblxy/br.tktkberrxy<=3.0) continue;
-	  if (br.cosalpha2d<=0.99) continue;
-	  if (fabs(br.tktkmass-KSHORT_MASS)>=0.015) continue;
+	  if (br.vtxprob<=cuts[0]) continue;//original cut 0.1
+	  if (br.lxy/br.errxy<=cuts[1]) continue;//original cut 3.0
+	  if (br.tktkblxy/br.tktkberrxy<=cuts[2]) continue;//original cut 3.0
+	  if (br.cosalpha2d<=cuts[3]) continue;//original cut 0.99
+	  if (fabs(br.tktkmass-KSHORT_MASS)>=cuts[4]) continue;//original cut 0.015
                 
 	  _nt3->Fill(br.mass,br.pt,br.eta);
 
 	}else
 	  if (channel==4) { // cuts for Bs -> J/psi phi
 	    if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
-	    if (br.vtxprob<=0.1) continue;
-	    if (br.lxy/br.errxy<=3.0) continue;
-	    if (br.cosalpha2d<=0.99) continue;
-	    if (fabs(br.tktkmass-PHI_MASS)>=0.010) continue;
+	    if (br.vtxprob<=cuts[0]) continue;//original cut 0.1
+	    if (br.lxy/br.errxy<=cuts[1]) continue;//original cut 3.0
+	    if (br.cosalpha2d<=cuts[2]) continue;//original cut 0.99
+	    if (fabs(br.tktkmass-PHI_MASS)>=cuts[3]) continue;//original cut 0.010
             
 	    v4_tk1.SetPtEtaPhiM(br.tk1pt,br.tk1eta,br.tk1phi,KAON_MASS);
 	    v4_tk2.SetPtEtaPhiM(br.tk2pt,br.tk2eta,br.tk2phi,PION_MASS);
-	    if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=0.05) continue;
+	    if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=cuts[4]) continue;//original cut 0.05
 	    v4_tk1.SetPtEtaPhiM(br.tk1pt,br.tk1eta,br.tk1phi,PION_MASS);
 	    v4_tk2.SetPtEtaPhiM(br.tk2pt,br.tk2eta,br.tk2phi,KAON_MASS);
-	    if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=0.05) continue;
+	    if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=cuts[4]) continue;
                 
 	    _nt4->Fill(br.mass,br.pt,br.eta);
 
 	  }else
 	    if (channel==5) { // cuts for psi(2S)/X(3872) -> J/psi pipi
-	      if (br.vtxprob<=0.2) continue;
-	      if (fabs(br.tk1eta)>=1.6) continue;
-	      if (fabs(br.tk2eta)>=1.6) continue;
+	      if (br.vtxprob<=cuts[0]) continue;//original cut 0.2
+	      if (fabs(br.tk1eta)>=cuts[1]) continue;//original cut 1.6
+	      if (fabs(br.tk2eta)>=cuts[2]) continue;//original cut 1.6
             
 	      _nt5->Fill(br.mass,br.pt,br.eta);
 
 	    }else
 	      if (channel==6) {//cuts for lambda
 		if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
-		if (br.vtxprob<=0.1) continue;
-		if (br.lxy/br.errxy<=3.0) continue;
-		if (br.tktkblxy/br.tktkberrxy<=3.0) continue;
-		if (br.cosalpha2d<=0.99) continue;
-		if (fabs(br.tktkmass-LAMBDA_MASS)>=0.015) continue;
+		if (br.vtxprob<=cuts[0]) continue;//original cut 0.1
+		if (br.lxy/br.errxy<=cuts[1]) continue;//original cut 3.0
+		if (br.tktkblxy/br.tktkberrxy<=cuts[2]) continue;//original cut 3.0
+		if (br.cosalpha2d<=cuts[3]) continue;//original cut 0.99
+		if (fabs(br.tktkmass-LAMBDA_MASS)>=cuts[4]) continue;//original cut 0.015
             
 		v4_tk1.SetPtEtaPhiM(br.tk1pt,br.tk1eta,br.tk1phi,PION_MASS);
 		v4_tk2.SetPtEtaPhiM(br.tk2pt,br.tk2eta,br.tk2phi,PION_MASS);
-		if (fabs((v4_tk1+v4_tk2).Mag()-KSHORT_MASS)<=0.015) continue;
+		if (fabs((v4_tk1+v4_tk2).Mag()-KSHORT_MASS)<=cuts[5]) continue;//original cut 0.015
             
 		_nt6->Fill(br.mass,br.pt,br.eta);
 
@@ -418,7 +420,7 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   c1.SaveAs("fit_side.png");
 
   std::cout << std::endl << "Chi^2: " << massframe->chiSquare() << std::endl;
-  std::cout << "LogLikelihood: " << nll->GetVal() << std::endl;
+  std::cout << "LogLikelihood: " << nll->getVal() << std::endl;
 
   //Integrating the background distribution                            
 
