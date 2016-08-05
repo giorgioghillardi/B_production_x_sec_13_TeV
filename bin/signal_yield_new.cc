@@ -1,4 +1,7 @@
+#include <RooPlotable.h>
+#include <RooHist.h>
 #include <TSystem.h>
+#include <sstream>
 #include <vector>
 #include <string>
 #include <TStyle.h>
@@ -19,16 +22,19 @@
 #include <RooChebychev.h>
 #include <RooBernstein.h>
 #include <RooExponential.h>
+#include <RooWorkspace.h>
 #include <RooAddPdf.h>
+#include <TGraphAsymmErrors.h>
+#include <TEfficiency.h>
 #include <RooPlot.h>
-#include "myloop.h"
-#include "plotDressing.h"
+#include "UserCode/B_production_x_sec_13_TeV/interface/myloop.h"
+#include "UserCode/B_production_x_sec_13_TeV/interface/plotDressing.h"
 #include "TMath.h"
 using namespace RooFit;
 
 // General fitting options
 #define NUMBER_OF_CPU       1
-#define YIELD_SUB_SAMPLES   1
+#define YIELD_SUB_SAMPLES   0
 
 #define VERSION             "v7"
 #define BASE_DIR            "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/"
@@ -58,8 +64,29 @@ TString channel_to_ntuple_name(int channel);
 TString channel_to_xaxis_title(int channel);
 int channel_to_nbins(int channel);
 
-void signal_yield_new(int channel)
+//void signal_yield_new(int channel)
+int main(int argc, char** argv)
 {
+  int channel = 0;
+ 
+  for(int i=1 ; i<argc ; ++i)
+    {
+      std::string argument = argv[i];
+
+      if(argument == "--channel")
+	{
+	  std::stringstream convert;
+	  convert << argv[++i];
+	  convert >> channel;
+	}
+    } 
+ 
+  if(channel==0)
+    {
+      std::cout << "So you give me no channel...I need a channel!" << std::endl;
+	return 0;
+    }
+  
   std::vector<std::string> dir_list;
   dir_list.push_back("full_dataset_mass_fit");
   dir_list.push_back("full_dataset_mass_pt_histo");
@@ -118,7 +145,8 @@ void signal_yield_new(int channel)
     }
   else
     {
-switch (channel) {
+      switch (channel) {
+      default:
       case 1:
 	pt_bin_edges = ntkp_pt_bin_edges;
 	nptbins = (sizeof(ntkp_pt_bin_edges) / sizeof(double)) - 1 ; //if pt_bin_edges is an empty array, then nptbins is equal to 0
@@ -164,7 +192,7 @@ switch (channel) {
  
  for(int i=0; i<nptbins; i++)
    {
-     cout << "processing subsample pt: " << i+1 << std::endl;
+     std::cout << "processing subsample pt: " << i+1 << std::endl;
      
      pt_bin_size[i] = pt_bin_edges[i+1]-pt_bin_edges[i];
 
@@ -389,7 +417,7 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
   RooHist* pull_hist = frame_m->pullHist("theData","thePdf");
   
   RooPlot* pull_plot = mass.frame();
-  pull_plot->addPlotable(pull_hist,"P");
+  pull_plot->addPlotable(static_cast<RooPlotable*>(pull_hist),"P");
   pull_plot->SetTitle("");
   pull_plot->GetXaxis()->SetTitle(channel_to_xaxis_title(channel));
   pull_plot->GetXaxis()->SetLabelFont(42);
@@ -455,6 +483,7 @@ void build_pdf(RooWorkspace& w, int channel)
   RooAbsData* data = w.data("data");
 
   switch (channel) {
+  default:
   case 1:
     mass_peak = BP_MASS;
     break;
@@ -527,21 +556,29 @@ void build_pdf(RooWorkspace& w, int channel)
   RooRealVar n_jpsix("n_jpsix","n_jpsix",data->sumEntries(TString::Format("mass>4.9&&mass<5.14")),data->sumEntries(TString::Format("mass>4.9&&mass<5.14")),data->sumEntries());
   
   RooAddPdf* model;
-  
-  if (channel==1 || channel ==3) // B+ -> J/psi K+, B0 -> J/psi Ks
-    model = new RooAddPdf("model","model",
+
+  switch(channel)
+    {
+    default:
+    case 1:// B+ -> J/psi K+
+    case 3://B0 -> J/psi Ks
+      model = new RooAddPdf("model","model",
 			  RooArgList(pdf_m_signal, pdf_m_combinatorial_exp, pdf_m_jpsix),
 			  RooArgList(n_signal, n_combinatorial, n_jpsix));
-  else
-    if (channel==2 || channel==4 || channel==6) // B0 -> J/psi K*; Bs -> J/psi phi; Lambda_b -> J/psi Lambda
+      break;
+    case 2:// B0 -> J/psi K* 
+    case 4://Bs -> J/psi phi
+    case 6://Lambda_b -> J/psi Lambda
       model = new RooAddPdf("model","model",
 			    RooArgList(pdf_m_signal, pdf_m_combinatorial_exp),
 			    RooArgList(n_signal, n_combinatorial));
-    else
-      if (channel==5) // J/psi pipi
-	model = new RooAddPdf("model","model",
-			      RooArgList(pdf_m_signal, pdf_m_combinatorial_bern, pdf_m_x3872),
-			      RooArgList(n_signal, n_combinatorial, n_x3872));
+      break;
+    case 5:// J/psi pipi
+      model = new RooAddPdf("model","model",
+			    RooArgList(pdf_m_signal, pdf_m_combinatorial_bern, pdf_m_x3872),
+			    RooArgList(n_signal, n_combinatorial, n_x3872));
+      break;
+    }
 
   w.import(*model);
 }
@@ -570,6 +607,7 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
   pt_max=400;
   
   switch (channel) {
+  default: 
   case 1:
     mass_min = 5.0; mass_max = 6.0;
     break;
@@ -604,6 +642,7 @@ TString channel_to_ntuple_name(int channel)
   TString ntuple_name = "";
 
   switch(channel){
+    default:
   case 1:
     ntuple_name="ntkp";
     break;
@@ -631,6 +670,7 @@ TString channel_to_xaxis_title(int channel)
   TString xaxis_title = "";
 
   switch (channel) {
+  default:
   case 1:
     xaxis_title = "M_{J/#psi K^{#pm}} [GeV]";
     break;
@@ -658,6 +698,7 @@ int channel_to_nbins(int channel)
   int nbins;
 
   switch (channel) {
+  default:
   case 1:
     nbins = 50;
     break;
@@ -683,7 +724,7 @@ int channel_to_nbins(int channel)
 void create_dir(std::vector<std::string> list)
 {
   //to create the directories needed to save the output files, like .png and .root
-  for(int i=0 ; i< list.size() ; ++i)
+  for(size_t i=0 ; i< list.size() ; ++i)
     {
       gSystem->Exec(("mkdir -p " + list[i]).c_str());
     }

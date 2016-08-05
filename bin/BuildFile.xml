@@ -3,14 +3,9 @@
 <use name="rootrflx"/>
 <use name="roofit"/>
 <use name="roostats"/>
-<use name="UserCode/B_production_x_sec_13_TeV"/>
+#<use name="UserCode/B_production_x_sec_13_TeV"/>
 <environment>
-  <bin name=""   file="processSamples.cc"></bin>
-  <bin name="makePseudoData"   file="makePseudoData.cc"></bin>
-  <bin name="trainMVA"         file="trainMVA.cc">      </bin>
-  <bin name="applyMVA"         file="applyMVA.cc">      </bin>
-  <bin name="getYields"        file="getYields.cc">     </bin>
-  <bin name="BDTStudy"         file="BDTStudy.cc">      </bin>
+  <bin name="signal_yield_new"   file="signal_yield_new.cc"></bin>
 </environment>
 
 <Flags CXXFLAGS="-g"/>
