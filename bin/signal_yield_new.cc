@@ -27,9 +27,10 @@
 #include <TGraphAsymmErrors.h>
 #include <TEfficiency.h>
 #include <RooPlot.h>
+#include "TMath.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/myloop.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/plotDressing.h"
-#include "TMath.h"
+
 using namespace RooFit;
 
 // General fitting options
@@ -83,10 +84,11 @@ int main(int argc, char** argv)
  
   if(channel==0)
     {
-      std::cout << "So you give me no channel...I need a channel!" << std::endl;
+      std::cout << "No channel was provided as input. Please use --channel. Example: signal_yield_new --channel 1" << std::endl;
 	return 0;
     }
   
+  //to create the directories to save the .png files
   std::vector<std::string> dir_list;
   dir_list.push_back("full_dataset_mass_fit");
   dir_list.push_back("full_dataset_mass_pt_histo");
