@@ -35,7 +35,6 @@ using namespace RooFit;
 
 // General fitting options
 #define NUMBER_OF_CPU       1
-#define YIELD_SUB_SAMPLES   0
 
 #define VERSION             "v7"
 #define BASE_DIR            "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/"
@@ -65,20 +64,26 @@ TString channel_to_ntuple_name(int channel);
 TString channel_to_xaxis_title(int channel);
 int channel_to_nbins(int channel);
 
-//void signal_yield_new(int channel)
+//input example: signal_yield_new --channel 1 --bins 1
 int main(int argc, char** argv)
 {
   int channel = 0;
+  int yield_sub_samples = 0;
  
   for(int i=1 ; i<argc ; ++i)
     {
       std::string argument = argv[i];
+      std::stringstream convert;
 
       if(argument == "--channel")
 	{
-	  std::stringstream convert;
 	  convert << argv[++i];
 	  convert >> channel;
+	}
+      if(argument == "--bins")
+	{
+	  convert << argv[++i];
+	  convert >> yield_sub_samples;
 	}
     } 
  
@@ -125,7 +130,7 @@ int main(int argc, char** argv)
   read_data(*ws, data_selection_input_file,channel);
   ws->Print();
   
-  if(!YIELD_SUB_SAMPLES) //mass fit and plot the full dataset
+  if(!yield_sub_samples) //mass fit and plot the full dataset
     { 
       //build the pdf for the channel selected above, it uses the dataset which is saved in ws. need to change the dataset to change the pdf.
       build_pdf(*ws,channel);     
@@ -194,7 +199,7 @@ int main(int argc, char** argv)
  
  for(int i=0; i<nptbins; i++)
    {
-     std::cout << "processing subsample pt: " << i+1 << std::endl;
+     std::cout << "processing subsample: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
      
      pt_bin_size[i] = pt_bin_edges[i+1]-pt_bin_edges[i];
 
