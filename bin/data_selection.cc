@@ -186,11 +186,11 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
     TFile *fout = new TFile(data_selection_output_file,"recreate");
 
     TNtupleD *_nt1 = new TNtupleD("ntkp","ntkp","mass:pt:eta");
-    TNtupleD *_nt2 = new TNtupleD("ntkp","ntkp","mass:pt:eta");
-    TNtupleD *_nt3 = new TNtupleD("ntkp","ntkp","mass:pt:eta");
-    TNtupleD *_nt4 = new TNtupleD("ntkp","ntkp","mass:pt:eta");
-    TNtupleD *_nt5 = new TNtupleD("ntkp","ntkp","mass:pt:eta");
-    TNtupleD *_nt6 = new TNtupleD("ntkp","ntkp","mass:pt:eta");
+    TNtupleD *_nt2 = new TNtupleD("ntkstar","ntkstar","mass:pt:eta");
+    TNtupleD *_nt3 = new TNtupleD("ntks","ntks","mass:pt:eta");
+    TNtupleD *_nt4 = new TNtupleD("ntphi","ntphi","mass:pt:eta");
+    TNtupleD *_nt5 = new TNtupleD("ntmix","ntmix","mass:pt:eta");
+    TNtupleD *_nt6 = new TNtupleD("ntlambda","ntlambda","mass:pt:eta");
 
     /*
   switch (channel) {
