@@ -64,12 +64,13 @@ TString channel_to_ntuple_name(int channel);
 TString channel_to_xaxis_title(int channel);
 int channel_to_nbins(int channel);
 
-//input example: signal_yield_new --channel 1 --bins 1
+//input example: signal_yield_new --channel 1 --bins 1 --eff 1
 int main(int argc, char** argv)
 {
   int channel = 0;
   int yield_sub_samples = 0;
- 
+  int calculate_efficiency = 0;
+
   for(int i=1 ; i<argc ; ++i)
     {
       std::string argument = argv[i];
@@ -84,6 +85,11 @@ int main(int argc, char** argv)
 	{
 	  convert << argv[++i];
 	  convert >> yield_sub_samples;
+	}
+      if(argument == "--eff")
+	{
+	  convert << argv[++i];
+	  convert >> calculate_efficiency;
 	}
     } 
  
@@ -212,23 +218,41 @@ int main(int argc, char** argv)
      yield_array[i] = (signal_res->getVal())/pt_bin_size[i];
      errLo_array[i] = -(signal_res->getAsymErrorLo())/pt_bin_size[i];
      errHi_array[i] = (signal_res->getAsymErrorHi())/pt_bin_size[i];
-     
-     pt_bin_centres_eff[i] = pt_bin_edges[i] + (pt_bin_edges[i+1]-pt_bin_edges[i])/2;
-     pt_bin_edges_eff_Lo[i] = pt_bin_centres_eff[i] - pt_bin_edges[i];
-     pt_bin_edges_eff_Hi[i] = pt_bin_edges[i+1] - pt_bin_centres_eff[i];
-     
-     pre_filter_eff = pre_filter_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1]);
-
-     eff_array[i] = pre_filter_eff->getVal();
-     effLo_array[i] = -pre_filter_eff->getAsymErrorLo();
-     effHi_array[i] = pre_filter_eff->getAsymErrorHi();
    }
- 
+
+ //to show the values of signal_yield and the errors at the end, like a table
  for(int i=0; i<nptbins; i++)
    {
      std::cout << "BIN: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " <<  yield_array[i] << " +" << errHi_array[i] << " -"<< errLo_array[i] << std::endl;
    }
+ 
+ if(calculate_efficiency)
+   {
+     for(int i=0; i<nptbins; i++)
+       {
+	 std::cout << "calculating pre-filter efficiency: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
+	 
+	 pt_bin_centres_eff[i] = pt_bin_edges[i] + (pt_bin_edges[i+1]-pt_bin_edges[i])/2;
+	 pt_bin_edges_eff_Lo[i] = pt_bin_centres_eff[i] - pt_bin_edges[i];
+	 pt_bin_edges_eff_Hi[i] = pt_bin_edges[i+1] - pt_bin_centres_eff[i];
+	 
+	 pre_filter_eff = pre_filter_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1]);
+	 
+	 eff_array[i] = pre_filter_eff->getVal();
+	 effLo_array[i] = -pre_filter_eff->getAsymErrorLo();
+	 effHi_array[i] = pre_filter_eff->getAsymErrorHi();
+       }
+	 //plot of the pre-filter efficiency as a function of pT
+	 TCanvas ce;
+	 TGraphAsymmErrors* graph_eff = new TGraphAsymmErrors(nptbins, pt_bin_centres_eff, eff_array, pt_bin_edges_eff_Lo, pt_bin_edges_eff_Hi,effLo_array,effHi_array);
+	 graph_eff->SetTitle("pre filter efficiency");
+	 graph_eff->SetMarkerColor(4);
+	 graph_eff->SetMarkerStyle(21);
+	 graph_eff->Draw("AP");
+	 ce.SaveAs("pre_filter_efficiency_err.png");
+   }
 
+ //plot of the signal_yield as a function of pt, in the future should be the x-sec corrected by efficiency and other factors
  TCanvas cz;
  TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array, pt_bin_edges_Lo, pt_bin_edges_Hi, errLo_array, errHi_array);
  graph->SetTitle("Raw signal yield in Pt bins");
@@ -238,15 +262,6 @@ int main(int argc, char** argv)
  graph->Draw("p");
  cz.SetLogy();
  cz.SaveAs("signal_yield/signal_yield_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + ".png");
- 
- //trying to plot eff1 as a function of pT
- TCanvas ce;
- TGraphAsymmErrors* graph_eff = new TGraphAsymmErrors(nptbins, pt_bin_centres_eff, eff_array, pt_bin_edges_eff_Lo, pt_bin_edges_eff_Hi,effLo_array,effHi_array);
- graph_eff->SetTitle("pre filter efficiency");
- graph_eff->SetMarkerColor(4);
- graph_eff->SetMarkerStyle(21);
- graph_eff->Draw("AP");
- ce.SaveAs("pre_filter_efficiency_err.png");
 
     }//end of else
 }//end of signal_yield_new
