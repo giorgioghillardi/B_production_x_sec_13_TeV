@@ -1,3 +1,4 @@
+#include <sstream>
 #include <TStyle.h>
 #include <TAxis.h>
 #include <TLatex.h>
@@ -23,10 +24,6 @@
 #include "TMath.h"
 using namespace RooFit;
 
-#define SOURCE1           "myloop_data_run2015D_v4_v1.root"
-#define SOURCE2           "myloop_data_run2015D_v3_v1.root"
-#define SOURCE3           "myloop_data_run2015C_v1_v1.root"
-
 #define SHOW_DIST 0
 //-----------------------------------------------------------------
 // Definition of channel #
@@ -43,11 +40,38 @@ void plot_mass_dist(RooWorkspace& w, int channel, TString directory);
 void read_data(RooWorkspace& w, TString filename,int channel);
 void read_data_cut(RooWorkspace& w, RooDataSet* data);
 void set_up_workspace_variables(RooWorkspace& w, int channel);
-void data_selection(TString fin1,TString fin2,TString fin3,TString data_selection_output_file,int channel);
+void data_selection(TString fin1,TString data_selection_output_file,int channel);
 TString channel_to_ntuple_name(int channel);
 
-void data_selection(int channel)
+//input example: data_selection --channel 1                                                                                        
+int main(int argc, char** argv)
 {
+  int channel = 0;
+  std::string input_file = "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_data.root";
+
+  for(int i=1 ; i<argc ; ++i)
+    {
+      std::string argument = argv[i];
+      std::stringstream convert;
+
+      if(argument == "--channel")
+        {
+          convert << argv[++i];
+          convert >> channel;
+        }
+
+      if(argument == "--input")
+        {
+          convert << argv[++i];
+          convert >> input_file;
+        }
+    }
+
+  if(channel==0)
+    {
+      std::cout << "No channel was provided as input. Please use --channel. Example: data_selection --channel 1" << std::endl;
+      return 0;
+
   TString data_selection_output_file="";
   data_selection_output_file= "selected_data_" + channel_to_ntuple_name(channel) + ".root";
 
@@ -56,7 +80,7 @@ void data_selection(int channel)
   TString pt_dist_directory="";
   TString mass_dist_directory="";
 
-  data_selection(SOURCE1,SOURCE2,SOURCE3,data_selection_output_file,channel);
+  data_selection(input_file,data_selection_output_file,channel);
    
   if(SHOW_DIST)
     {
@@ -154,7 +178,7 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
   w.import(pt);
 }
 
-void data_selection(TString fin1, TString fin2,TString fin3, TString data_selection_output_file,int channel){
+void data_selection(TString fin1, TString data_selection_output_file,int channel){
 
     TFile *fout = new TFile(data_selection_output_file,"recreate");
 
@@ -198,8 +222,6 @@ void data_selection(TString fin1, TString fin2,TString fin3, TString data_select
     tin = new TChain(channel_to_ntuple_name(channel));
 
     tin->Add(fin1);
-    tin->Add(fin2);
-    tin->Add(fin3);
 
     br.setbranchadd(tin);
 
