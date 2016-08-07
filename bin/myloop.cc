@@ -1,16 +1,36 @@
 #include <TChain.h>
+#include <sstream>
 #include <TTree.h>
 #include <TFile.h>
 #include <TMath.h>
 #include <TLorentzVector.h>
 #include <TVector3.h>
-#include "format.h"
-#include "myloop.h"
+#include "UserCode/B_production_x_sec_13_TeV/interface/format.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/myloop.h"
 //#include "json_50nsMuonPhysV2_processed.h"
 
-void myloop()
+int main(int argc, char** argv)
 {
+  std::string dir ="";
+
+  for(int i=1 ; i<argc ; ++i)
+    {
+      std::string argument = argv[i];
+      std::stringstream convert;
+
+      if(argument == "--dir")
+        {
+          convert << argv[++i];
+          convert >> dir;
+        }
+    }
+  /*
+  if(dir == "")
+    {
+      std::cout << "No directory was specified. Saving in the current directory. To specify use --dir" << std::endl;
+      return 0;
+    }
+  */
     TChain *root = new TChain("demo/root");
     TChain *HltTree = new TChain("hltanalysis/HltTree");
 
@@ -34,7 +54,7 @@ void myloop()
     int n_entries = root->GetEntries();
     if (n_entries!=HltTree->GetEntries()) {
      printf("Error: # of entries are different in two main trees.\n");
-     return;
+     return 0;
     }
     printf("Going to process %d entries.\n",n_entries);
     
@@ -63,7 +83,16 @@ void myloop()
     for (int i=0;i<N_HLT_BOOKINGS;i++)
         HltTree->SetBranchAddress(HLT_paths[i],&HLT_book[i]);
     
-    TFile *fout = new TFile("myloop_data.root","recreate"); //change this dir to be an input in the macro
+    TString directory = "";
+
+    if(dir == "")
+      {
+	directory = "myloop_data.root";
+      }
+    else
+      directory = dir + "/myloop_data.root";
+    
+    TFile *fout = new TFile(directory,"recreate");
     
     ReducedBranches brkp;
     ReducedBranches brpi;
@@ -112,7 +141,7 @@ void myloop()
         // verify the Run # and Event #
         if (EvtInfo->EvtNo!=(int)HltTree_Event || EvtInfo->RunNo!=HltTree_Run) {
             printf("Error: mismatch of event # and run #.\n");
-            return;
+            return 0;
         }
         
         // Start of BInfo loop
@@ -141,7 +170,7 @@ void myloop()
                     br = &brlambda; nt = ntlambda; break; // lambda
                 default:
                     printf("Error: unknown BInfo->type.\n");
-                    return;
+                    return 0;
             }
             
             // cleanup

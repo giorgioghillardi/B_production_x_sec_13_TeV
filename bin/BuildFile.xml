@@ -6,6 +6,7 @@
 #<use name="UserCode/B_production_x_sec_13_TeV"/>
 <environment>
   <bin name="signal_yield_new"   file="signal_yield_new.cc"></bin>
+  <bin name="myloop"   file="myloop.cc"></bin>
 </environment>
 
 <Flags CXXFLAGS="-g"/>
