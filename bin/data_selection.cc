@@ -20,6 +20,7 @@
 #include <RooBernstein.h>
 #include <RooExponential.h>
 #include <RooAddPdf.h>
+#include <TLegend.h>
 #include <RooPlot.h>
 #include "UserCode/B_production_x_sec_13_TeV/interface/myloop.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/plotDressing.h"
@@ -74,41 +75,10 @@ int main(int argc, char** argv)
 
   if(channel==0)
     {
-      //set up mass and pt variables inside ws  
-      set_up_workspace_variables(*ws,channel);
-
-      //read data from the selected data file, and import it as a dataset into the workspace.
-      read_data(*ws, data_selection_output_file,channel);
-  
-      data = ws->data("data");
-  
-      pt_dist_directory = "full_dataset_mass_pt_dist/" + channel_to_ntuple_name(channel) + "_pt";
-      plot_pt_dist(*ws,channel,pt_dist_directory);
-
-      mass_dist_directory = "full_dataset_mass_pt_dist/" + channel_to_ntuple_name(channel) + "_mass";
-      plot_mass_dist(*ws,channel,mass_dist_directory);
-    }
-
-  if(SIDEBAND_SUB)
-    {
-      //set up mass and pt variables inside ws  
-      set_up_workspace_variables(*ws,channel);
-
-      //read data from the selected data file, and import it as a dataset into the workspace.
-      read_data(*ws, data_selection_output_file,channel);
-
-      switch(channel)
-	{
-	case 2:
-	  sideband_sub(*ws, 5.1, 5.4);
-	case 4:
-	  sideband_sub(*ws, 5.25, 5.45);
-	default:
-	  std::cout << "WARNING! UNDEFINED LIMITS FOR PEAK REGION" << std::endl;
-	}
       std::cout << "No channel was provided as input. Please use --channel. Example: data_selection --channel 1" << std::endl;
       return 0;
-    }
+
+}
 
   TString data_selection_output_file="";
   data_selection_output_file= "selected_data_" + channel_to_ntuple_name(channel) + ".root";
@@ -135,6 +105,34 @@ int main(int argc, char** argv)
       mass_dist_directory = "full_dataset_mass_pt_dist/" + channel_to_ntuple_name(channel) + "_mass";
       plot_mass_dist(*ws,channel,mass_dist_directory);
     }
+
+  if(SIDEBAND_SUB)
+    {
+
+      RooWorkspace* ws = new RooWorkspace("ws","Bmass");
+      TString pt_dist_directory="";
+      TString mass_dist_directory="";
+
+
+      //set up mass and pt variables inside ws  
+      set_up_workspace_variables(*ws,channel);
+
+      //read data from the selected data file, and import it as a dataset into the workspace.
+      read_data(*ws, data_selection_output_file,channel);
+
+      switch(channel)
+	{
+	case 2:
+	  sideband_sub(*ws, 5.1, 5.4);
+	case 4:
+	  sideband_sub(*ws, 5.25, 5.45);
+	default:
+	  std::cout << "WARNING! UNDEFINED LIMITS FOR PEAK REGION" << std::endl;
+	}
+    }
+
+
+
 }
 
 void plot_pt_dist(RooWorkspace& w, int channel, TString directory)
@@ -462,7 +460,7 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   c1.SaveAs("fit_side.png");
 
   std::cout << std::endl << "Chi^2: " << massframe->chiSquare() << std::endl;
-  std::cout << "LogLikelihood: " << nll->GetVal() << std::endl;
+  std::cout << "LogLikelihood: " << nll->getVal() << std::endl;
 
   //Integrating the background distribution                            
 

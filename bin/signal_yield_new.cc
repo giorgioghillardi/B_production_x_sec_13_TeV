@@ -30,7 +30,7 @@
 #include "TMath.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/myloop.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/plotDressing.h"
-
+#include <TLegend.h>
 using namespace RooFit;
 
 // General fitting options
