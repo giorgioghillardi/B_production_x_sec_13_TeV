@@ -1,3 +1,4 @@
+#include <sstream>
 #include <TStyle.h>
 #include <TAxis.h>
 #include <TLatex.h>
@@ -5,10 +6,13 @@
 #include <TFile.h>
 #include <TTree.h>
 #include <TString.h>
+#include <TChain.h>
 #include <TCanvas.h>
 #include <TNtupleD.h>
 #include <TH1D.h>
 #include <TLorentzVector.h>
+#include <TLegend.h>
+#include <RooWorkspace.h>
 #include <RooRealVar.h>
 #include <RooConstVar.h>
 #include <RooDataSet.h>
@@ -18,17 +22,11 @@
 #include <RooExponential.h>
 #include <RooAddPdf.h>
 #include <RooPlot.h>
-#include "myloop.h"
-#include "plotDressing.h"
+#include "UserCode/B_production_x_sec_13_TeV/interface/myloop.h"
+#include "UserCode/B_production_x_sec_13_TeV/interface/plotDressing.h"
 #include "TMath.h"
 using namespace RooFit;
 
-#define SOURCE1           "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_data_run2015D_v4_v1.root"
-#define SOURCE2           "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_data_run2015D_v3_v1.root"
-#define SOURCE3           "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_data_run2015C_v1_v1.root"
-
-#define SHOW_DIST 0
-#define SIDEBAND_SUB 0
 //-----------------------------------------------------------------
 // Definition of channel #
 // channel = 1: B+ -> J/psi K+
@@ -44,44 +42,86 @@ void plot_mass_dist(RooWorkspace& w, int channel, TString directory);
 void read_data(RooWorkspace& w, TString filename,int channel);
 void read_data_cut(RooWorkspace& w, RooDataSet* data);
 void set_up_workspace_variables(RooWorkspace& w, int channel);
-void data_selection(TString fin1,TString fin2,TString fin3,TString data_selection_output_file,int channel,double* cuts);
 TString channel_to_ntuple_name(int channel);
 
 void sideband_sub(RooWorkspace& w, double left, double right);
 
-void data_selection(int channel)
+void data_selection(TString fin1,TString data_selection_output_file,int channel);
+
+//input example: data_selection --channel 1 --input /some/place/ --sub 1 --showdist 1
+int main(int argc, char** argv)
 {
+  int channel = 0;
+  std::string input_file = "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_data.root";
+  bool side_sub = 0, show_dist;
+
+  for(int i=1 ; i<argc ; ++i)
+    {
+      std::string argument = argv[i];
+      std::stringstream convert;
+
+      if(argument == "--channel")
+        {
+          convert << argv[++i];
+          convert >> channel;
+        }
+
+      if(argument == "--input")
+        {
+          convert << argv[++i];
+          convert >> input_file;
+        }
+
+      if(argument == "--sub")
+	{
+	  convert << argv[++i];
+	  convert >> side_sub;
+	}
+
+      if(argument == "--showdist")
+	{
+	  convert << argv[++i];
+	  convert >> show_dist;
+	}
+    }
+
+  if(channel==0)
+    {
+      std::cout << "No channel was provided as input. Please use --channel. Example: data_selection --channel 1" << std::endl;
+      return 0;
+    }
+
   TString data_selection_output_file="";
   data_selection_output_file= "selected_data_" + channel_to_ntuple_name(channel) + ".root";
+  
+  data_selection(input_file,data_selection_output_file,channel);
 
-  RooWorkspace* ws = new RooWorkspace("ws","Bmass");
-  RooAbsData* data;
-  TString pt_dist_directory="";
-  TString mass_dist_directory="";
+  if(show_dist)
+    { 
+      RooWorkspace* ws = new RooWorkspace("ws","Bmass");
+      TString pt_dist_directory="";
+      TString mass_dist_directory="";
+ 
+      //      gSystem->Exec(("mkdir -p ").c_str());
 
-  double cuts[] = {0.1, 3.0, 0.99, 0.010, 0.05};
-
-  data_selection(SOURCE1,SOURCE2,SOURCE3,data_selection_output_file,channel,cuts);
-   
-  if(SHOW_DIST)
-    {
       //set up mass and pt variables inside ws  
       set_up_workspace_variables(*ws,channel);
-
+      
       //read data from the selected data file, and import it as a dataset into the workspace.
       read_data(*ws, data_selection_output_file,channel);
-  
-      data = ws->data("data");
-  
+      
+      RooAbsData* data = ws->data("data");
+      
       pt_dist_directory = "full_dataset_mass_pt_dist/" + channel_to_ntuple_name(channel) + "_pt";
       plot_pt_dist(*ws,channel,pt_dist_directory);
-
+      
       mass_dist_directory = "full_dataset_mass_pt_dist/" + channel_to_ntuple_name(channel) + "_mass";
       plot_mass_dist(*ws,channel,mass_dist_directory);
     }
 
-  if(SIDEBAND_SUB)
+  if(side_sub)
     {
+      RooWorkspace* ws = new RooWorkspace("ws","Bmass");
       //set up mass and pt variables inside ws  
       set_up_workspace_variables(*ws,channel);
 
@@ -105,7 +145,7 @@ void plot_pt_dist(RooWorkspace& w, int channel, TString directory)
   //full dataset pt distribution
   RooRealVar pt = *(w.var("pt"));
   RooAbsData* data = w.data("data");
-
+  
   TCanvas c2;
   TH1D* pt_dist = (TH1D*)data->createHistogram("pt_dist",pt);
   pt_dist->Draw();
@@ -151,6 +191,7 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
   pt_max=400;
   
   switch (channel) {
+  default:
   case 1:
     mass_min = 5.0; mass_max = 6.0;
     break;
@@ -178,53 +219,53 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
   w.import(pt);
 }
 
-void data_selection(TString fin1, TString fin2,TString fin3, TString data_selection_output_file,int channel, double* cuts){
+void data_selection(TString fin1, TString data_selection_output_file,int channel){
 
   TFile *fout = new TFile(data_selection_output_file,"recreate");
 
-  TNtupleD *_nt1;
-  TNtupleD *_nt2;
-  TNtupleD *_nt3;
-  TNtupleD *_nt4;
-  TNtupleD *_nt5;
-  TNtupleD *_nt6;
+  TNtupleD *_nt1 = new TNtupleD("ntkp","ntkp","mass:pt:eta");
+  TNtupleD *_nt2 = new TNtupleD("ntkstar","ntkstar","mass:pt:eta");
+  TNtupleD *_nt3 = new TNtupleD("ntks","ntks","mass:pt:eta");
+  TNtupleD *_nt4 = new TNtupleD("ntphi","ntphi","mass:pt:eta");
+  TNtupleD *_nt5 = new TNtupleD("ntmix","ntmix","mass:pt:eta");
+  TNtupleD *_nt6 = new TNtupleD("ntlambda","ntlambda","mass:pt:eta");
 
-  switch (channel) {
-  case 1:
+  /*
+    switch (channel) {
+    case 1:
+    default:
     _nt1 = new TNtupleD("ntkp","ntkp","mass:pt:eta");
     break;
-  case 2:
+    case 2:
     _nt2 = new TNtupleD("ntkstar","ntkstar","mass:pt:eta");
     break;
-  case 3:
+    case 3:
     _nt3 = new TNtupleD("ntks","ntks","mass:pt:eta");
     break;
-  case 4:
+    case 4:
     _nt4 = new TNtupleD("ntphi","ntphi","mass:pt:eta");
     break;
-  case 5:
+    case 5:
     _nt5 = new TNtupleD("ntmix","ntmix","mass:pt:eta");
     break;
-  case 6:
+    case 6:
     _nt6 = new TNtupleD("ntlambda","ntlambda","mass:pt:eta");
     break;
-  }
-    
-  TChain* tin;
+    }
+  */
+
   ReducedBranches br;
-        
+  TChain* tin;
+  
   int n_br_queued = 0;
   ReducedBranches br_queue[32];
   TLorentzVector v4_tk1, v4_tk2;
-
+  
   std::cout << "selecting data from channel " << channel << std::endl;
 
   tin = new TChain(channel_to_ntuple_name(channel));
 
   tin->Add(fin1);
-  tin->Add(fin2);
-  tin->Add(fin3);
-
   br.setbranchadd(tin);
 
   for (int evt=0;evt<tin->GetEntries();evt++) {
@@ -232,24 +273,24 @@ void data_selection(TString fin1, TString fin2,TString fin3, TString data_select
         
     if (channel==1) { // cuts for B+ -> J/psi K+
       if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
-      if (br.vtxprob<=cuts[0]) continue;//original cut 0.1
-      if (br.tk1pt<=cuts[1]) continue;//original cut 1.6
-      if (br.lxy/br.errxy<=cuts[2]) continue;//original cut 3.0
-      if (br.cosalpha2d<=cuts[3]) continue;//original cut 0.99
+      if (br.vtxprob<=0.1) continue;//original cut 0.1
+      if (br.tk1pt<=1.6) continue;//original cut 1.6
+      if (br.lxy/br.errxy<=3.0) continue;//original cut 3.0
+      if (br.cosalpha2d<=0.99) continue;//original cut 0.99
             
       _nt1->Fill(br.mass,br.pt,br.eta);
 	    
     }else
       if (channel==2) { // cuts for B0 -> J/psi K*
 	if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
-	if (br.vtxprob<=cuts[0]) continue;//original cut 0.1
-	if (br.lxy/br.errxy<=cuts[1]) continue;//original cut 3.0
-	if (br.cosalpha2d<=cuts[2]) continue;//original cut 0.99
-	if (fabs(br.tktkmass-KSTAR_MASS)>=cuts[3]) continue;//original cut 0.05
+	if (br.vtxprob<=0.1) continue;//original cut 0.1
+	if (br.lxy/br.errxy<=3.0) continue;//original cut 3.0
+	if (br.cosalpha2d<=0.99) continue;//original cut 0.99
+	if (fabs(br.tktkmass-KSTAR_MASS)>=0.05) continue;//original cut 0.05
             
 	v4_tk1.SetPtEtaPhiM(br.tk1pt,br.tk1eta,br.tk1phi,KAON_MASS);
 	v4_tk2.SetPtEtaPhiM(br.tk2pt,br.tk2eta,br.tk2phi,KAON_MASS);
-	if (fabs((v4_tk1+v4_tk2).Mag()-PHI_MASS)<=cuts[4]) continue;//original cut 0.01
+	if (fabs((v4_tk1+v4_tk2).Mag()-PHI_MASS)<=0.01) continue;//original cut 0.01
             
 	if (n_br_queued==0) {
 	  memcpy(&br_queue[n_br_queued],&br,sizeof(ReducedBranches));
@@ -291,51 +332,51 @@ void data_selection(TString fin1, TString fin2,TString fin3, TString data_select
       }else
 	if (channel==3) { // cuts for B0 -> J/psi Ks
 	  if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
-	  if (br.vtxprob<=cuts[0]) continue;//original cut 0.1
-	  if (br.lxy/br.errxy<=cuts[1]) continue;//original cut 3.0
-	  if (br.tktkblxy/br.tktkberrxy<=cuts[2]) continue;//original cut 3.0
-	  if (br.cosalpha2d<=cuts[3]) continue;//original cut 0.99
-	  if (fabs(br.tktkmass-KSHORT_MASS)>=cuts[4]) continue;//original cut 0.015
+	  if (br.vtxprob<=0.1) continue;//original cut 0.1
+	  if (br.lxy/br.errxy<=3.0) continue;//original cut 3.0
+	  if (br.tktkblxy/br.tktkberrxy<=3.0) continue;//original cut 3.0
+	  if (br.cosalpha2d<=0.99) continue;//original cut 0.99
+	  if (fabs(br.tktkmass-KSHORT_MASS)>=0.015) continue;//original cut 0.015
                 
 	  _nt3->Fill(br.mass,br.pt,br.eta);
 
 	}else
 	  if (channel==4) { // cuts for Bs -> J/psi phi
 	    if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
-	    if (br.vtxprob<=cuts[0]) continue;//original cut 0.1
-	    if (br.lxy/br.errxy<=cuts[1]) continue;//original cut 3.0
-	    if (br.cosalpha2d<=cuts[2]) continue;//original cut 0.99
-	    if (fabs(br.tktkmass-PHI_MASS)>=cuts[3]) continue;//original cut 0.010
+	    if (br.vtxprob<=0.1) continue;//original cut 0.1
+	    if (br.lxy/br.errxy<=3.0) continue;//original cut 3.0
+	    if (br.cosalpha2d<=0.99) continue;//original cut 0.99
+	    if (fabs(br.tktkmass-PHI_MASS)>=0.010) continue;//original cut 0.010
             
 	    v4_tk1.SetPtEtaPhiM(br.tk1pt,br.tk1eta,br.tk1phi,KAON_MASS);
 	    v4_tk2.SetPtEtaPhiM(br.tk2pt,br.tk2eta,br.tk2phi,PION_MASS);
-	    if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=cuts[4]) continue;//original cut 0.05
+	    if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=0.05) continue;//original cut 0.05
 	    v4_tk1.SetPtEtaPhiM(br.tk1pt,br.tk1eta,br.tk1phi,PION_MASS);
 	    v4_tk2.SetPtEtaPhiM(br.tk2pt,br.tk2eta,br.tk2phi,KAON_MASS);
-	    if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=cuts[4]) continue;
+	    if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=0.05) continue;
                 
 	    _nt4->Fill(br.mass,br.pt,br.eta);
 
 	  }else
 	    if (channel==5) { // cuts for psi(2S)/X(3872) -> J/psi pipi
-	      if (br.vtxprob<=cuts[0]) continue;//original cut 0.2
-	      if (fabs(br.tk1eta)>=cuts[1]) continue;//original cut 1.6
-	      if (fabs(br.tk2eta)>=cuts[2]) continue;//original cut 1.6
+	      if (br.vtxprob<=0.2) continue;//original cut 0.2
+	      if (fabs(br.tk1eta)>=1.6) continue;//original cut 1.6
+	      if (fabs(br.tk2eta)>=1.6) continue;//original cut 1.6
             
 	      _nt5->Fill(br.mass,br.pt,br.eta);
 
 	    }else
 	      if (channel==6) {//cuts for lambda
 		if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
-		if (br.vtxprob<=cuts[0]) continue;//original cut 0.1
-		if (br.lxy/br.errxy<=cuts[1]) continue;//original cut 3.0
-		if (br.tktkblxy/br.tktkberrxy<=cuts[2]) continue;//original cut 3.0
-		if (br.cosalpha2d<=cuts[3]) continue;//original cut 0.99
-		if (fabs(br.tktkmass-LAMBDA_MASS)>=cuts[4]) continue;//original cut 0.015
+		if (br.vtxprob<=0.1) continue;//original cut 0.1
+		if (br.lxy/br.errxy<=3.0) continue;//original cut 3.0
+		if (br.tktkblxy/br.tktkberrxy<=3.0) continue;//original cut 3.0
+		if (br.cosalpha2d<=0.99) continue;//original cut 0.99
+		if (fabs(br.tktkmass-LAMBDA_MASS)>=0.015) continue;//original cut 0.015
             
 		v4_tk1.SetPtEtaPhiM(br.tk1pt,br.tk1eta,br.tk1phi,PION_MASS);
 		v4_tk2.SetPtEtaPhiM(br.tk2pt,br.tk2eta,br.tk2phi,PION_MASS);
-		if (fabs((v4_tk1+v4_tk2).Mag()-KSHORT_MASS)<=cuts[5]) continue;//original cut 0.015
+		if (fabs((v4_tk1+v4_tk2).Mag()-KSHORT_MASS)<=0.015) continue;//original cut 0.015
             
 		_nt6->Fill(br.mass,br.pt,br.eta);
 
@@ -352,6 +393,7 @@ TString channel_to_ntuple_name(int channel)
   TString ntuple_name = "";
 
   switch(channel){
+  default:
   case 1:
     ntuple_name="ntkp";
     break;
@@ -395,8 +437,8 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   reduceddata_central = (RooDataSet*) data->reduce(Form("mass>%lf",left));
   reduceddata_central = (RooDataSet*) reduceddata_central->reduce(Form("mass<%lf",right));
   /*                                                                                                                                             
-    RooRealVar mean("mean", "mean", 0., 5.);                                                                                                    
-    RooRealVar sigma("sigma", "sigma", -1000., 1000.);                                                                                           
+																		 RooRealVar mean("mean", "mean", 0., 5.);                                                                                                    
+																		 RooRealVar sigma("sigma", "sigma", -1000., 1000.);                                                                                           
   */
 
   RooRealVar lambda("lambda", "lambda", -1000., 1000.);

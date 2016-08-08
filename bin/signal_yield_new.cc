@@ -1,4 +1,7 @@
+#include <RooPlotable.h>
+#include <RooHist.h>
 #include <TSystem.h>
+#include <sstream>
 #include <vector>
 #include <string>
 #include <TStyle.h>
@@ -19,16 +22,19 @@
 #include <RooChebychev.h>
 #include <RooBernstein.h>
 #include <RooExponential.h>
+#include <RooWorkspace.h>
 #include <RooAddPdf.h>
+#include <TGraphAsymmErrors.h>
+#include <TEfficiency.h>
 #include <RooPlot.h>
-#include "myloop.h"
-#include "plotDressing.h"
 #include "TMath.h"
+#include "UserCode/B_production_x_sec_13_TeV/interface/myloop.h"
+#include "UserCode/B_production_x_sec_13_TeV/interface/plotDressing.h"
+
 using namespace RooFit;
 
 // General fitting options
 #define NUMBER_OF_CPU       1
-#define YIELD_SUB_SAMPLES   0
 
 #define VERSION             "v7"
 #define BASE_DIR            "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/"
@@ -58,8 +64,42 @@ TString channel_to_ntuple_name(int channel);
 TString channel_to_xaxis_title(int channel);
 int channel_to_nbins(int channel);
 
-void signal_yield_new(int channel)
+//input example: signal_yield_new --channel 1 --bins 1 --eff 1
+int main(int argc, char** argv)
 {
+  int channel = 0;
+  int yield_sub_samples = 0;
+  int calculate_efficiency = 0;
+
+  for(int i=1 ; i<argc ; ++i)
+    {
+      std::string argument = argv[i];
+      std::stringstream convert;
+
+      if(argument == "--channel")
+	{
+	  convert << argv[++i];
+	  convert >> channel;
+	}
+      if(argument == "--bins")
+	{
+	  convert << argv[++i];
+	  convert >> yield_sub_samples;
+	}
+      if(argument == "--eff")
+	{
+	  convert << argv[++i];
+	  convert >> calculate_efficiency;
+	}
+    } 
+ 
+  if(channel==0)
+    {
+      std::cout << "No channel was provided as input. Please use --channel. Example: signal_yield_new --channel 1" << std::endl;
+      return 0;
+    }
+  
+  //to create the directories to save the .png files
   std::vector<std::string> dir_list;
   dir_list.push_back("full_dataset_mass_fit");
   dir_list.push_back("full_dataset_mass_pt_histo");
@@ -78,7 +118,7 @@ void signal_yield_new(int channel)
   
   int nptbins;
   
-  TString data_selection_input_file = /*TString(BASE_DIR) + */"selected_data_" + channel_to_ntuple_name(channel) + ".root";
+  TString data_selection_input_file = "selected_data_" + channel_to_ntuple_name(channel) + ".root";
   
   RooWorkspace* ws = new RooWorkspace("ws","Bmass");
   RooAbsData* data;
@@ -96,7 +136,7 @@ void signal_yield_new(int channel)
   read_data(*ws, data_selection_input_file,channel);
   ws->Print();
   
-  if(!YIELD_SUB_SAMPLES) //mass fit and plot the full dataset
+  if(!yield_sub_samples) //mass fit and plot the full dataset
     { 
       //build the pdf for the channel selected above, it uses the dataset which is saved in ws. need to change the dataset to change the pdf.
       build_pdf(*ws,channel);     
@@ -119,6 +159,7 @@ void signal_yield_new(int channel)
   else
     {
       switch (channel) {
+      default:
       case 1:
 	pt_bin_edges = ntkp_pt_bin_edges;
 	nptbins = (sizeof(ntkp_pt_bin_edges) / sizeof(double)) - 1 ; //if pt_bin_edges is an empty array, then nptbins is equal to 0
@@ -164,36 +205,54 @@ void signal_yield_new(int channel)
  
       for(int i=0; i<nptbins; i++)
 	{
-	  cout << "processing subsample pt: " << i+1 << std::endl;
+	  std::cout << "processing subsample: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
      
 	  pt_bin_size[i] = pt_bin_edges[i+1]-pt_bin_edges[i];
-
+     
 	  pt_bin_means[i] = pt_bin_mean(*ws,pt_bin_edges[i],pt_bin_edges[i+1]);
 	  pt_bin_edges_Lo[i] = pt_bin_means[i] - pt_bin_edges[i];
 	  pt_bin_edges_Hi[i] = pt_bin_edges[i+1] - pt_bin_means[i];
      
 	  signal_res = bin_mass_fit(*ws,channel,pt_bin_edges[i],pt_bin_edges[i+1]);
-              
+     
 	  yield_array[i] = (signal_res->getVal())/pt_bin_size[i];
 	  errLo_array[i] = -(signal_res->getAsymErrorLo())/pt_bin_size[i];
 	  errHi_array[i] = (signal_res->getAsymErrorHi())/pt_bin_size[i];
-     
-	  pt_bin_centres_eff[i] = pt_bin_edges[i] + (pt_bin_edges[i+1]-pt_bin_edges[i])/2;
-	  pt_bin_edges_eff_Lo[i] = pt_bin_centres_eff[i] - pt_bin_edges[i];
-	  pt_bin_edges_eff_Hi[i] = pt_bin_edges[i+1] - pt_bin_centres_eff[i];
-     
-	  pre_filter_eff = pre_filter_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1]);
-
-	  eff_array[i] = pre_filter_eff->getVal();
-	  effLo_array[i] = -pre_filter_eff->getAsymErrorLo();
-	  effHi_array[i] = pre_filter_eff->getAsymErrorHi();
 	}
- 
+
+      //to show the values of signal_yield and the errors at the end, like a table
       for(int i=0; i<nptbins; i++)
 	{
 	  std::cout << "BIN: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " <<  yield_array[i] << " +" << errHi_array[i] << " -"<< errLo_array[i] << std::endl;
 	}
+ 
+      if(calculate_efficiency)
+	{
+	  for(int i=0; i<nptbins; i++)
+	    {
+	      std::cout << "calculating pre-filter efficiency: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
+	 
+	      pt_bin_centres_eff[i] = pt_bin_edges[i] + (pt_bin_edges[i+1]-pt_bin_edges[i])/2;
+	      pt_bin_edges_eff_Lo[i] = pt_bin_centres_eff[i] - pt_bin_edges[i];
+	      pt_bin_edges_eff_Hi[i] = pt_bin_edges[i+1] - pt_bin_centres_eff[i];
+	 
+	      pre_filter_eff = pre_filter_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1]);
+	 
+	      eff_array[i] = pre_filter_eff->getVal();
+	      effLo_array[i] = -pre_filter_eff->getAsymErrorLo();
+	      effHi_array[i] = pre_filter_eff->getAsymErrorHi();
+	    }
+	  //plot of the pre-filter efficiency as a function of pT
+	  TCanvas ce;
+	  TGraphAsymmErrors* graph_eff = new TGraphAsymmErrors(nptbins, pt_bin_centres_eff, eff_array, pt_bin_edges_eff_Lo, pt_bin_edges_eff_Hi,effLo_array,effHi_array);
+	  graph_eff->SetTitle("pre filter efficiency");
+	  graph_eff->SetMarkerColor(4);
+	  graph_eff->SetMarkerStyle(21);
+	  graph_eff->Draw("AP");
+	  ce.SaveAs("pre_filter_efficiency_err.png");
+	}
 
+      //plot of the signal_yield as a function of pt, in the future should be the x-sec corrected by efficiency and other factors
       TCanvas cz;
       TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array, pt_bin_edges_Lo, pt_bin_edges_Hi, errLo_array, errHi_array);
       graph->SetTitle("Raw signal yield in Pt bins");
@@ -203,15 +262,6 @@ void signal_yield_new(int channel)
       graph->Draw("p");
       cz.SetLogy();
       cz.SaveAs("signal_yield/signal_yield_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + ".png");
- 
-      //trying to plot eff1 as a function of pT
-      TCanvas ce;
-      TGraphAsymmErrors* graph_eff = new TGraphAsymmErrors(nptbins, pt_bin_centres_eff, eff_array, pt_bin_edges_eff_Lo, pt_bin_edges_eff_Hi,effLo_array,effHi_array);
-      graph_eff->SetTitle("pre filter efficiency");
-      graph_eff->SetMarkerColor(4);
-      graph_eff->SetMarkerStyle(21);
-      graph_eff->Draw("AP");
-      ce.SaveAs("pre_filter_efficiency_err.png");
 
     }//end of else
 }//end of signal_yield_new
@@ -389,7 +439,7 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
   RooHist* pull_hist = frame_m->pullHist("theData","thePdf");
   
   RooPlot* pull_plot = mass.frame();
-  pull_plot->addPlotable(pull_hist,"P");
+  pull_plot->addPlotable(static_cast<RooPlotable*>(pull_hist),"P");
   pull_plot->SetTitle("");
   pull_plot->GetXaxis()->SetTitle(channel_to_xaxis_title(channel));
   pull_plot->GetXaxis()->SetLabelFont(42);
@@ -455,6 +505,7 @@ void build_pdf(RooWorkspace& w, int channel)
   RooAbsData* data = w.data("data");
 
   switch (channel) {
+  default:
   case 1:
     mass_peak = BP_MASS;
     break;
@@ -491,7 +542,7 @@ void build_pdf(RooWorkspace& w, int channel)
   RooAddPdf pdf_m_signal("pdf_m_signal","pdf_m_signal",RooArgList(m_gaussian1,m_gaussian2),RooArgList(m_fraction));
   
   // use single Gaussian for J/psi Ks and J/psi Lambda due to low statistics
-  if (channel==3 || channel==6) {
+  if (channel==3 || channel==6 || data->sumEntries()<250) {
     m_sigma2.setConstant(kTRUE);
     m_fraction.setVal(1.);
   }
@@ -527,21 +578,29 @@ void build_pdf(RooWorkspace& w, int channel)
   RooRealVar n_jpsix("n_jpsix","n_jpsix",data->sumEntries(TString::Format("mass>4.9&&mass<5.14")),data->sumEntries(TString::Format("mass>4.9&&mass<5.14")),data->sumEntries());
   
   RooAddPdf* model;
-  
-  if (channel==1 || channel ==3) // B+ -> J/psi K+, B0 -> J/psi Ks
-    model = new RooAddPdf("model","model",
-			  RooArgList(pdf_m_signal, pdf_m_combinatorial_exp, pdf_m_jpsix),
-			  RooArgList(n_signal, n_combinatorial, n_jpsix));
-  else
-    if (channel==2 || channel==4 || channel==6) // B0 -> J/psi K*; Bs -> J/psi phi; Lambda_b -> J/psi Lambda
+
+  switch(channel)
+    {
+    default:
+    case 1:// B+ -> J/psi K+
+    case 3://B0 -> J/psi Ks
+      model = new RooAddPdf("model","model",
+			    RooArgList(pdf_m_signal, pdf_m_combinatorial_exp, pdf_m_jpsix),
+			    RooArgList(n_signal, n_combinatorial, n_jpsix));
+      break;
+    case 2:// B0 -> J/psi K* 
+    case 4://Bs -> J/psi phi
+    case 6://Lambda_b -> J/psi Lambda
       model = new RooAddPdf("model","model",
 			    RooArgList(pdf_m_signal, pdf_m_combinatorial_exp),
 			    RooArgList(n_signal, n_combinatorial));
-    else
-      if (channel==5) // J/psi pipi
-	model = new RooAddPdf("model","model",
-			      RooArgList(pdf_m_signal, pdf_m_combinatorial_bern, pdf_m_x3872),
-			      RooArgList(n_signal, n_combinatorial, n_x3872));
+      break;
+    case 5:// J/psi pipi
+      model = new RooAddPdf("model","model",
+			    RooArgList(pdf_m_signal, pdf_m_combinatorial_bern, pdf_m_x3872),
+			    RooArgList(n_signal, n_combinatorial, n_x3872));
+      break;
+    }
 
   w.import(*model);
 }
@@ -570,6 +629,7 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
   pt_max=400;
   
   switch (channel) {
+  default: 
   case 1:
     mass_min = 5.0; mass_max = 6.0;
     break;
@@ -604,6 +664,7 @@ TString channel_to_ntuple_name(int channel)
   TString ntuple_name = "";
 
   switch(channel){
+  default:
   case 1:
     ntuple_name="ntkp";
     break;
@@ -631,6 +692,7 @@ TString channel_to_xaxis_title(int channel)
   TString xaxis_title = "";
 
   switch (channel) {
+  default:
   case 1:
     xaxis_title = "M_{J/#psi K^{#pm}} [GeV]";
     break;
@@ -658,6 +720,7 @@ int channel_to_nbins(int channel)
   int nbins;
 
   switch (channel) {
+  default:
   case 1:
     nbins = 50;
     break;
@@ -683,7 +746,7 @@ int channel_to_nbins(int channel)
 void create_dir(std::vector<std::string> list)
 {
   //to create the directories needed to save the output files, like .png and .root
-  for(int i=0 ; i< list.size() ; ++i)
+  for(size_t i=0 ; i< list.size() ; ++i)
     {
       gSystem->Exec(("mkdir -p " + list[i]).c_str());
     }
