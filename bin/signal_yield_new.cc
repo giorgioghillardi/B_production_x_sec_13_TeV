@@ -38,6 +38,7 @@ using namespace RooFit;
 
 #define VERSION             "v7"
 #define BASE_DIR            "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/"
+
 //-----------------------------------------------------------------
 // Definition of channel #
 // channel = 1: B+ -> J/psi K+
@@ -49,8 +50,8 @@ using namespace RooFit;
 
 void create_dir(std::vector<std::string> list);
 void plot_pt_dist(RooWorkspace& w, int channel, TString directory);
+void plot_mass_fit(RooWorkspace& w, int channel, TString directory,int pt_high, int pt_low);
 void plot_mass_fit(RooWorkspace& w, int channel, TString directory);
-
 RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max);
 double pt_bin_mean(RooWorkspace& w, double pt_min, double pt_max);
 RooRealVar* pre_filter_efficiency(int channel, double pt_min, double pt_max);
@@ -352,7 +353,7 @@ RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_
   TString dir = "";
   dir = "pt_bin_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "mass_fit_" + TString::Format("pt_from_%d_to_%d",(int)pt_min,(int)pt_max);
   
-  plot_mass_fit(ws_cut,channel,dir);
+  plot_mass_fit(ws_cut,channel,dir, (int) pt_min, (int) pt_max);
 
   //how to put the legend indicating each pt bin ??
   //change the plot_mass_fit to output a TCanvas, and write the legend on top after, and then have a function just to save the plots.
@@ -382,7 +383,7 @@ double pt_bin_mean(RooWorkspace& w, double pt_min, double pt_max)
   return centre;
 }
 
-void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
+void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high, int pt_low)
 {
   RooRealVar mass = *(w.var("mass"));
   RooAbsData* data = w.data("data");
@@ -549,6 +550,173 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
   c1->SaveAs(directory + ".root");
   c1->SaveAs(directory + ".png"); }
 
+void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
+{
+  RooRealVar mass = *(w.var("mass"));
+  RooAbsData* data = w.data("data");
+  RooAbsPdf* model = w.pdf("model");
+  RooRealVar lambda = *(w.var("m_exp"));
+  RooRealVar mean = *(w.var("m_mean"));
+  RooRealVar sigma1 = *(w.var("m_sigma1"));
+  RooRealVar sigma2 = *(w.var("m_sigma2"));
+  RooRealVar n_signal = *(w.var("n_signal"));
+  RooRealVar n_back = *(w.var("n_combinatorial"));    
+  RooPlot* frame_m = mass.frame();
+  
+  TH1D* histo_data = (TH1D*)data->createHistogram("histo_data", mass, Binning(channel_to_nbins(channel), mass.getMin(), mass.getMax() ));
+  histo_data->Sumw2(false);
+  histo_data->SetBinErrorOption(TH1::kPoisson);
+  histo_data->SetMarkerStyle(20);
+  histo_data->SetMarkerSize(0.8);
+  histo_data->SetLineColor(kBlack);
+  
+  for (int i=1; i<=channel_to_nbins(channel); i++)
+    if (histo_data->GetBinContent(i)==0) histo_data->SetBinError(i,0.);
+  
+  data->plotOn(frame_m,Name("theData"),Binning(channel_to_nbins(channel)),Invisible());
+  
+  model->plotOn(frame_m,Name("thePdf"),Precision(2E-4));
+  
+  //model->paramOn(frame_m); //show all the parameters of the fit in the plot.
+  
+  model->plotOn(frame_m,Precision(2E-4),Components("pdf_m_signal"),LineColor(8),LineWidth(2),LineStyle(kSolid),FillStyle(3008),FillColor(8), VLines(), DrawOption("F"));
+  
+  if (channel==1 || channel==2 || channel==3 || channel==4 || channel==6)
+    model->plotOn(frame_m,Precision(2E-4),Components("pdf_m_combinatorial_exp"),LineColor(9),LineWidth(2),LineStyle(2));
+  else
+    model->plotOn(frame_m,Precision(2E-4),Components("pdf_m_combinatorial_bern"),LineColor(kCyan+1),LineWidth(2),LineStyle(2));
+  
+  if (channel==1 || channel==3)
+    model->plotOn(frame_m,Precision(2E-4),Components("pdf_m_jpsix"),LineColor(kViolet),LineWidth(2),LineStyle(7));
+  if (channel==5)
+    model->plotOn(frame_m,Precision(2E-4),Components("pdf_m_x3872"),LineColor(kOrange),LineWidth(2),LineStyle(kSolid),FillStyle(3008),FillColor(kOrange), VLines(), DrawOption("F"));
+  
+  frame_m->SetTitle("");
+  frame_m->GetXaxis()->SetTitle(channel_to_xaxis_title(channel));
+  frame_m->GetXaxis()->SetLabelFont(42);
+  frame_m->GetXaxis()->SetLabelOffset(0.01);
+  frame_m->GetXaxis()->SetTitleSize(0.06);
+  frame_m->GetXaxis()->SetTitleOffset(1.09);
+  frame_m->GetXaxis()->SetLabelFont(42);
+  frame_m->GetXaxis()->SetLabelSize(0.055);
+  frame_m->GetXaxis()->SetTitleFont(42);
+  frame_m->GetYaxis()->SetTitle(TString::Format("Events / %g MeV",(mass.getMax()-mass.getMin())*1000./channel_to_nbins(channel)));
+  frame_m->GetYaxis()->SetLabelFont(42);
+  frame_m->GetYaxis()->SetLabelOffset(0.01);
+  frame_m->GetYaxis()->SetTitleOffset(1.6);
+  frame_m->GetYaxis()->SetTitleSize(0.05);
+  frame_m->GetYaxis()->SetTitleFont(42);
+  frame_m->GetYaxis()->SetLabelFont(42);
+  frame_m->GetYaxis()->SetLabelSize(0.055);
+  
+  RooHist* pull_hist = frame_m->pullHist("theData","thePdf");
+  
+  RooPlot* pull_plot = mass.frame();
+  pull_plot->addPlotable(static_cast<RooPlotable*>(pull_hist),"P");
+  pull_plot->SetTitle("");
+  pull_plot->GetXaxis()->SetTitle(channel_to_xaxis_title(channel));
+  pull_plot->GetXaxis()->SetLabelFont(42);
+  pull_plot->GetXaxis()->SetLabelOffset(0.01);
+  pull_plot->GetXaxis()->SetTitleSize(0.06);
+  pull_plot->GetXaxis()->SetTitleOffset(1.09);
+  pull_plot->GetXaxis()->SetLabelFont(42);
+  pull_plot->GetXaxis()->SetLabelSize(0.055);
+  pull_plot->GetXaxis()->SetTitleFont(42);
+  pull_plot->GetYaxis()->SetTitle(TString::Format("Events / %g MeV",(mass.getMax()-mass.getMin())*1000./channel_to_nbins(channel)));
+  pull_plot->GetYaxis()->SetLabelFont(42);
+  pull_plot->GetYaxis()->SetLabelOffset(0.01);
+  pull_plot->GetYaxis()->SetTitleOffset(1.14);
+  pull_plot->GetYaxis()->SetTitleSize(0.06);
+  pull_plot->GetYaxis()->SetTitleFont(42);
+TCanvas *c1 = canvasDressing("c1"); c1->cd();
+  
+  // TPad *p1 = new TPad("p1","p1",0,0,1,1);
+  //p1->Draw();
+   
+  TPad *p1 = new TPad("p1","p1",0.05,0.27,0.99,0.99);
+ // TPad *p1 = new TPad("p1","p1",0.05,0.05,0.99,0.99);
+  p1->SetBorderMode(0); 
+  p1->Draw(); 
+  
+    
+ TPad *p2 = new TPad("p2","p2",0.05,0.01,0.97,0.2); 
+  p2->SetTopMargin(0.);    
+  p2->SetBorderMode(0); 
+  p2->SetTicks(1,2); 
+  p2->Draw();
+  
+  RooAbsReal* nll = model->createNLL(*data);
+  double log_likelihood= nll->getVal();
+  std::stringstream ll_str;
+  ll_str >> log_likelihood;
+  double chis = frame_m->chiSquare();
+  double lambda_exp = lambda.getVal();
+  double mean_gauss = mean.getVal();
+  double sigma1_gauss = sigma1.getVal();
+  double sigma2_gauss = sigma2.getVal();
+  double signal_yield = n_signal.getVal();
+  double back_yield = n_back.getVal();
+
+TLatex* tex1 = new TLatex(0.2, 0.88, Form("#lambda_{exp} = %.3lf",lambda_exp));
+tex1->SetNDC(kTRUE);
+tex1->SetTextFont(42);
+tex1->SetTextSize(0.03);
+tex1->Draw();  
+
+TLatex* tex2 = new TLatex(0.2, 0.84, Form("#mu_{gauss} = %.3lf",mean_gauss));
+tex2->SetNDC(kTRUE);
+tex2->SetTextFont(42);
+tex2->SetTextSize(0.03);
+tex2->Draw();  
+
+TLatex* tex3 = new TLatex(0.2, 0.80, Form("#sigma_{gauss1} = %.3lf",sigma1_gauss));
+tex3->SetNDC(kTRUE);
+tex3->SetTextFont(42);
+tex3->SetTextSize(0.03);
+tex3->Draw();  
+
+TLatex* tex4 = new TLatex(0.2, 0.76, Form("#sigma_{gauss2} = %.3lf",sigma2_gauss));
+tex4->SetNDC(kTRUE);
+tex4->SetTextFont(42);
+tex4->SetTextSize(0.03);
+if(data->sumEntries()>250){
+tex4->Draw();  
+}
+
+TLatex* tex5 = new TLatex(0.2, 0.70, Form("Signal = %.0lf",signal_yield));
+tex5->SetNDC(kTRUE);
+tex5->SetTextFont(42);
+tex5->SetTextSize(0.03);
+tex5->Draw();  
+
+TLatex* tex6 = new TLatex(0.2, 0.66, Form("Background = %.0lf",back_yield));
+tex6->SetNDC(kTRUE);
+tex6->SetTextFont(42);
+tex6->SetTextSize(0.03);
+tex6->Draw();  
+
+TLatex* tex7 = new TLatex(0.2, 0.60, Form("lnL = %.3lf", log_likelihood));
+tex7->SetNDC(kTRUE);
+tex7->SetTextFont(42);
+tex7->SetTextSize(0.03);
+tex7->Draw();  
+
+TLatex* tex8 = new TLatex(0.2, 0.56, Form("#chi^{2} = %.3lf", chis));
+tex8->SetNDC(kTRUE);
+tex8->SetTextFont(42);
+tex8->SetTextSize(0.03);
+tex8->Draw();  
+ 
+ p1->cd();
+ frame_m->Draw();
+ histo_data->Draw("Esame");
+ Legend(channel,0,0,0);
+ p2->cd();
+ pull_plot->Draw();
+  
+  c1->SaveAs(directory + ".root");
+  c1->SaveAs(directory + ".png"); }
+
 void plot_pt_dist(RooWorkspace& w, int channel, TString directory)
 {
   //full dataset pt distribution
@@ -701,7 +869,7 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
     mass_min = 5.0; mass_max = 6.0;
     break;
   case 2:
-    mass_min = 5.0; mass_max = 6.0;
+    mass_min = 4.75; mass_max = 6.0;
     break;
   case 3:
     mass_min = 5.0; mass_max = 6.0;
