@@ -1,0 +1,7 @@
+<use name="roottmva"/>
+<use name="rootrflx"/>
+<use name="roofit"/>
+<use name="roostats"/>
+<export>
+  <lib name="1"/>
+</export>

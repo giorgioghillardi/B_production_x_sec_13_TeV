@@ -1,3 +1,4 @@
+#include <sstream>
 #include <TStyle.h>
 #include <TAxis.h>
 #include <TLatex.h>
@@ -5,10 +6,12 @@
 #include <TFile.h>
 #include <TTree.h>
 #include <TString.h>
+#include <TChain.h>
 #include <TCanvas.h>
 #include <TNtupleD.h>
 #include <TH1D.h>
 #include <TLorentzVector.h>
+#include <RooWorkspace.h>
 #include <RooRealVar.h>
 #include <RooConstVar.h>
 #include <RooDataSet.h>
@@ -18,14 +21,10 @@
 #include <RooExponential.h>
 #include <RooAddPdf.h>
 #include <RooPlot.h>
-#include "myloop.h"
-#include "plotDressing.h"
+#include "UserCode/B_production_x_sec_13_TeV/interface/myloop.h"
+#include "UserCode/B_production_x_sec_13_TeV/interface/plotDressing.h"
 #include "TMath.h"
 using namespace RooFit;
-
-#define SOURCE1           "myloop_data_run2015D_v4_v1.root"
-#define SOURCE2           "myloop_data_run2015D_v3_v1.root"
-#define SOURCE3           "myloop_data_run2015C_v1_v1.root"
 
 #define SHOW_DIST 0
 #define SIDEBAND_SUB 0
@@ -44,24 +43,36 @@ void plot_mass_dist(RooWorkspace& w, int channel, TString directory);
 void read_data(RooWorkspace& w, TString filename,int channel);
 void read_data_cut(RooWorkspace& w, RooDataSet* data);
 void set_up_workspace_variables(RooWorkspace& w, int channel);
-void data_selection(TString fin1,TString fin2,TString fin3,TString data_selection_output_file,int channel);
+void data_selection(TString fin1,TString data_selection_output_file,int channel);
 TString channel_to_ntuple_name(int channel);
 
 void sideband_sub(RooWorkspace& w, double left, double right);
 
-void data_selection(int channel)
+//input example: data_selection --channel 1 --input /some/place/
+int main(int argc, char** argv)
 {
-  TString data_selection_output_file="";
-  data_selection_output_file= "selected_data_" + channel_to_ntuple_name(channel) + ".root";
+  int channel = 0;
+  std::string input_file = "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_data.root";
 
-  RooWorkspace* ws = new RooWorkspace("ws","Bmass");
-  RooAbsData* data;
-  TString pt_dist_directory="";
-  TString mass_dist_directory="";
+  for(int i=1 ; i<argc ; ++i)
+    {
+      std::string argument = argv[i];
+      std::stringstream convert;
 
-  data_selection(SOURCE1,SOURCE2,SOURCE3,data_selection_output_file,channel);
-   
-  if(SHOW_DIST)
+      if(argument == "--channel")
+        {
+          convert << argv[++i];
+          convert >> channel;
+        }
+
+      if(argument == "--input")
+        {
+          convert << argv[++i];
+          convert >> input_file;
+        }
+    }
+
+  if(channel==0)
     {
       //set up mass and pt variables inside ws  
       set_up_workspace_variables(*ws,channel);
@@ -95,6 +106,34 @@ void data_selection(int channel)
 	default:
 	  std::cout << "WARNING! UNDEFINED LIMITS FOR PEAK REGION" << std::endl;
 	}
+      std::cout << "No channel was provided as input. Please use --channel. Example: data_selection --channel 1" << std::endl;
+      return 0;
+    }
+
+  TString data_selection_output_file="";
+  data_selection_output_file= "selected_data_" + channel_to_ntuple_name(channel) + ".root";
+  
+  data_selection(input_file,data_selection_output_file,channel);
+    
+  if(SHOW_DIST)
+    { 
+      RooWorkspace* ws = new RooWorkspace("ws","Bmass");
+      TString pt_dist_directory="";
+      TString mass_dist_directory="";
+      
+      //set up mass and pt variables inside ws  
+      set_up_workspace_variables(*ws,channel);
+      
+      //read data from the selected data file, and import it as a dataset into the workspace.
+      read_data(*ws, data_selection_output_file,channel);
+      
+      RooAbsData* data = ws->data("data");
+      
+      pt_dist_directory = "full_dataset_mass_pt_dist/" + channel_to_ntuple_name(channel) + "_pt";
+      plot_pt_dist(*ws,channel,pt_dist_directory);
+      
+      mass_dist_directory = "full_dataset_mass_pt_dist/" + channel_to_ntuple_name(channel) + "_mass";
+      plot_mass_dist(*ws,channel,mass_dist_directory);
     }
 }
 
@@ -103,7 +142,7 @@ void plot_pt_dist(RooWorkspace& w, int channel, TString directory)
   //full dataset pt distribution
   RooRealVar pt = *(w.var("pt"));
   RooAbsData* data = w.data("data");
-
+  
   TCanvas c2;
   TH1D* pt_dist = (TH1D*)data->createHistogram("pt_dist",pt);
   pt_dist->Draw();
@@ -148,7 +187,8 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
   pt_min=0;
   pt_max=400;
   
-  switch (channel) {
+ switch (channel) {
+  default:
   case 1:
     mass_min = 5.0; mass_max = 6.0;
     break;
@@ -176,19 +216,22 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
   w.import(pt);
 }
 
-void data_selection(TString fin1, TString fin2,TString fin3, TString data_selection_output_file,int channel){
+void data_selection(TString fin1, TString data_selection_output_file,int channel){
 
   TFile *fout = new TFile(data_selection_output_file,"recreate");
 
-  TNtupleD *_nt1;
-  TNtupleD *_nt2;
-  TNtupleD *_nt3;
-  TNtupleD *_nt4;
-  TNtupleD *_nt5;
-  TNtupleD *_nt6;
 
-  switch (channel) {
+    TNtupleD *_nt1 = new TNtupleD("ntkp","ntkp","mass:pt:eta");
+    TNtupleD *_nt2 = new TNtupleD("ntkstar","ntkstar","mass:pt:eta");
+    TNtupleD *_nt3 = new TNtupleD("ntks","ntks","mass:pt:eta");
+    TNtupleD *_nt4 = new TNtupleD("ntphi","ntphi","mass:pt:eta");
+    TNtupleD *_nt5 = new TNtupleD("ntmix","ntmix","mass:pt:eta");
+    TNtupleD *_nt6 = new TNtupleD("ntlambda","ntlambda","mass:pt:eta");
+
+    
+/*  switch (channel) {
   case 1:
+  default:
     _nt1 = new TNtupleD("ntkp","ntkp","mass:pt:eta");
     break;
   case 2:
@@ -206,22 +249,22 @@ void data_selection(TString fin1, TString fin2,TString fin3, TString data_select
   case 6:
     _nt6 = new TNtupleD("ntlambda","ntlambda","mass:pt:eta");
     break;
-  }
+  }*/
     
-  TChain* tin;
-  ReducedBranches br;
         
-  int n_br_queued = 0;
-  ReducedBranches br_queue[32];
-  TLorentzVector v4_tk1, v4_tk2;
+
+    ReducedBranches br;
+    TChain* tin;
+    
+    int n_br_queued = 0;
+    ReducedBranches br_queue[32];
+    TLorentzVector v4_tk1, v4_tk2;
 
   std::cout << "selecting data from channel " << channel << std::endl;
 
   tin = new TChain(channel_to_ntuple_name(channel));
 
-  tin->Add(fin1);
-  tin->Add(fin2);
-  tin->Add(fin3);
+    tin->Add(fin1);
 
   br.setbranchadd(tin);
 
@@ -350,6 +393,7 @@ TString channel_to_ntuple_name(int channel)
   TString ntuple_name = "";
 
   switch(channel){
+  default:
   case 1:
     ntuple_name="ntkp";
     break;

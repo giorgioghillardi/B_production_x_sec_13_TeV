@@ -17,23 +17,23 @@
 
 // HLT paths to be booked
 enum {
-    HLT_Dimuon0_Jpsi_Muon_v2,               // 0
-    HLT_Dimuon10_Jpsi_Barrel_v2,            // 1
-    HLT_Dimuon16_Jpsi_v2,                   // 2
-    HLT_Dimuon20_Jpsi_v2,                   // 3
-    HLT_DoubleMu4_3_Jpsi_Displaced_v2,      // 4
-    //    HLT_DoubleMu4_JpsiTrk_Displaced_v1,     // 5
+    HLT_Dimuon0_Jpsi_Muon_v1,               // 0
+    HLT_Dimuon10_Jpsi_Barrel_v1,            // 1
+    HLT_Dimuon16_Jpsi_v1,                   // 2
+    HLT_Dimuon20_Jpsi_v1,                   // 3
+    HLT_DoubleMu4_3_Jpsi_Displaced_v1,      // 4
+    HLT_DoubleMu4_JpsiTrk_Displaced_v1,     // 5
     HLT_DoubleMu4_JpsiTrk_Displaced_v2,     // 6
     N_HLT_BOOKINGS
 };
 
 const char HLT_paths[N_HLT_BOOKINGS][64] = {
-    "HLT_Dimuon0_Jpsi_Muon_v2",             // 0
-    "HLT_Dimuon10_Jpsi_Barrel_v2",          // 1
-    "HLT_Dimuon16_Jpsi_v2",                 // 2
-    "HLT_Dimuon20_Jpsi_v2",                 // 3
-    "HLT_DoubleMu4_3_Jpsi_Displaced_v2",    // 4
-    //  "HLT_DoubleMu4_JpsiTrk_Displaced_v1",   // 5
+    "HLT_Dimuon0_Jpsi_Muon_v1",             // 0
+    "HLT_Dimuon10_Jpsi_Barrel_v1",          // 1
+    "HLT_Dimuon16_Jpsi_v1",                 // 2
+    "HLT_Dimuon20_Jpsi_v1",                 // 3
+    "HLT_DoubleMu4_3_Jpsi_Displaced_v1",    // 4
+    "HLT_DoubleMu4_JpsiTrk_Displaced_v1",   // 5
     "HLT_DoubleMu4_JpsiTrk_Displaced_v2"    // 6
 };
 
