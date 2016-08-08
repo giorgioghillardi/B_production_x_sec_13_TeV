@@ -124,7 +124,7 @@ int main(int argc, char** argv)
   
   for(int i=0; i<size; i++)
     std::cout << "cuts[" << i << "]: " << cuts[i] << std::endl;
-/*
+
   for(int i=0; i<size; i++)
     {
       std::stringstream convert;
@@ -161,7 +161,7 @@ int main(int argc, char** argv)
 	  plot_mass_dist(*ws,channel,mass_dist_directory);
 	}
     }
-  */
+  
 }
 
 //channel and variable will only be used to apply default values
