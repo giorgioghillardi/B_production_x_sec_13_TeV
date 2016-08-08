@@ -7,6 +7,7 @@
 <environment>
   <bin name="signal_yield_new"   file="signal_yield_new.cc"></bin>
   <bin name="myloop"   file="myloop.cc"></bin>
+    <bin name="myloop_gen"   file="myloop_gen.cc"></bin>
   <bin name="data_selection"   file="data_selection.cc"></bin>
 </environment>
 
