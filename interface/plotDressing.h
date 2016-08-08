@@ -43,8 +43,9 @@ TCanvas *canvasDressing(TString name = "c1")
 //#########################################
 void Legend(int channel, int pt_low, int pt_high, bool pt_bins_flag)
 {
-  double x_pos = 0.65;
-  double y_pos = 0.93;
+double x_pos = 0.65;
+  double y_pos_s = 0.93;
+  double y_pos = 0.91;
   double y_space = -0.075;
   double x1_line = x_pos-0.07;
   double x2_line = x_pos-0.02;
@@ -59,69 +60,70 @@ void Legend(int channel, int pt_low, int pt_high, bool pt_bins_flag)
     pt->SetFillStyle(0);
     pt->SetTextFont(42);
     pt->Draw();
-    TLatex * tex = new TLatex(x_pos,y_pos,"#surds = 13 TeV");
+    TLatex * tex = new TLatex(x_pos,y_pos_s,"#surds = 13 TeV");
     tex->SetNDC(kTRUE);
     tex->SetLineWidth(2);
     tex->Draw();
-    tex = new TLatex(x_pos,y_pos + 1*y_space,"CMS");
+    tex = new TLatex(0.1,y_pos_s,"CMS Preliminary");
     tex->SetNDC(kTRUE);
     tex->SetTextFont(42);
     tex->SetLineWidth(2);
     tex->Draw();
-    tex = new TLatex(x_pos,y_pos + 2*y_space,"Preliminary");
+    /*tex = new TLatex(x_pos,y_pos + 2*y_space,"Preliminary");
     tex->SetNDC(kTRUE);
     tex->SetTextFont(52);
     tex->SetLineWidth(2);
-    tex->Draw();
+    tex->Draw();*/
 
     if(pt_bins_flag)
-      tex = new TLatex(x_pos,y_pos + 4*y_space,TString::Format("%d < p_{T} < %d",pt_low,pt_high));
+      tex = new TLatex(0.55,y_pos + y_space-0.04,TString::Format("%d < p_{T} < %d [GeV]",pt_low,pt_high));
     else
-      tex = new TLatex(x_pos,y_pos + 4*y_space,TString::Format("p_{T} > 10 GeV"));
+      tex = new TLatex(0.55,y_pos + y_space-0.04 ,TString::Format("p_{T} > 10 GeV"));}
+//###########################################
 
-    tex->SetNDC(kTRUE);
+ tex->SetNDC(kTRUE);
     tex->SetLineWidth(2);
     tex->Draw();
 
-    TLine *line = new TLine(x1_line,y_separation+y_line+5*y_space,x2_line,y_separation+y_line+5*y_space);
+    TLine *line = new TLine(x1_line,y_separation+y_line+4*y_space,x2_line,y_separation+y_line+4*y_space);
     line->SetNDC(kTRUE);
     line->SetLineColor(4);
     line->SetLineWidth(3);
     line->Draw();
-    tex = new TLatex(x_pos,y_separation+y_pos+5*y_space,"Total fit");
+    tex = new TLatex(x_pos,y_separation+y_pos+4*y_space,"Total fit");
     tex->SetNDC(kTRUE);
     tex->SetTextFont(42);
     tex->SetLineWidth(2);
     tex->Draw();
-    line = new TLine(x1_line,y_separation+y_line+6*y_space,x2_line,y_separation+y_line+6*y_space);
+    line = new TLine(x1_line,y_separation+y_line+5*y_space,x2_line,y_separation+y_line+5*y_space);
     line->SetNDC(kTRUE);
-    line->SetLineColor(7);
+    line->SetLineColor(9);
     line->SetLineStyle(2);
     line->SetLineWidth(3);
     line->Draw();
-    tex = new TLatex(x_pos,y_separation+y_pos+6*y_space,"Background");
+    tex = new TLatex(x_pos,y_separation+y_pos+5*y_space,"Background");
     tex->SetNDC(kTRUE);
     tex->SetTextFont(42);
     tex->SetLineWidth(2);
     tex->Draw();
-    TPave *pave = new TPave(x1_line,y_separation+y_line+7.75*y_space,x2_line,y_separation+y_line+8.25*y_space,4,"blNDC");
-    pave->SetFillColor(2);
+    TPave *pave = new TPave(x1_line,y_separation+y_line+6.75*y_space,x2_line,y_separation+y_line+7.25*y_space,4,$
+    pave->SetFillColor(8);
     pave->SetFillStyle(3008);
-    pave->SetLineColor(2);
+    pave->SetLineColor(30);
     pave->Draw();
-    tex = new TLatex(x_pos,y_separation+y_pos+8*y_space,"Signal");
+    tex = new TLatex(x_pos,y_separation+y_pos+7*y_space,"Signal");
     tex->SetNDC(kTRUE);
     tex->SetTextFont(42);
     tex->SetLineWidth(2);
     tex->Draw();
 
-    switch(channel){
+switch(channel){
     case 1:
       tex = new TLatex(x_pos,y_pos + 3*y_space,"B^{#pm} #rightarrow J/#psi K^{#pm}");
       tex->SetNDC(kTRUE);
       tex->SetLineWidth(2);
       tex->Draw();
-      tex = new TLatex(x_pos,y_separation+y_pos+7*y_space,"Peaking background");
+      tex = new TLatex(x_pos,y_separation+y_pos+2*y_space,"Peaking background");
       tex->SetNDC(kTRUE);
       tex->SetTextFont(42);
       tex->SetLineWidth(2);
@@ -134,19 +136,19 @@ void Legend(int channel, int pt_low, int pt_high, bool pt_bins_flag)
       line->Draw();
       break;
     case 2:
-      tex = new TLatex(x_pos,y_pos + 3*y_space,"B^{0}_{d} #rightarrow J/#psi K^{0*}");
+      tex = new TLatex(0.55,y_pos + 2*y_space-0.04,"B^{0}_{d} #rightarrow J/#psi K^{0*}");
       tex->SetNDC(kTRUE);
       tex->SetLineWidth(2);
       tex->Draw();
       break;
     case 3:
-      tex = new TLatex(x_pos,y_pos + 3*y_space,"B^{0}_{d} #rightarrow J/#psi K_{s}");
+      tex = new TLatex(x_pos,y_pos + 2*y_space,"B^{0}_{d} #rightarrow J/#psi K_{s}");
       tex->SetNDC(kTRUE);
       tex->SetLineWidth(2);
       tex->Draw();
       break;
     case 4:
-      tex = new TLatex(x_pos,y_pos + 3*y_space,"B^{0}_{s} #rightarrow J/#psi #phi");
+      tex = new TLatex(0.55,y_pos + 2*y_space-0.04,"B^{0}_{s} #rightarrow J/#psi #phi");
       tex->SetNDC(kTRUE);
       tex->SetLineWidth(2);
       tex->Draw();
@@ -171,7 +173,7 @@ void Legend(int channel, int pt_low, int pt_high, bool pt_bins_flag)
       tex->SetTextFont(42);
       tex->SetLineWidth(2);
       tex->Draw();
-      pave = new TPave(x1_line,y_separation+y_line+8.75*y_space,x2_line,y_separation+y_line+9.25*y_space,4,"blNDC");
+      pave = new TPave(x1_line,y_separation+y_line+8.75*y_space,x2_line,y_separation+y_line+9.25*y_space,4,"blND$
       pave->SetFillColor(kOrange);
       pave->SetFillStyle(3008);
       pave->SetLineColor(2);
@@ -184,8 +186,11 @@ void Legend(int channel, int pt_low, int pt_high, bool pt_bins_flag)
       tex->Draw();
       break;
     }
-}
-//###########################################
+
+
+
+
+
 
 void LegendChannelOne()
 {
