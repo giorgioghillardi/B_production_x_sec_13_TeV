@@ -8,6 +8,7 @@
   <bin name="signal_yield_new"   file="signal_yield_new.cc"></bin>
   <bin name="myloop"   file="myloop.cc"></bin>
   <bin name="data_selection"   file="data_selection.cc"></bin>
+  <bin name="optimize_cuts"   file="optimize_cuts.cc"></bin>
 </environment>
 
 <Flags CXXFLAGS="-g"/>
