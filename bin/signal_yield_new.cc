@@ -455,32 +455,94 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
   pull_plot->GetYaxis()->SetTitleOffset(1.14);
   pull_plot->GetYaxis()->SetTitleSize(0.06);
   pull_plot->GetYaxis()->SetTitleFont(42);
-  pull_plot->GetYaxis()->SetLabelFont(42);
-  pull_plot->GetYaxis()->SetLabelSize(0.055);
-
-  TCanvas *c1 = canvasDressing("c1"); c1->cd();
+TCanvas *c1 = canvasDressing("c1"); c1->cd();
   
   // TPad *p1 = new TPad("p1","p1",0,0,1,1);
   //p1->Draw();
    
-  //  TPad *p1 = new TPad("p1","p1",0.03,0.27,0.99,0.99);
-  TPad *p1 = new TPad("p1","p1",0.05,0.05,0.99,0.99);
+  TPad *p1 = new TPad("p1","p1",0.05,0.27,0.99,0.99);
+ // TPad *p1 = new TPad("p1","p1",0.05,0.05,0.99,0.99);
   p1->SetBorderMode(0); 
   p1->Draw(); 
   
-  /*
-    TPad *p2 = new TPad("p2","p2",0.03,0.01,0.99,0.26); 
-    p2->SetTopMargin(0.);    
-    p2->SetBorderMode(0); 
-    p2->SetTicks(1,2); 
-    p2->Draw();
-  */
-  p1->cd(); frame_m->Draw(); histo_data->Draw("Esame"); Legend(channel,0,0,0);
-  //p2->cd(); pull_plot->Draw();
+    
+ TPad *p2 = new TPad("p2","p2",0.05,0.01,0.97,0.2); 
+  p2->SetTopMargin(0.);    
+  p2->SetBorderMode(0); 
+  p2->SetTicks(1,2); 
+  p2->Draw();
   
-  // c1->SaveAs(directory + ".root");
-  c1->SaveAs(directory + ".png"); 
+  RooAbsReal* nll = model->createNLL(*data);
+  double log_likelihood= nll->getVal();
+  std::stringstream ll_str;
+  ll_str >> log_likelihood;
+  double chis = frame_m->chiSquare();
+  double lambda_exp = lambda.getVal();
+  double mean_gauss = mean.getVal();
+  double sigma1_gauss = sigma1.getVal();
+  double sigma2_gauss = sigma2.getVal();
+  double signal_yield = n_signal.getVal();
+  double back_yield = n_back.getVal();
+
+TLatex* tex1 = new TLatex(0.2, 0.88, Form("#lambda_{exp} = %.3lf",lambda_exp));
+tex1->SetNDC(kTRUE);
+tex1->SetTextFont(42);
+tex1->SetTextSize(0.03);
+tex1->Draw();  
+
+TLatex* tex2 = new TLatex(0.2, 0.84, Form("#mu_{gauss} = %.3lf",mean_gauss));
+tex2->SetNDC(kTRUE);
+tex2->SetTextFont(42);
+tex2->SetTextSize(0.03);
+tex2->Draw();  
+
+TLatex* tex3 = new TLatex(0.2, 0.80, Form("#sigma_{gauss1} = %.3lf",sigma1_gauss));
+tex3->SetNDC(kTRUE);
+tex3->SetTextFont(42);
+tex3->SetTextSize(0.03);
+tex3->Draw();  
+
+TLatex* tex4 = new TLatex(0.2, 0.76, Form("#sigma_{gauss2} = %.3lf",sigma2_gauss));
+tex4->SetNDC(kTRUE);
+tex4->SetTextFont(42);
+tex4->SetTextSize(0.03);
+if(data->sumEntries()>250){
+tex4->Draw();  
 }
+
+TLatex* tex5 = new TLatex(0.2, 0.70, Form("Signal = %.0lf",signal_yield));
+tex5->SetNDC(kTRUE);
+tex5->SetTextFont(42);
+tex5->SetTextSize(0.03);
+tex5->Draw();  
+
+TLatex* tex6 = new TLatex(0.2, 0.66, Form("Background = %.0lf",back_yield));
+tex6->SetNDC(kTRUE);
+tex6->SetTextFont(42);
+tex6->SetTextSize(0.03);
+tex6->Draw();  
+
+TLatex* tex7 = new TLatex(0.2, 0.60, Form("lnL = %.3lf", log_likelihood));
+tex7->SetNDC(kTRUE);
+tex7->SetTextFont(42);
+tex7->SetTextSize(0.03);
+tex7->Draw();  
+
+TLatex* tex8 = new TLatex(0.2, 0.56, Form("#chi^{2} = %.3lf", chis));
+tex8->SetNDC(kTRUE);
+tex8->SetTextFont(42);
+tex8->SetTextSize(0.03);
+tex8->Draw();  
+ 
+ p1->cd();
+ frame_m->Draw();
+ histo_data->Draw("Esame");
+ Legend(channel,pt_low,pt_high,1);
+ p2->cd();
+ pull_plot->Draw();
+  
+  c1->SaveAs(directory + ".root");
+  c1->SaveAs(directory + ".png"); }
 
 void plot_pt_dist(RooWorkspace& w, int channel, TString directory)
 {
