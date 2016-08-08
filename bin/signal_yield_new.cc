@@ -387,7 +387,12 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
   RooRealVar mass = *(w.var("mass"));
   RooAbsData* data = w.data("data");
   RooAbsPdf* model = w.pdf("model");
-  
+  RooRealVar lambda = *(w.var("m_exp"));
+  RooRealVar mean = *(w.var("m_mean"));
+  RooRealVar sigma1 = *(w.var("m_sigma1"));
+  RooRealVar sigma2 = *(w.var("m_sigma2"));
+  RooRealVar n_signal = *(w.var("n_signal"));
+  RooRealVar n_back = *(w.var("n_combinatorial"));    
   RooPlot* frame_m = mass.frame();
   
   TH1D* histo_data = (TH1D*)data->createHistogram("histo_data", mass, Binning(channel_to_nbins(channel), mass.getMin(), mass.getMax() ));
@@ -406,10 +411,10 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
   
   //model->paramOn(frame_m); //show all the parameters of the fit in the plot.
   
-  model->plotOn(frame_m,Precision(2E-4),Components("pdf_m_signal"),LineColor(kRed),LineWidth(2),LineStyle(kSolid),FillStyle(3008),FillColor(kRed), VLines(), DrawOption("F"));
+  model->plotOn(frame_m,Precision(2E-4),Components("pdf_m_signal"),LineColor(8),LineWidth(2),LineStyle(kSolid),FillStyle(3008),FillColor(8), VLines(), DrawOption("F"));
   
   if (channel==1 || channel==2 || channel==3 || channel==4 || channel==6)
-    model->plotOn(frame_m,Precision(2E-4),Components("pdf_m_combinatorial_exp"),LineColor(kCyan+1),LineWidth(2),LineStyle(2));
+    model->plotOn(frame_m,Precision(2E-4),Components("pdf_m_combinatorial_exp"),LineColor(9),LineWidth(2),LineStyle(2));
   else
     model->plotOn(frame_m,Precision(2E-4),Components("pdf_m_combinatorial_bern"),LineColor(kCyan+1),LineWidth(2),LineStyle(2));
   
