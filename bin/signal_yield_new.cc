@@ -49,7 +49,7 @@ using namespace RooFit;
 
 void create_dir(std::vector<std::string> list);
 void plot_pt_dist(RooWorkspace& w, int channel, TString directory);
-void plot_mass_fit(RooWorkspace& w, int channel, TString directory);
+void plot_mass_fit(RooWorkspace& w, int channel, TString directory,int pt_high, int pt_low);
 
 RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max);
 double pt_bin_mean(RooWorkspace& w, double pt_min, double pt_max);
@@ -382,7 +382,7 @@ double pt_bin_mean(RooWorkspace& w, double pt_min, double pt_max)
   return centre;
 }
 
-void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
+void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high, int pt_low)
 {
   RooRealVar mass = *(w.var("mass"));
   RooAbsData* data = w.data("data");
