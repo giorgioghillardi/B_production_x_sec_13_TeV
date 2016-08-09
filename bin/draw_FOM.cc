@@ -7,6 +7,7 @@
 #include <TStyle.h>
 #include <TAxis.h>
 #include <TLatex.h>
+#include <TGraphErrors.h>
 #include <TPaveText.h>
 #include <TFile.h>
 #include <TTree.h>
@@ -61,7 +62,7 @@ TString channel_to_ntuple_name(int channel);
 TString channel_to_xaxis_title(int channel);
 int channel_to_nbins(int channel);
 
-void DrawGraph(int n, double* v1, double* v2, std::string title, std::string x_title, std::string y_title, std::string file);
+void DrawGraph(int n, double* v1, double* v2, double* err, std::string title, std::string x_title, std::string y_title, std::string file);
 std::vector<double> generate_cuts(int channel, std::string variable, double begin, double end, int size);
 
 //input example: signal_yield_new --channel 1 --cuts lxy 3.0 10.0 8
@@ -126,8 +127,8 @@ int main(int argc, char** argv)
 
   double FOM[size];
   double FOM_err[size];
-  int i=0;
-  //  for(int i=0; i<size; i++)
+  //int i=0;
+    for(int i=0; i<size; i++)
     {
       std::stringstream convert;
       std::string s_cut="";
@@ -177,7 +178,7 @@ int main(int argc, char** argv)
       FOM[i]=signal_res->getVal()/sqrt(signal_res->getVal()+back_res->getVal());
 
       FOM_err[i]=sqrt( ( (1-signal_res->getVal())/((signal_res->getVal()+back_res->getVal())*(signal_res->getVal()+back_res->getVal()))/(sqrt(signal_res->getVal()+back_res->getVal()))*signal_err)*((1-signal_res->getVal())/((signal_res->getVal()+back_res->getVal())*(signal_res->getVal()+back_res->getVal()))/(sqrt(signal_res->getVal()+back_res->getVal()))*signal_err) + ((signal_res->getVal())/(pow(signal_res->getVal()+back_res->getVal(),1.5))*back_err)*((signal_res->getVal())/(pow(signal_res->getVal()+back_res->getVal(),1.5))*back_err));
-
+      
 
       /*      mass_fit_directory = "full_dataset_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION);
       pt_dist_directory = "full_dataset_mass_pt_histo/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION);
@@ -186,11 +187,11 @@ int main(int argc, char** argv)
       plot_pt_dist(*ws,channel,pt_dist_directory);*/
     
     }
-  
+ for(int i=0; i<size; i++){  
     std::cout << "FOM: " << FOM[i] << " +/- " << FOM_err[1] << std::endl;
-  /*
-  DrawGraph(size, cuts.data(), FOM, "FOM for "+variable+">x", "x", "FOM", "FOM_graph.png");
-  */
+  }
+  DrawGraph(size, cuts.data(), FOM, FOM_err, "FOM for "+variable+">x", "x", "FOM", "FOM_graph.png");
+  
 }//end of signal_yield_new
 
 
@@ -644,10 +645,14 @@ void create_dir(std::vector<std::string> list)
     }
 }
 
-void DrawGraph(int n, double* v1, double* v2, std::string title, std::string x_title, std::string y_title, std::string file)
+void DrawGraph(int n, double* v1, double* v2, double* err, std::string title, std::string x_title, std::string y_title, std::string file)
 {
   TCanvas c;
-  TGraph* graph = new TGraph(n, v1, v2);
+  double cuts_err[n];
+  for(int i=0; i<n;i++){
+    cuts_err[i]=0;
+  }
+  TGraphErrors* graph = new TGraphErrors(n, v1, v2, cuts_err, err);
 
   graph->GetXaxis()->SetTitle(x_title.c_str());
   graph->GetYaxis()->SetTitle(y_title.c_str());
