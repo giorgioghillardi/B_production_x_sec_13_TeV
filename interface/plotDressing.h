@@ -1,3 +1,11 @@
+#include <TCanvas.h>
+#include <TPaveText.h>
+#include <TLatex.h>
+#include <TPave.h>
+#include <TLine.h>
+#include <TStyle.h>
+#include <sstream>
+
 TCanvas *canvasDressing(TString name = "c1")
 {
     gStyle->SetOptStat(0);

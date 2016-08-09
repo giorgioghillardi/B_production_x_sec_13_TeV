@@ -30,6 +30,7 @@
 #include "TMath.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/myloop.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/plotDressing.h"
+#include "UserCode/B_production_x_sec_13_TeV/interface/channel.h"
 
 using namespace RooFit;
 
@@ -59,10 +60,6 @@ void build_pdf(RooWorkspace& w, int channel);
 void read_data(RooWorkspace& w, TString filename,int channel);
 void read_data_cut(RooWorkspace& w, RooAbsData* data);
 void set_up_workspace_variables(RooWorkspace& w, int channel);
-
-TString channel_to_ntuple_name(int channel);
-TString channel_to_xaxis_title(int channel);
-int channel_to_nbins(int channel);
 
 //input example: signal_yield_new --channel 1 --bins 1 --eff 1
 int main(int argc, char** argv)
@@ -269,11 +266,11 @@ int main(int argc, char** argv)
 RooRealVar* pre_filter_efficiency(int channel, double pt_min, double pt_max)
 {
   ReducedGenBranches gen;
-  TString mc_gen_input_file = TString(BASE_DIR) + "myloop_gen_bfilter.root";
+  TString mc_gen_input_file = "myloop_gen_" + channel_to_ntuple_name(channel) + "_bfilter.root";
   TFile *fin = new TFile(mc_gen_input_file);
   
-  TString ntuple = channel_to_ntuple_name(channel) + "_gen";
-  TTree *tin = (TTree*)fin->Get(ntuple);
+  TString ntuple_name = channel_to_ntuple_name(channel) + "_gen";
+  TTree *tin = (TTree*)fin->Get(ntuple_name);
   gen.setbranchadd(tin);
 
   //use histograms to count the events, and TEfficiency for efficiency, because it takes care of the errors and propagation
@@ -657,92 +654,6 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
   w.import(pt);
 }
 
-TString channel_to_ntuple_name(int channel)
-{
-  //returns a TString with the ntuple name corresponding to the channel. It can be used to find the data on each channel saved in a file. or to write the name of a directory
-
-  TString ntuple_name = "";
-
-  switch(channel){
-    default:
-  case 1:
-    ntuple_name="ntkp";
-    break;
-  case 2:
-    ntuple_name="ntkstar";
-    break;
-  case 3:
-    ntuple_name="ntks";
-    break;
-  case 4:
-    ntuple_name="ntphi";
-    break;
-  case 5:
-    ntuple_name="ntmix";
-    break;
-  case 6:
-    ntuple_name="ntlambda";
-    break;
-  }
-  return ntuple_name;
-}
-
-TString channel_to_xaxis_title(int channel)
-{
-  TString xaxis_title = "";
-
-  switch (channel) {
-  default:
-  case 1:
-    xaxis_title = "M_{J/#psi K^{#pm}} [GeV]";
-    break;
-  case 2:
-    xaxis_title = "M_{J/#psi K^{#pm}#pi^{#mp}} [GeV]";
-    break;
-  case 3:
-    xaxis_title = "M_{J/#psi K^{0}_{S}} [GeV]";
-    break;
-  case 4:
-    xaxis_title = "M_{J/#psi K^{#pm}K^{#mp}} [GeV]";
-    break;
-  case 5:
-    xaxis_title = "M_{J/#psi #pi^{#pm}#pi^{#mp}} [GeV]";
-    break;
-  case 6:
-    xaxis_title = "M_{J/#psi #Lambda} [GeV]";
-    break;
-  }
-  return xaxis_title;
-}
-
-int channel_to_nbins(int channel)
-{
-  int nbins;
-
-  switch (channel) {
-  default:
-  case 1:
-    nbins = 50;
-    break;
-  case 2:
-    nbins = 50;
-    break;
-  case 3:
-    nbins = 50;
-    break;
-  case 4:
-    nbins = 50;
-    break;
-  case 5:
-    nbins = 80;
-    break;
-  case 6:
-    nbins = 50;
-    break;
-  }
-  return nbins;
-}
-
 void create_dir(std::vector<std::string> list)
 {
   //to create the directories needed to save the output files, like .png and .root
@@ -751,119 +662,3 @@ void create_dir(std::vector<std::string> list)
       gSystem->Exec(("mkdir -p " + list[i]).c_str());
     }
 }
-
-/*
-switch (channel) {
-      case 1:
-	pt_bin_edges = ntkp_pt_bin_edges;
-	nptbins = (sizeof(ntkp_pt_bin_edges) / sizeof(double)) - 1 ; //if pt_bin_edges is an empty array, then nptbins is equal to 0
-	break;
-      case 2:
-	pt_bin_edges = ntkstar_pt_bin_edges;
-	nptbins = (sizeof(ntkstar_pt_bin_edges) / sizeof(double)) - 1 ;
-	break;
-      case 3:
-	pt_bin_edges = ntks_pt_bin_edges;
-	nptbins = (sizeof(ntks_pt_bin_edges) / sizeof(double)) - 1 ;
-	break;
-      case 4:
-	pt_bin_edges = ntphi_pt_bin_edges;
-	nptbins = (sizeof(ntphi_pt_bin_edges) / sizeof(double)) - 1 ;
-	break;
-      case 5:
-	pt_bin_edges = ntmix_pt_bin_edges;
-	nptbins = (sizeof(ntmix_pt_bin_edges) / sizeof(double)) - 1 ;
-	break;
-      case 6:
-	pt_bin_edges = ntlambda_pt_bin_edges;
-	nptbins = (sizeof(ntlambda_pt_bin_edges) / sizeof(double)) - 1 ;
-	break;
-      }
-      
-      RooDataSet* data_original  = new RooDataSet("data_original", "data_original", *(ws->data("data")->get()),Import( *(dynamic_cast<RooDataSet *>(ws->data("data"))) ));
-      
-      RooRealVar pt = *(ws->var("pt"));
-      
-      RooThresholdCategory ptRegion("ptRegion", "region of pt", pt);
-      ptRegion.addThreshold(*(pt_bin_edges),"below 1st bin");
-
-      for(int i=0; i<nptbins; i++)
-	{
-	  TString reg = TString::Format("PtBin%d",i+1);
-	  ptRegion.addThreshold(*(pt_bin_edges+i+1),reg);
-	}
-      data_original->addColumn(ptRegion);
-      
-      Roo1DTable * tab = data_original->table(ptRegion);
-      tab->Print("v");
-      delete tab;
-      
-      //to produce and process each pt subsample                                                                                                    
-      RooDataSet *data_cut;
-      RooWorkspace* ws_cut;
-      RooAbsPdf* model_cut;
-      RooRealVar* pt_mean;
-      TString directory="";
-      double pt_bin_centre[nptbins];
-      double pt_bin_edges_Lo[nptbins];
-      double pt_bin_edges_Hi[nptbins];
-      double yield_array[nptbins];
-      double errLo_array[nptbins];
-      double errHi_array[nptbins];
-      
-      for(int i=0; i<nptbins; i++)
-	{
-	  cout << "processing subsample pt: " << i+1 << std::endl;
-
-	  TString ptcut(TString::Format("(ptRegion==ptRegion::PtBin%d)", i+1));
-
-	  data_cut = new RooDataSet("data", "data", *(data_original->get()),Import(*data_original), Cut(ptcut));
-
-	  // TString ptcut(TString::Format("(pt>(pt_bin_edges+%d))&&(pt<(pt_bin_edges+%d+1))",i));
-	  //RooFormulaVar ptcut("pt_cut","pt_cut","pt>*(pt_bin_edges+i) && pt<*(pt_bin_edges+i+1)",RooArgList(pt_bin_edges,i));
-	  //data_cut=data_original->reduce(Cut(ptcut));
-
-	  ws_cut = new RooWorkspace("ws_cut","Bmass_cut");
-	  set_up_workspace_variables(*ws_cut,channel);
-	  read_data_cut(*ws_cut,data_cut);
-	  build_pdf(*ws_cut,channel);
-
-	  model_cut = ws_cut->pdf("model");
-	  ws_cut->Print();
-	
-	  pt_mean = data_cut->meanVar(pt); //older way: pt_bin_centre[i] = *(pt_bin_edges+i) + (*(pt_bin_edges+i+1)-*(pt_bin_edges+i))/2;
-	  pt_bin_centre[i] = (double) pt_mean->getVal();
-	  pt_bin_edges_Lo[i] = pt_bin_centre[i] - *(pt_bin_edges+i);
-	  pt_bin_edges_Hi[i] = *(pt_bin_edges+i+1) - pt_bin_centre[i];
-
-	  fit_res = model_cut->fitTo(*data_cut,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
-	  signal_res = ws_cut->var("n_signal");
-
-	  yield_array[i] = signal_res->getVal();
-	  errLo_array[i] = -signal_res->getAsymErrorLo();
-	  errHi_array[i] = signal_res->getAsymErrorHi();
-
-	  directory = "pt_bin_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + "mass_fit_" + channel_to_ntuple_name(channel) + TString::Format("_bin_%d_%d", (int)*(pt_bin_edges+i), (int)*(pt_bin_edges+i+1));
-	  
-	  plot_mass_fit(*ws_cut,channel,directory);
-	  
-	  //how to put the legend indicating each pt bin ??
-	  //change the plot_mass_fit to output a TCanvas, and write the legend on top after, and then have a function just to save the plots.
-	  //  Legend(channel,(int)pt_bin_lo,(int)pt_bin_hi,1);
-	}
-      for(int i=0; i<nptbins; i++)
-	{
-	  std::cout << "BIN: "<< (int) *(pt_bin_edges+i) << " to " << (int) *(pt_bin_edges+i+1) << " : " <<  yield_array[i] << " +" << errHi_array[i] << " -"<< errLo_array[i] << std::endl;
-	}
-
-      TCanvas cz;
-      TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_centre, yield_array, pt_bin_edges_Lo, pt_bin_edges_Hi, errLo_array, errHi_array);
-      graph->SetTitle("Raw signal yield in Pt bins");
-      graph->SetFillColor(2);
-      graph->SetFillStyle(3001);
-      graph->Draw("a2");
-      graph->Draw("p");
-      cz.SetLogy();
-      // cz.SaveAs("signal_yield/signal_yield_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + ".root");
-      cz.SaveAs("signal_yield/signal_yield_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + ".png");     
-*/
