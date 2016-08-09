@@ -14,6 +14,7 @@
 #include <TH1D.h>
 #include <TLorentzVector.h>
 #include <TLegend.h>
+#include <TSystem.h>
 #include <RooWorkspace.h>
 #include <RooRealVar.h>
 #include <RooConstVar.h>
@@ -144,7 +145,7 @@ int main(int argc, char** argv)
 	  TString pt_dist_directory="";
 	  TString mass_dist_directory="";
  
-	  //      gSystem->Exec(("mkdir -p ").c_str());
+	  gSystem->Exec(("mkdir -p full_dataset_mass_pt_dist_"+variable+"_"+s_cut).c_str());
 	  
 	  //set up mass and pt variables inside ws  
 	  set_up_workspace_variables(*ws,channel);
@@ -154,10 +155,10 @@ int main(int argc, char** argv)
 	  
 	  RooAbsData* data = ws->data("data");
 	  
-	  pt_dist_directory = "full_dataset_mass_pt_dist/" + channel_to_ntuple_name(channel) + "_pt";
+	  pt_dist_directory = "full_dataset_mass_pt_dist_"+variable+"_"+s_cut+"/" + channel_to_ntuple_name(channel) + "_pt";
 	  plot_pt_dist(*ws,channel,pt_dist_directory);
 	  
-	  mass_dist_directory = "full_dataset_mass_pt_dist/" + channel_to_ntuple_name(channel) + "_mass";
+	  mass_dist_directory = "full_dataset_mass_pt_dist_"+variable+"_"+s_cut+"/" + channel_to_ntuple_name(channel) + "_mass";
 	  plot_mass_dist(*ws,channel,mass_dist_directory);
 	}
     }
@@ -341,7 +342,7 @@ void data_selection(TString fin1, TString data_selection_output_file, int channe
 	  { if (br.vtxprob<=cuts) continue; }//original cut 0.1
 	else
 	  { if (br.vtxprob<=0.1) continue; }//original cut 0.1
-	
+
 	if(variable=="lxy")
 	  { if (br.lxy/br.errxy<=cuts) continue; }//original cut 3.0
 	else
@@ -416,15 +417,15 @@ void data_selection(TString fin1, TString data_selection_output_file, int channe
 	  if (channel==4) { // cuts for Bs -> J/psi phi
 	    if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
 
+	    if(variable=="lxy")
+	      { if (br.lxy/br.errxy<=cuts) continue; }//original cut 3.0	      
+	    else
+	      { if (br.lxy/br.errxy<=4.0) continue; }//original cut 3.0
+
 	    if(variable=="vtxprob")
 	      { if (br.vtxprob<=cuts) continue; }//original cut 0.1	      
 	    else
 	      { if (br.vtxprob<=0.1) continue; }//original cut 0.1
-
-	    if(variable=="lxy")
-	      { if (br.lxy/br.errxy<=cuts) continue; }//original cut 3.0	      
-	    else
-	      { if (br.lxy/br.errxy<=3.0) continue; }//original cut 3.0
 
 	    if(variable=="cosalpha2d")
 	      { if (br.cosalpha2d<=cuts) continue; }//original cut 0.99
