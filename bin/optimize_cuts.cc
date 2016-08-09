@@ -315,22 +315,22 @@ void data_selection(TString fin1, TString data_selection_output_file, int channe
       if(variable=="vtxprob")
 	{ if (br.vtxprob<=cuts) continue; }//original cut 0.1
       else
-	{ if (br.vtxprob<=0.1) continue; }//original cut 0.1
+	{ if (br.vtxprob<=0.1) continue; }
 
       if(variable=="tk1pt")
 	{ if (br.tk1pt<=cuts) continue; }//original cut 1.6
       else
-	{ if (br.tk1pt<=1.6) continue; }//original cut 1.6
+	{ if (br.tk1pt<=1.6) continue; }
 
       if(variable=="lxy")
 	{ if (br.lxy/br.errxy<=cuts) continue; }//original cut 3.0
       else
-	{ if (br.lxy/br.errxy<=3.0) continue; }//original cut 3.0
+	{ if (br.lxy/br.errxy<=3.0) continue; }
 
       if(variable=="cosalpha2d")
 	{ if (br.cosalpha2d<=cuts) continue; }//original cut 0.99
       else
-	{ if (br.cosalpha2d<=0.99) continue; }//original cut 0.99
+	{ if (br.cosalpha2d<=0.99) continue; }
             
       _nt1->Fill(br.mass,br.pt,br.eta);
 	    
