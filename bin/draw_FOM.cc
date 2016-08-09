@@ -123,12 +123,13 @@ int main(int argc, char** argv)
   std::vector<std::string> dir_list;
   dir_list.push_back("full_dataset_mass_fit");
   dir_list.push_back("full_dataset_mass_pt_histo");
+  dir_list.push_back("FOM");
   create_dir(dir_list);
 
   double FOM[size];
   double FOM_err[size];
   //int i=0;
-    for(int i=0; i<size; i++)
+  for(int i=0; i<size; i++)
     {
       std::stringstream convert;
       std::string s_cut="";
@@ -149,7 +150,7 @@ int main(int argc, char** argv)
       RooRealVar* back_res;      
       
       /*TString pt_dist_directory="";
-      TString mass_fit_directory="";*/
+	TString mass_fit_directory="";*/
       
       //set up mass and pt variables inside ws  
       set_up_workspace_variables(*ws,channel);
@@ -181,16 +182,16 @@ int main(int argc, char** argv)
       
 
       /*      mass_fit_directory = "full_dataset_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION);
-      pt_dist_directory = "full_dataset_mass_pt_histo/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION);
+	      pt_dist_directory = "full_dataset_mass_pt_histo/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION);
       
-      plot_mass_fit(*ws,channel,mass_fit_directory);
-      plot_pt_dist(*ws,channel,pt_dist_directory);*/
+	      plot_mass_fit(*ws,channel,mass_fit_directory);
+	      plot_pt_dist(*ws,channel,pt_dist_directory);*/
     
     }
- for(int i=0; i<size; i++){  
+  for(int i=0; i<size; i++){  
     std::cout << "FOM: " << FOM[i] << " +/- " << FOM_err[1] << std::endl;
   }
-  DrawGraph(size, cuts.data(), FOM, FOM_err, "FOM for "+variable+">x", "x", "FOM", "FOM_graph.png");
+  DrawGraph(size, cuts.data(), FOM, FOM_err, "FOM for "+variable+">x", "x", "FOM", "FOM/FOM_"+variable+".png");
   
 }//end of signal_yield_new
 
@@ -710,7 +711,7 @@ void DrawGraph(int n, double* v1, double* v2, double* err, std::string title, st
   Roo1DTable * tab = data_original->table(ptRegion);
   tab->Print("v");
   delete tab;
-      
+  
   //to produce and process each pt subsample                                                                                                    
   RooDataSet *data_cut;
   RooWorkspace* ws_cut;
