@@ -137,7 +137,7 @@ int main(int argc, char** argv)
       TString data_selection_output_file="";
       data_selection_output_file= "selected_data_" + channel_to_ntuple_name(channel) + "_" + variable + "_" + s_cut + ".root";
   
-      data_selection(input_file,data_selection_output_file,channel, variable, cuts[i]);
+      data_selection(input_file, data_selection_output_file, channel, variable, cuts[i]);
 
       if(show_dist)
 	{ 
@@ -417,15 +417,15 @@ void data_selection(TString fin1, TString data_selection_output_file, int channe
 	  if (channel==4) { // cuts for Bs -> J/psi phi
 	    if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
 
+	    if(variable=="vtxprob")
+	      { if (br.vtxprob<=cuts) continue; } //original cut 0.1
+	    else
+	      { if (br.vtxprob<=0.1) continue; } //original cut 0.1
+	    
 	    if(variable=="lxy")
 	      { if (br.lxy/br.errxy<=cuts) continue; }//original cut 3.0	      
 	    else
-	      { if (br.lxy/br.errxy<=4.0) continue; }//original cut 3.0
-
-	    if(variable=="vtxprob")
-	      { if (br.vtxprob<=cuts) continue; }//original cut 0.1	      
-	    else
-	      { if (br.vtxprob<=0.1) continue; }//original cut 0.1
+	      { if (br.lxy/br.errxy<=3.0) continue; }//original cut 3.0
 
 	    if(variable=="cosalpha2d")
 	      { if (br.cosalpha2d<=cuts) continue; }//original cut 0.99
@@ -434,7 +434,7 @@ void data_selection(TString fin1, TString data_selection_output_file, int channe
 
 	    if(variable=="PHI_MASS")
 	      { if (fabs(br.tktkmass-PHI_MASS)>=cuts) continue; }//original cut 0.010
-            else
+	    else
 	      { if (fabs(br.tktkmass-PHI_MASS)>=0.010) continue; }//original cut 0.010
 
 	    if(variable=="KSTAR_MASS")
@@ -450,11 +450,12 @@ void data_selection(TString fin1, TString data_selection_output_file, int channe
 	      {
 		v4_tk1.SetPtEtaPhiM(br.tk1pt,br.tk1eta,br.tk1phi,KAON_MASS);
 		v4_tk2.SetPtEtaPhiM(br.tk2pt,br.tk2eta,br.tk2phi,PION_MASS);
-		if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=cuts) continue;//original cut 0.05
+		if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=0.05) continue;//original cut 0.05
 		v4_tk1.SetPtEtaPhiM(br.tk1pt,br.tk1eta,br.tk1phi,PION_MASS);
 		v4_tk2.SetPtEtaPhiM(br.tk2pt,br.tk2eta,br.tk2phi,KAON_MASS);
-		if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=cuts) continue;
+		if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=0.05) continue;
 	      }
+
 	    _nt4->Fill(br.mass,br.pt,br.eta);
 
 	  }else
