@@ -34,7 +34,7 @@
 #include <TLegend.h>
 using namespace RooFit;
 
-// General fitting options
+// General fitting option
 #define NUMBER_OF_CPU       1
 
 #define VERSION             "v7"
