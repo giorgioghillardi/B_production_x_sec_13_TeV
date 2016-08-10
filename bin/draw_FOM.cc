@@ -188,11 +188,17 @@ int main(int argc, char** argv)
 	      plot_pt_dist(*ws,channel,pt_dist_directory);*/
     
     }
+
   for(int i=0; i<size; i++){  
     std::cout << "FOM: " << FOM[i] << " +/- " << FOM_err[1] << std::endl;
   }
-  DrawGraph(size, cuts.data(), FOM, FOM_err, "FOM for "+variable+">x", "x", "FOM", "FOM/FOM_"+variable+".png");
-  
+
+  if(variable=="lxy" || variable=="vtxprob" || variable=="cosalpha2d")
+    DrawGraph(size, cuts.data(), FOM, FOM_err, "FOM for "+variable+">x", "x (1)", "FOM (1)", "FOM/FOM_"+variable+".png");
+
+  else
+    DrawGraph(size, cuts.data(), FOM, FOM_err, "FOM for "+variable+">x", "x (GeV)", "FOM (1)", "FOM/FOM_"+variable+".png");
+
 }//end of signal_yield_new
 
 
@@ -653,14 +659,14 @@ void DrawGraph(int n, double* v1, double* v2, double* err, std::string title, st
   for(int i=0; i<n;i++){
     cuts_err[i]=0;
   }
-  TGraphErrors* graph = new TGraphErrors(n, v1, v2, cuts_err, err);
+  TGraphErrors* graph = new TGraphErrors(n, v1, v2, cuts_err, err); 
 
   graph->GetXaxis()->SetTitle(x_title.c_str());
   graph->GetYaxis()->SetTitle(y_title.c_str());
   graph->SetTitle(title.c_str());
   graph->SetMarkerStyle(kFullCircle);
-  graph->SetMarkerColor(38);
-  graph->SetMarkerSize(1);
+  graph->SetMarkerColor(kBlack);
+  graph->SetMarkerSize(0.5);
   graph->Draw("AP");
 
   c.SaveAs(file.c_str());
