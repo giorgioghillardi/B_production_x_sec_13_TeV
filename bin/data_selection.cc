@@ -28,6 +28,10 @@
 #include "TMath.h"
 using namespace RooFit;
 
+#define MASS_MIN_2 5.0
+#define MASS_MAX_2 5.6
+
+
 //-----------------------------------------------------------------
 // Definition of channel #
 // channel = 1: B+ -> J/psi K+
@@ -199,7 +203,7 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
     mass_min = 5.0; mass_max = 6.0;
     break;
   case 2:
-    mass_min = 5.0; mass_max = 6.0;
+    mass_min = MASS_MIN_2; mass_max = MASS_MAX_2;
     break;
   case 3:
     mass_min = 5.0; mass_max = 6.0;
@@ -444,17 +448,21 @@ void sideband_sub(RooWorkspace& w, double left, double right)
 																		 RooRealVar sigma("sigma", "sigma", -1000., 1000.);                                                                                           
   */
 
-  RooRealVar lambda("lambda", "lambda", -1000., 1000.);
+  RooRealVar lambda("lambda", "lambda",-5., -20., 0.);
 
-  RooExponential fit_side("fit_side", "fit_side_lan", mass, lambda);
+  RooExponential fit_side("fit_side", "fit_side_exp", mass, lambda);
 
-  mass.setRange("all", 5.,6.);
-  mass.setRange("right",right,6.);
-  mass.setRange("left",5.,left);
+  mass.setRange("all", mass.getMin(),mass.getMax());
+  mass.setRange("right",right,mass.getMax());
+  mass.setRange("left",mass.getMin(),left);
   mass.setRange("peak",left,right);
+  
+  std::cout<<"mass minimum: "<<mass.getMin()<<std::endl;
+  std::cout<<"mass maximum: "<<mass.getMax()<<std::endl;
+  
 
   fit_side.fitTo(*reduceddata_side,Range("left,right"));
-  RooRealVar* nll = (RooRealVar*) fit_side.createNLL(*reduceddata_side, Range("left,right"));
+//  RooRealVar* nll = (RooRealVar*) fit_side.createNLL(*reduceddata_side, Range("left,right"));
 
   RooPlot* massframe = mass.frame();
   reduceddata_side->plotOn(massframe);
@@ -464,8 +472,8 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   massframe->Draw();
   c1.SaveAs("fit_side.png");
 
-  std::cout << std::endl << "Chi^2: " << massframe->chiSquare() << std::endl;
-  std::cout << "LogLikelihood: " << nll->getVal() << std::endl;
+  std::cout << std::endl << "chisquare: " << massframe->chiSquare() << std::endl;
+//  std::cout << "LogLikelihood: " << nll->getVal() << std::endl;
 
   //Integrating the background distribution                            
 

@@ -57,6 +57,7 @@ int main(int argc, char** argv)
   int channel = 0;
   std::string input_file = "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_data.root";
   bool side_sub = 0, show_dist=0;
+  std::string outDir = "";
 
   std::string variable ="";
   double begin=0, end=0;
@@ -73,6 +74,9 @@ int main(int argc, char** argv)
           convert >> channel;
 	  convert.clear();     
 	}
+
+    if(argument == "--outDir")
+     outDir = argv[++i];
 
       if(argument == "--input")
         {
@@ -123,21 +127,25 @@ int main(int argc, char** argv)
 
   std::vector<double> cuts = generate_cuts(channel, variable, begin, end, size);
   
-  for(int i=0; i<size; i++)
+  for(size_t i=0; i<cuts.size(); i++)
     std::cout << "cuts[" << i << "]: " << cuts[i] << std::endl;
 
-  for(int i=0; i<size; i++)
+  for(size_t i=0; i<cuts.size(); i++)
     {
       std::stringstream convert;
       std::string s_cut="";
 
-      convert << cuts[i];
+      convert << cuts.at(i);
       convert >> s_cut;
 
       TString data_selection_output_file="";
       data_selection_output_file= "selected_data_" + channel_to_ntuple_name(channel) + "_" + variable + "_" + s_cut + ".root";
+      if(outDir != "")
+        data_selection_output_file = outDir + "/" + data_selection_output_file;
   
-      data_selection(input_file, data_selection_output_file, channel, variable, cuts[i]);
+      std::cout << "Calling data_selection(...). varible: " << variable << std::endl;
+      data_selection(input_file, data_selection_output_file, channel, variable, cuts.at(i));
+      std::cout << "Done data_selection(..)" << std::endl;
 
       if(show_dist)
 	{ 
