@@ -12,6 +12,7 @@
 #include <TH1D.h>
 #include <TLorentzVector.h>
 #include <TLegend.h>
+#include <TSystem.h>
 #include <RooWorkspace.h>
 #include <RooRealVar.h>
 #include <RooConstVar.h>
@@ -53,7 +54,7 @@ int main(int argc, char** argv)
 {
   int channel = 0;
   std::string input_file = "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_data.root";
-  bool side_sub = 0, show_dist;
+  bool side_sub = 0, show_dist = 0;
 
   for(int i=1 ; i<argc ; ++i)
     {
@@ -102,7 +103,7 @@ int main(int argc, char** argv)
       TString pt_dist_directory="";
       TString mass_dist_directory="";
  
-      //      gSystem->Exec(("mkdir -p ").c_str());
+      gSystem->Exec("mkdir -p full_dataset_mass_pt_dist/");
 
       //set up mass and pt variables inside ws  
       set_up_workspace_variables(*ws,channel);
@@ -132,8 +133,10 @@ int main(int argc, char** argv)
 	{
 	case 2:
 	  sideband_sub(*ws, 5.1, 5.4);
+	  break;
 	case 4:
 	  sideband_sub(*ws, 5.25, 5.45);
+	  break;
 	default:
 	  std::cout << "WARNING! UNDEFINED LIMITS FOR PEAK REGION" << std::endl;
 	}
@@ -223,12 +226,12 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 
   TFile *fout = new TFile(data_selection_output_file,"recreate");
 
-  TNtupleD *_nt1 = new TNtupleD("ntkp","ntkp","mass:pt:eta");
-  TNtupleD *_nt2 = new TNtupleD("ntkstar","ntkstar","mass:pt:eta");
-  TNtupleD *_nt3 = new TNtupleD("ntks","ntks","mass:pt:eta");
-  TNtupleD *_nt4 = new TNtupleD("ntphi","ntphi","mass:pt:eta");
-  TNtupleD *_nt5 = new TNtupleD("ntmix","ntmix","mass:pt:eta");
-  TNtupleD *_nt6 = new TNtupleD("ntlambda","ntlambda","mass:pt:eta");
+  TNtupleD *_nt1 = new TNtupleD("ntkp","ntkp","mass:pt:eta:y");
+  TNtupleD *_nt2 = new TNtupleD("ntkstar","ntkstar","mass:pt:eta:y");
+  TNtupleD *_nt3 = new TNtupleD("ntks","ntks","mass:pt:eta:y");
+  TNtupleD *_nt4 = new TNtupleD("ntphi","ntphi","mass:pt:eta:y");
+  TNtupleD *_nt5 = new TNtupleD("ntmix","ntmix","mass:pt:eta:y");
+  TNtupleD *_nt6 = new TNtupleD("ntlambda","ntlambda","mass:pt:eta:y");
 
   /*
     switch (channel) {
@@ -278,7 +281,7 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
       if (br.lxy/br.errxy<=3.0) continue;//original cut 3.0
       if (br.cosalpha2d<=0.99) continue;//original cut 0.99
             
-      _nt1->Fill(br.mass,br.pt,br.eta);
+      _nt1->Fill(br.mass,br.pt,br.eta,br.y);
 	    
     }else
       if (channel==2) { // cuts for B0 -> J/psi K*
@@ -320,7 +323,7 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 	    }
                                  
 	    if (isBestKstarMass){
-	      _nt2->Fill(br_queue[i].mass,br_queue[i].pt,br_queue[i].eta);
+	      _nt2->Fill(br_queue[i].mass,br_queue[i].pt,br_queue[i].eta,br_queue[i].y);
 
 	    }
 
@@ -338,7 +341,7 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 	  if (br.cosalpha2d<=0.99) continue;//original cut 0.99
 	  if (fabs(br.tktkmass-KSHORT_MASS)>=0.015) continue;//original cut 0.015
                 
-	  _nt3->Fill(br.mass,br.pt,br.eta);
+	  _nt3->Fill(br.mass,br.pt,br.eta,br.y);
 
 	}else
 	  if (channel==4) { // cuts for Bs -> J/psi phi
@@ -355,7 +358,7 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 	    v4_tk2.SetPtEtaPhiM(br.tk2pt,br.tk2eta,br.tk2phi,KAON_MASS);
 	    if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=0.05) continue;
                 
-	    _nt4->Fill(br.mass,br.pt,br.eta);
+	    _nt4->Fill(br.mass,br.pt,br.eta,br.y);
 
 	  }else
 	    if (channel==5) { // cuts for psi(2S)/X(3872) -> J/psi pipi
@@ -363,7 +366,7 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 	      if (fabs(br.tk1eta)>=1.6) continue;//original cut 1.6
 	      if (fabs(br.tk2eta)>=1.6) continue;//original cut 1.6
             
-	      _nt5->Fill(br.mass,br.pt,br.eta);
+	      _nt5->Fill(br.mass,br.pt,br.eta,br.y);
 
 	    }else
 	      if (channel==6) {//cuts for lambda
@@ -378,7 +381,7 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 		v4_tk2.SetPtEtaPhiM(br.tk2pt,br.tk2eta,br.tk2phi,PION_MASS);
 		if (fabs((v4_tk1+v4_tk2).Mag()-KSHORT_MASS)<=0.015) continue;//original cut 0.015
             
-		_nt6->Fill(br.mass,br.pt,br.eta);
+		_nt6->Fill(br.mass,br.pt,br.eta,br.y);
 
 	      }
   }//end of the for for the events
