@@ -4,6 +4,7 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include <fstream>
 #include <TStyle.h>
 #include <TAxis.h>
 #include <TLatex.h>
@@ -63,6 +64,8 @@ TString channel_to_xaxis_title(int channel);
 int channel_to_nbins(int channel);
 
 void DrawGraph(int n, double* v1, double* v2, double* err, std::string title, std::string x_title, std::string y_title, std::string file);
+void latex_table(std::string filename, int n_col, int n_lin, std::string* title, double** number, std::string caption, int type);
+
 std::vector<double> generate_cuts(int channel, std::string variable, double begin, double end, int size);
 
 //input example: signal_yield_new --channel 1 --cuts lxy 3.0 10.0 8
@@ -128,6 +131,11 @@ int main(int argc, char** argv)
 
   double FOM[size];
   double FOM_err[size];
+  double n_signal[size];
+  double n_back[size];
+  double signal_err[size];
+  double back_err[size];
+
   //int i=0;
   for(int i=0; i<size; i++)
     {
@@ -173,12 +181,15 @@ int main(int argc, char** argv)
       std::cout <<"SIGNAL: "<< signal_res->getVal() << " " << signal_res->getAsymErrorLo() << " +" << signal_res->getAsymErrorHi() << std::endl;
       std::cout <<"BACKGROUND: "<< back_res->getVal() << " " << back_res->getAsymErrorLo() << " +" << back_res->getAsymErrorHi() << std::endl;
       
-      double signal_err = (signal_res->getAsymErrorHi()-signal_res->getAsymErrorLo())/2;
-      double back_err = (back_res->getAsymErrorHi()-back_res->getAsymErrorLo())/2;
+      n_signal[i]=signal_res->getVal();
+      n_back[i]=back_res->getVal();
+
+      signal_err[i] = (signal_res->getAsymErrorHi()-signal_res->getAsymErrorLo())/2;
+      back_err[i] = (back_res->getAsymErrorHi()-back_res->getAsymErrorLo())/2;
 
       FOM[i]=signal_res->getVal()/sqrt(signal_res->getVal()+back_res->getVal());
 
-      FOM_err[i]=sqrt( ( (1-signal_res->getVal())/((signal_res->getVal()+back_res->getVal())*(signal_res->getVal()+back_res->getVal()))/(sqrt(signal_res->getVal()+back_res->getVal()))*signal_err)*((1-signal_res->getVal())/((signal_res->getVal()+back_res->getVal())*(signal_res->getVal()+back_res->getVal()))/(sqrt(signal_res->getVal()+back_res->getVal()))*signal_err) + ((signal_res->getVal())/(pow(signal_res->getVal()+back_res->getVal(),1.5))*back_err)*((signal_res->getVal())/(pow(signal_res->getVal()+back_res->getVal(),1.5))*back_err));
+      FOM_err[i]=sqrt( ( (1-signal_res->getVal())/((signal_res->getVal()+back_res->getVal())*(signal_res->getVal()+back_res->getVal()))/(sqrt(signal_res->getVal()+back_res->getVal()))*signal_err[i])*((1-signal_res->getVal())/((signal_res->getVal()+back_res->getVal())*(signal_res->getVal()+back_res->getVal()))/(sqrt(signal_res->getVal()+back_res->getVal()))*signal_err[i]) + ((signal_res->getVal())/(pow(signal_res->getVal()+back_res->getVal(),1.5))*back_err[i])*((signal_res->getVal())/(pow(signal_res->getVal()+back_res->getVal(),1.5))*back_err[i]));
       
 
       /*      mass_fit_directory = "full_dataset_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION);
@@ -199,6 +210,21 @@ int main(int argc, char** argv)
   else
     DrawGraph(size, cuts.data(), FOM, FOM_err, "FOM for "+variable+">x", "x (GeV)", "FOM (1)", "FOM/FOM_"+variable+".png");
 
+  std::string caption = "Signal and Background Yields for different cuts in " + variable;
+
+  std::string title[7] = {variable+" cuts", "Signal" , "Signal Error", "Bakground", "Background Error", "FOM", "FOM Error"};
+
+  double** number = new double* [6];
+
+  number[0]=cuts.data();
+  number[1]=n_signal;
+  number[2]=signal_err;
+  number[3]=n_back;
+  number[4]=back_err;
+  number[5]=FOM;
+  number[6]=FOM_err;
+
+  latex_table("FOM/table_"+variable, 7, size+1, title, number, caption , 1);
 }//end of signal_yield_new
 
 
@@ -672,6 +698,92 @@ void DrawGraph(int n, double* v1, double* v2, double* err, std::string title, st
   c.SaveAs(file.c_str());
 }
 
+
+void latex_table(std::string filename, int n_col, int n_lin, std::string* title, double** number, std::string caption, int type)
+{
+  std::ofstream file;
+
+  //Begin Document                                                                                                                              
+
+  file.open(filename + ".tex");
+
+  file << "\\documentclass{article}" << std::endl;
+  //file << "\\usepackage[utf8]{inputenc}" << std::endl;                                                                                        
+  file << "\\usepackage{cancel}" << std::endl;
+  file << "\\usepackage{geometry}" << std::endl;
+  file << "\\usepackage{booktabs}" << std::endl;
+  file << "\\geometry{a4paper, total={170mm,257mm}, left=20mm, top=20mm,}" << std::endl;
+
+  file << "\\title{B production at 13 TeV}" << std::endl;
+  file << "\\author{Joao Melo & Julia Silva}" << std::endl;
+  file << "\\date{July 2016}" << std::endl;
+  file << "\\begin{document}" << std::endl;
+  file << "\\maketitle" << std::endl;
+
+  // Create table                                                                                                                                
+  file << "\\begin{table}[!h]" << std::endl;
+  // file << "\\centering" << std::endl;                                                                                                         
+  //setup table size                                                                                                                             
+  std::string col="c";
+
+  for(int i=1; i<n_col; i++)
+    col+="|c";
+
+  file << "\\begin{tabular}{"+col+"}" << std::endl;
+  file << "\\toprule" << std::endl;
+
+  switch(type)
+    {
+    case 1:
+      //write top line                                                                                                                           
+      for(int i=0; i<n_col-1; i++)
+	file << title[i]+" & ";
+	
+      file << title[n_col-1];
+
+      file << "\\\\  \\midrule" << std::endl;
+      //insert numbers                                                                                                                           
+      for(int i=0; i<n_lin-1; i++)
+        {
+          for(int c=0; c<n_col-1; c++)
+            file << number[c][i] << " & ";
+
+          file << number[n_col-1][i] << " \\\\" << std::endl;
+        }
+
+      file << "\\bottomrule" << std::endl;
+      break;
+    case 2:
+      //insert numbers                                                                                                                           
+      for(int i=0; i<n_lin; i++)
+        {
+          file << title[i]+" & ";
+
+          for(int c=1; c>n_col-1; c++)
+            file << number[c][i] << " & ";
+
+          file << number[n_col-1][i] << " \\\\" << std::endl;
+        }
+
+      file << "\\bottomrule" << std::endl;
+
+      break;
+    }
+  //End Table                                                                                                                                    
+  file << "\\end{tabular}" << std::endl;
+  file << "\\caption{"+caption+"}" << std::endl;
+
+  file << "\\end{table}" << std::endl;
+  //End document                                                                                                                                
+
+  file << "\\end{document}" << std::endl;
+
+  system(("pdflatex " + filename + ".tex").c_str());
+  system(("gnome-open " + filename + ".pdf").c_str());
+}
+
+
+ 
 /*
   switch (channel) {
   case 1:

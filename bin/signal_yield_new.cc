@@ -52,7 +52,7 @@ void create_dir(std::vector<std::string> list);
 void plot_pt_dist(RooWorkspace& w, int channel, TString directory);
 void plot_mass_fit(RooWorkspace& w, int channel, TString directory,int pt_high, int pt_low);
 void plot_mass_fit(RooWorkspace& w, int channel, TString directory);
-RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max);
+RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max);
 double pt_bin_mean(RooWorkspace& w, double pt_min, double pt_max);
 RooRealVar* pre_filter_efficiency(int channel, double pt_min, double pt_max);
 
@@ -109,6 +109,7 @@ int main(int argc, char** argv)
   
   create_dir(dir_list);
 
+  //pt bins
   double ntkp_pt_bin_edges[]={10,20,30,40,50,60,70,80,90,100,120,150};
   double ntkstar_pt_bin_edges[]={15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 72, 80, 90, 100};
   double ntks_pt_bin_edges[]={10,20,30,40,50,60,70};
@@ -118,6 +119,18 @@ int main(int argc, char** argv)
   double* pt_bin_edges;
   
   int nptbins;
+
+  //y bins
+  double ntkp_y_bin_edges[]={0.0, 0.5, 1.0, 1.5, 2.25};
+  double ntkstar_y_bin_edges[]={0.0, 0.5, 1.0, 1.5, 2.25};
+  double ntks_y_bin_edges[]={0.0, 0.5, 1.0, 1.5, 2.25};
+  double ntphi_y_bin_edges[]={0.0, 0.5, 1.0, 1.5, 2.25};
+  double ntmix_y_bin_edges[]={0.0, 0.5, 1.0, 1.5, 2.25};
+  double ntlambda_y_bin_edges[]={0.0, 0.5, 1.0, 1.5, 2.25};
+  double* y_bin_edges;
+  
+  int nybins;
+
   
   TString data_selection_input_file = "selected_data_" + channel_to_ntuple_name(channel) + ".root";
   
@@ -128,9 +141,10 @@ int main(int argc, char** argv)
   RooRealVar* signal_res;
 
   TString pt_dist_directory="";
+  TString y_dist_directory="";
   TString mass_fit_directory="";
 
-  //set up mass and pt variables inside ws  
+  //set up mass, pt and y variables inside ws  
   set_up_workspace_variables(*ws,channel);
 
   //read data from the selected data file, and import it as a dataset into the workspace.
@@ -164,36 +178,59 @@ int main(int argc, char** argv)
       case 1:
 	pt_bin_edges = ntkp_pt_bin_edges;
 	nptbins = (sizeof(ntkp_pt_bin_edges) / sizeof(double)) - 1 ; //if pt_bin_edges is an empty array, then nptbins is equal to 0
+
+	y_bin_edges = ntkp_y_bin_edges;
+	nybins = (sizeof(ntkp_y_bin_edges) / sizeof(double)) - 1 ; //if y_bin_edges is an empty array, then nptbins is equal to 0
 	break;
       case 2:
 	pt_bin_edges = ntkstar_pt_bin_edges;
 	nptbins = (sizeof(ntkstar_pt_bin_edges) / sizeof(double)) - 1 ;
+
+	y_bin_edges = ntkstar_y_bin_edges;
+	nybins = (sizeof(ntkstar_y_bin_edges) / sizeof(double)) - 1 ;
 	break;
       case 3:
 	pt_bin_edges = ntks_pt_bin_edges;
 	nptbins = (sizeof(ntks_pt_bin_edges) / sizeof(double)) - 1 ;
+
+	y_bin_edges = ntks_y_bin_edges;
+	nybins = (sizeof(ntks_y_bin_edges) / sizeof(double)) - 1 ;
 	break;
       case 4:
 	pt_bin_edges = ntphi_pt_bin_edges;
 	nptbins = (sizeof(ntphi_pt_bin_edges) / sizeof(double)) - 1 ;
+
+	y_bin_edges = ntphi_y_bin_edges;
+	nybins = (sizeof(ntphi_y_bin_edges) / sizeof(double)) - 1 ;
 	break;
       case 5:
 	pt_bin_edges = ntmix_pt_bin_edges;
 	nptbins = (sizeof(ntmix_pt_bin_edges) / sizeof(double)) - 1 ;
+
+	y_bin_edges = ntmix_y_bin_edges;
+	nybins = (sizeof(ntmix_y_bin_edges) / sizeof(double)) - 1 ;
 	break;
       case 6:
 	pt_bin_edges = ntlambda_pt_bin_edges;
 	nptbins = (sizeof(ntlambda_pt_bin_edges) / sizeof(double)) - 1 ;
+
+	y_bin_edges = ntlambda_y_bin_edges;
+	nybins = (sizeof(ntlambda_y_bin_edges) / sizeof(double)) - 1 ;
 	break;
       }
+
+      std::cout << "nybins: " << nybins << std::endl;
+      std::cout << "y_bin_edges[0]: " << y_bin_edges[0] << std::endl;
+      std::cout << "y_bin_edges[1]: " << y_bin_edges[1] << std::endl;
+
       double pt_bin_size[nptbins];
       double pt_bin_means[nptbins];
       double pt_bin_edges_Lo[nptbins];
       double pt_bin_edges_Hi[nptbins];
 
-      double yield_array[nptbins];
-      double errLo_array[nptbins];
-      double errHi_array[nptbins];
+      double yield_array[nybins][nptbins];
+      double errLo_array[nybins][nptbins];
+      double errHi_array[nybins][nptbins];
  
       double pt_bin_centres_eff[nptbins];
       double pt_bin_edges_eff_Lo[nptbins];
@@ -203,30 +240,43 @@ int main(int argc, char** argv)
       double effHi_array[nptbins];
 
       RooRealVar* pre_filter_eff;
- 
-      for(int i=0; i<nptbins; i++)
-	{
-	  std::cout << "processing subsample: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
-     
-	  pt_bin_size[i] = pt_bin_edges[i+1]-pt_bin_edges[i];
-     
-	  pt_bin_means[i] = pt_bin_mean(*ws,pt_bin_edges[i],pt_bin_edges[i+1]);
-	  pt_bin_edges_Lo[i] = pt_bin_means[i] - pt_bin_edges[i];
-	  pt_bin_edges_Hi[i] = pt_bin_edges[i+1] - pt_bin_means[i];
-     
-	  signal_res = bin_mass_fit(*ws,channel,pt_bin_edges[i],pt_bin_edges[i+1]);
-     
-	  yield_array[i] = (signal_res->getVal())/pt_bin_size[i];
-	  errLo_array[i] = -(signal_res->getAsymErrorLo())/pt_bin_size[i];
-	  errHi_array[i] = (signal_res->getAsymErrorHi())/pt_bin_size[i];
+      
+      for(int c=0; c<nybins; c++)
+	{ 
+	  std::cout << "processing subsample: " << y_bin_edges[c] << " < |y| < " << y_bin_edges[c+1] << std::endl;
+	  
+	  for(int i=0; i<nptbins; i++)
+	    {
+	      std::cout << "processing subsample: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
+	      
+	      pt_bin_size[i] = pt_bin_edges[i+1]-pt_bin_edges[i];
+	      std::cout << pt_bin_size[i] << std::endl;
+	      
+	      pt_bin_means[i] = pt_bin_mean(*ws,pt_bin_edges[i],pt_bin_edges[i+1]);
+	      pt_bin_edges_Lo[i] = pt_bin_means[i] - pt_bin_edges[i];
+	      pt_bin_edges_Hi[i] = pt_bin_edges[i+1] - pt_bin_means[i];
+
+	      std::cout << pt_bin_edges_Lo[i] << pt_bin_edges_Hi[i] << std::endl;
+	      
+	      signal_res = bin_mass_fit(*ws,channel,pt_bin_edges[i],pt_bin_edges[i+1], y_bin_edges[c], y_bin_edges[c+1]);
+	      
+	      yield_array[c][i] = (signal_res->getVal())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]));
+	      errLo_array[c][i] = -(signal_res->getAsymErrorLo())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]));
+	      errHi_array[c][i] = (signal_res->getAsymErrorHi())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]));
+	    }
 	}
 
       //to show the values of signal_yield and the errors at the end, like a table
-      for(int i=0; i<nptbins; i++)
+      for(int c=0; c<nybins; c++)
 	{
-	  std::cout << "BIN: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " <<  yield_array[i] << " +" << errHi_array[i] << " -"<< errLo_array[i] << std::endl;
+	  std::cout << "BIN y: " << y_bin_edges[c] << " to " << y_bin_edges[c+1] << " : " << std::endl;
+	  for(int i=0; i<nptbins; i++)
+	    {
+	      std::cout << "BIN pt: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " <<  yield_array[c][i] << " +" << errHi_array[c][i] << " -"<< errLo_array[c][i] << std::endl;
+	    }
+	  std::cout << std::endl;
 	}
- 
+
       if(calculate_efficiency)
 	{
 	  for(int i=0; i<nptbins; i++)
@@ -252,7 +302,7 @@ int main(int argc, char** argv)
 	  graph_eff->Draw("AP");
 	  ce.SaveAs("pre_filter_efficiency_err.png");
 	}
-
+      /*
       //plot of the signal_yield as a function of pt, in the future should be the x-sec corrected by efficiency and other factors
       TCanvas cz;
       TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array, pt_bin_edges_Lo, pt_bin_edges_Hi, errLo_array, errHi_array);
@@ -263,7 +313,7 @@ int main(int argc, char** argv)
       graph->Draw("p");
       cz.SetLogy();
       cz.SaveAs("signal_yield/signal_yield_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + ".png");
-
+      */
     }//end of else
 }//end of signal_yield_new
 
@@ -324,11 +374,14 @@ RooRealVar* pre_filter_efficiency(int channel, double pt_min, double pt_max)
   return eff1;
 }
 
-RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max)
+RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max)
 {
   RooRealVar pt = *(w.var("pt"));
   RooRealVar pt_low("pt_low","pt_low",pt_min);
   RooRealVar pt_high("pt_high","pt_high",pt_max);
+  RooRealVar y = *(w.var("y"));
+  RooRealVar y_low("y_low","y_low",y_min);
+  RooRealVar y_high("y_high","y_high",y_max);
   RooAbsData* data_original;
   RooAbsData* data_cut;
   RooWorkspace ws_cut;
@@ -338,9 +391,16 @@ RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_
   data_original = w.data("data");
   
   set_up_workspace_variables(ws_cut,channel);
-    
-  RooFormulaVar ptcut("pt_cut","pt>pt_low && pt<pt_high",RooArgList(pt,pt_low,pt_high));
-  data_cut = data_original->reduce(ptcut);
+   
+  std::cout << "y_low.getVal(): " << y_low.getVal() << std::endl;  
+  std::cout << "y_high.getVal(): " << y_high.getVal() << std::endl;  
+  std::cout << "y_min: " << y_min << std::endl;  
+  std::cout << "y_max: " << y_max << std::endl;  
+
+  RooFormulaVar cut("cut","pt>pt_low && pt<pt_high && ((y>y_low && y<y_high) || (y>-y_high && y<-y_low))",
+		    RooArgList(pt,pt_low,pt_high,y,y_low,y_high));
+  
+  data_cut = data_original->reduce(cut);
   read_data_cut(ws_cut,data_cut);
 
   build_pdf(ws_cut,channel);
@@ -351,7 +411,7 @@ RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_
   model_cut->fitTo(*data_cut,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
 
   TString dir = "";
-  dir = "pt_bin_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "mass_fit_" + TString::Format("pt_from_%d_to_%d",(int)pt_min,(int)pt_max);
+  dir = "pt_bin_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "mass_fit_" + TString::Format("pt_from_%d_to_%d_y_from_%lf_to_%lf",(int)pt_min,(int)pt_max,y_min,y_max);
   
   plot_mass_fit(ws_cut,channel,dir, (int) pt_min, (int) pt_max);
 
@@ -628,18 +688,18 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
   pull_plot->GetYaxis()->SetTitleOffset(1.14);
   pull_plot->GetYaxis()->SetTitleSize(0.06);
   pull_plot->GetYaxis()->SetTitleFont(42);
-TCanvas *c1 = canvasDressing("c1"); c1->cd();
+  TCanvas *c1 = canvasDressing("c1"); c1->cd();
   
   // TPad *p1 = new TPad("p1","p1",0,0,1,1);
   //p1->Draw();
    
   TPad *p1 = new TPad("p1","p1",0.05,0.27,0.99,0.99);
- // TPad *p1 = new TPad("p1","p1",0.05,0.05,0.99,0.99);
+  // TPad *p1 = new TPad("p1","p1",0.05,0.05,0.99,0.99);
   p1->SetBorderMode(0); 
   p1->Draw(); 
   
     
- TPad *p2 = new TPad("p2","p2",0.05,0.01,0.97,0.2); 
+  TPad *p2 = new TPad("p2","p2",0.05,0.01,0.97,0.2); 
   p2->SetTopMargin(0.);    
   p2->SetBorderMode(0); 
   p2->SetTicks(1,2); 
@@ -657,62 +717,62 @@ TCanvas *c1 = canvasDressing("c1"); c1->cd();
   double signal_yield = n_signal.getVal();
   double back_yield = n_back.getVal();
 
-TLatex* tex1 = new TLatex(0.2, 0.88, Form("#lambda_{exp} = %.3lf",lambda_exp));
-tex1->SetNDC(kTRUE);
-tex1->SetTextFont(42);
-tex1->SetTextSize(0.03);
-tex1->Draw();  
+  TLatex* tex1 = new TLatex(0.2, 0.88, Form("#lambda_{exp} = %.3lf",lambda_exp));
+  tex1->SetNDC(kTRUE);
+  tex1->SetTextFont(42);
+  tex1->SetTextSize(0.03);
+  tex1->Draw();  
 
-TLatex* tex2 = new TLatex(0.2, 0.84, Form("#mu_{gauss} = %.3lf",mean_gauss));
-tex2->SetNDC(kTRUE);
-tex2->SetTextFont(42);
-tex2->SetTextSize(0.03);
-tex2->Draw();  
+  TLatex* tex2 = new TLatex(0.2, 0.84, Form("#mu_{gauss} = %.3lf",mean_gauss));
+  tex2->SetNDC(kTRUE);
+  tex2->SetTextFont(42);
+  tex2->SetTextSize(0.03);
+  tex2->Draw();  
 
-TLatex* tex3 = new TLatex(0.2, 0.80, Form("#sigma_{gauss1} = %.3lf",sigma1_gauss));
-tex3->SetNDC(kTRUE);
-tex3->SetTextFont(42);
-tex3->SetTextSize(0.03);
-tex3->Draw();  
+  TLatex* tex3 = new TLatex(0.2, 0.80, Form("#sigma_{gauss1} = %.3lf",sigma1_gauss));
+  tex3->SetNDC(kTRUE);
+  tex3->SetTextFont(42);
+  tex3->SetTextSize(0.03);
+  tex3->Draw();  
 
-TLatex* tex4 = new TLatex(0.2, 0.76, Form("#sigma_{gauss2} = %.3lf",sigma2_gauss));
-tex4->SetNDC(kTRUE);
-tex4->SetTextFont(42);
-tex4->SetTextSize(0.03);
-if(data->sumEntries()>250){
-tex4->Draw();  
-}
+  TLatex* tex4 = new TLatex(0.2, 0.76, Form("#sigma_{gauss2} = %.3lf",sigma2_gauss));
+  tex4->SetNDC(kTRUE);
+  tex4->SetTextFont(42);
+  tex4->SetTextSize(0.03);
+  if(data->sumEntries()>250){
+    tex4->Draw();  
+  }
 
-TLatex* tex5 = new TLatex(0.2, 0.70, Form("Signal = %.0lf",signal_yield));
-tex5->SetNDC(kTRUE);
-tex5->SetTextFont(42);
-tex5->SetTextSize(0.03);
-tex5->Draw();  
+  TLatex* tex5 = new TLatex(0.2, 0.70, Form("Signal = %.0lf",signal_yield));
+  tex5->SetNDC(kTRUE);
+  tex5->SetTextFont(42);
+  tex5->SetTextSize(0.03);
+  tex5->Draw();  
 
-TLatex* tex6 = new TLatex(0.2, 0.66, Form("Background = %.0lf",back_yield));
-tex6->SetNDC(kTRUE);
-tex6->SetTextFont(42);
-tex6->SetTextSize(0.03);
-tex6->Draw();  
+  TLatex* tex6 = new TLatex(0.2, 0.66, Form("Background = %.0lf",back_yield));
+  tex6->SetNDC(kTRUE);
+  tex6->SetTextFont(42);
+  tex6->SetTextSize(0.03);
+  tex6->Draw();  
 
-TLatex* tex7 = new TLatex(0.2, 0.60, Form("lnL = %.3lf", log_likelihood));
-tex7->SetNDC(kTRUE);
-tex7->SetTextFont(42);
-tex7->SetTextSize(0.03);
-tex7->Draw();  
+  TLatex* tex7 = new TLatex(0.2, 0.60, Form("lnL = %.3lf", log_likelihood));
+  tex7->SetNDC(kTRUE);
+  tex7->SetTextFont(42);
+  tex7->SetTextSize(0.03);
+  tex7->Draw();  
 
-TLatex* tex8 = new TLatex(0.2, 0.56, Form("#chi^{2} = %.3lf", chis));
-tex8->SetNDC(kTRUE);
-tex8->SetTextFont(42);
-tex8->SetTextSize(0.03);
-tex8->Draw();  
+  TLatex* tex8 = new TLatex(0.2, 0.56, Form("#chi^{2} = %.3lf", chis));
+  tex8->SetNDC(kTRUE);
+  tex8->SetTextFont(42);
+  tex8->SetTextSize(0.03);
+  tex8->Draw();  
  
- p1->cd();
- frame_m->Draw();
- histo_data->Draw("Esame");
- Legend(channel,0,0,0);
- p2->cd();
- pull_plot->Draw();
+  p1->cd();
+  frame_m->Draw();
+  histo_data->Draw("Esame");
+  Legend(channel,0,0,0);
+  p2->cd();
+  pull_plot->Draw();
   
   c1->SaveAs(directory + ".root");
   c1->SaveAs(directory + ".png"); }
@@ -845,7 +905,7 @@ void read_data(RooWorkspace& w, TString filename,int channel)
   TFile* f = new TFile(filename);
   TNtupleD* _nt = (TNtupleD*)f->Get(channel_to_ntuple_name(channel));
  
-  RooDataSet* data = new RooDataSet("data","data",_nt,RooArgSet( *(w.var("mass")) , *(w.var("pt")) ));
+  RooDataSet* data = new RooDataSet("data","data",_nt,RooArgSet( *(w.var("mass")) , *(w.var("pt")) , *(w.var("y")) ));
   
   w.import(*data);
 }
@@ -859,9 +919,13 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
 {
   double mass_min, mass_max;
   double pt_min, pt_max;
+  double y_min, y_max;
 
   pt_min=0;
   pt_max=400;
+
+  y_min=-2.4;
+  y_max=2.4;
   
   switch (channel) {
   default: 
@@ -887,9 +951,11 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
 
   RooRealVar mass("mass","mass",mass_min,mass_max);
   RooRealVar pt("pt","pt",pt_min,pt_max);
+  RooRealVar y("y", "y", y_min, y_max);
 
   w.import(mass);
   w.import(pt);
+  w.import(y);
 }
 
 TString channel_to_ntuple_name(int channel)
