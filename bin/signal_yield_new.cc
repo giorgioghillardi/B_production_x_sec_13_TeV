@@ -262,9 +262,9 @@ int main(int argc, char** argv)
 	      
 	      signal_res = bin_mass_fit(*ws,channel,pt_bin_edges[i],pt_bin_edges[i+1], y_bin_edges[c], y_bin_edges[c+1]);
 	      
-	      yield_array[c][i] = (signal_res->getVal())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]));
-	      errLo_array[c][i] = -(signal_res->getAsymErrorLo())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]));
-	      errHi_array[c][i] = (signal_res->getAsymErrorHi())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]));
+	      yield_array[c][i] = (signal_res->getVal())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]))*pow(10,nybins-c);
+	      errLo_array[c][i] = -(signal_res->getAsymErrorLo())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]))*pow(10,nybins-c);
+	      errHi_array[c][i] = (signal_res->getAsymErrorHi())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]))*pow(10,nybins-c);
 	    }
 	}
 
@@ -304,18 +304,48 @@ int main(int argc, char** argv)
 	  graph_eff->Draw("AP");
 	  ce.SaveAs("pre_filter_efficiency_err.png");
 	}
-      /*
+      
       //plot of the signal_yield as a function of pt, in the future should be the x-sec corrected by efficiency and other factors
       TCanvas cz;
-      TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array, pt_bin_edges_Lo, pt_bin_edges_Hi, errLo_array, errHi_array);
+      TPad *pad = new TPad("pad", "pad", 0.05, 0.05, 0.99, 0.99);
+      //      pad->cd();
+      pad->Draw();
+
+      TH1D* empty = new TH1D("empty", "empty", nptbins, 0, 100);
+      empty->Draw("hist");
+      empty->SetMinimum(1);
+      empty->SetMaximum(4e6);
+
+      TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array[0], pt_bin_edges_Lo, pt_bin_edges_Hi, errLo_array[0], errHi_array[0]);
       graph->SetTitle("Raw signal yield in Pt bins");
-      graph->SetFillColor(2);
-      graph->SetFillStyle(3001);
-      graph->Draw("a2");
-      graph->Draw("p");
+      graph->SetMarkerColor(1);
+      graph->SetMarkerSize(0.5);
+      graph->SetMarkerStyle(20);
+      //      graph->SetFillColor(2);
+      //graph->SetFillStyle(3001);
+      //      graph->Draw("a");
+      graph->Draw("p same");/*
+      graph->GetYaxis()->SetMinimum(0.);
+      graph->GetYaxis()->SetMaximum(3000000.);
+			*/
+           
+      for(int i=1; i<nybins; i++)
+	{
+	  TGraphAsymmErrors* graph2 = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array[i], pt_bin_edges_Lo, pt_bin_edges_Hi, errLo_array[i], errHi_array[i]);
+	  graph2->SetTitle("Raw signal yield in Pt bins");
+	  graph2->SetMarkerColor(i+1);
+	  graph2->SetMarkerSize(0.5);
+	  graph2->SetMarkerStyle(20);
+	  //graph2->Draw("a2 same");
+	  graph2->Draw("p same");/*
+	  graph2->GetYaxis()->SetMinimum(0.);
+	  graph2->GetYaxis()->SetMaximum(3000000.);*/
+	}
+
+      cz.Update();
       cz.SetLogy();
       cz.SaveAs("signal_yield/signal_yield_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + ".png");
-      */
+      
     }//end of else
 }//end of signal_yield_new
 
