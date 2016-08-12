@@ -28,8 +28,8 @@
 #include "TMath.h"
 using namespace RooFit;
 
-#define MASS_MIN_2 5.0
-#define MASS_MAX_2 5.6
+#define MASS_MIN_2 4.75
+#define MASS_MAX_2 6.0
 
 
 //-----------------------------------------------------------------
@@ -290,9 +290,9 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
     }else
       if (channel==2) { // cuts for B0 -> J/psi K*
 	if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
-	if (br.vtxprob<=0.1) continue;//original cut 0.1
-	if (br.lxy/br.errxy<=3.0) continue;//original cut 3.0
-	if (br.cosalpha2d<=0.99) continue;//original cut 0.99
+	if (br.vtxprob<=0.2) continue;//original cut 0.1
+	if (br.lxy/br.errxy<=4.5) continue;//original cut 3.0
+	if (br.cosalpha2d<=0.996) continue;//original cut 0.99
 	if (fabs(br.tktkmass-KSTAR_MASS)>=0.05) continue;//original cut 0.05
             
 	v4_tk1.SetPtEtaPhiM(br.tk1pt,br.tk1eta,br.tk1phi,KAON_MASS);
