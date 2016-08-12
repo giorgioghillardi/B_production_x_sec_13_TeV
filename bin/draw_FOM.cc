@@ -135,6 +135,7 @@ int main(int argc, char** argv)
   double n_back[size];
   double signal_err[size];
   double back_err[size];
+  double likelihood[size];
 
   //int i=0;
   for(int i=0; i<size; i++)
@@ -156,7 +157,8 @@ int main(int argc, char** argv)
       RooFitResult* fit_res;
       RooRealVar* signal_res;
       RooRealVar* back_res;      
-      
+      RooRealVar* log_like;      
+
       /*TString pt_dist_directory="";
 	TString mass_fit_directory="";*/
       
@@ -177,12 +179,15 @@ int main(int argc, char** argv)
       
       signal_res = ws->var("n_signal");
       back_res = ws->var("n_combinatorial");      
+      log_like = (RooRealVar* ) model->createNLL(*data);
 
       std::cout <<"SIGNAL: "<< signal_res->getVal() << " " << signal_res->getAsymErrorLo() << " +" << signal_res->getAsymErrorHi() << std::endl;
       std::cout <<"BACKGROUND: "<< back_res->getVal() << " " << back_res->getAsymErrorLo() << " +" << back_res->getAsymErrorHi() << std::endl;
-      
+      std::cout <<"LOG LIKELIHOOD: "<< log_like->getVal() << std::endl;     
+
       n_signal[i]=signal_res->getVal();
       n_back[i]=back_res->getVal();
+      likelihood[i]=log_like->getVal();
 
       signal_err[i] = (signal_res->getAsymErrorHi()-signal_res->getAsymErrorLo())/2;
       back_err[i] = (back_res->getAsymErrorHi()-back_res->getAsymErrorLo())/2;
@@ -212,9 +217,9 @@ int main(int argc, char** argv)
 
   std::string caption = "Signal and Background Yields for different cuts in " + variable;
 
-  std::string title[7] = {variable+" cuts", "Signal" , "Signal Error", "Bakground", "Background Error", "FOM", "FOM Error"};
+  std::string title[8] = {variable+" cuts", "Signal" , "Signal Error", "Bakground", "Background Error", "FOM", "FOM Error", "Log Likelihood"};
 
-  double** number = new double* [6];
+  double** number = new double* [8];
 
   number[0]=cuts.data();
   number[1]=n_signal;
@@ -223,8 +228,9 @@ int main(int argc, char** argv)
   number[4]=back_err;
   number[5]=FOM;
   number[6]=FOM_err;
+  number[7]=likelihood;
 
-  latex_table("FOM/table_"+variable, 7, size+1, title, number, caption , 1);
+  latex_table("FOM/table_"+variable, 8, size+1, title, number, caption , 1);
 }//end of signal_yield_new
 
 
