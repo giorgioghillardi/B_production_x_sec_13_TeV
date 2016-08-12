@@ -24,9 +24,11 @@
 #include <RooExponential.h>
 #include <RooWorkspace.h>
 #include <RooAddPdf.h>
+#include <RooGenericPdf.h>
 #include <TGraphAsymmErrors.h>
 #include <TEfficiency.h>
 #include <RooPlot.h>
+#include <RooPlotable.h>
 #include "TMath.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/myloop.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/plotDressing.h"
@@ -505,7 +507,12 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high,
   RooHist* pull_hist = frame_m->pullHist("theData","thePdf");
   
   RooPlot* pull_plot = mass.frame();
+
+  RooGenericPdf* line_ref = new RooGenericPdf("ref_0", "ref_0", RooConst(0.));
+  line_ref->plotOn(pull_plot, LineStyle(7), LineColor(13), LineWidth(2));  
+
   pull_plot->addPlotable(static_cast<RooPlotable*>(pull_hist),"P");
+
   pull_plot->SetTitle("");
   pull_plot->GetXaxis()->SetTitle(channel_to_xaxis_title(channel));
   pull_plot->GetXaxis()->SetLabelFont(42);
@@ -537,7 +544,7 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high,
   p2->SetBorderMode(0); 
   p2->SetTicks(1,2); 
   p2->Draw();
-  
+//  p2->SetGridy(true);  
   RooAbsReal* nll = model->createNLL(*data);
   double log_likelihood= nll->getVal();
   std::stringstream ll_str;
@@ -672,6 +679,11 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
   RooHist* pull_hist = frame_m->pullHist("theData","thePdf");
   
   RooPlot* pull_plot = mass.frame();
+  
+  RooGenericPdf* line_ref = new RooGenericPdf("ref_0", "ref_0", RooConst(0.));
+  line_ref->plotOn(pull_plot, LineStyle(7), LineColor(13), LineWidth(2));  
+
+
   pull_plot->addPlotable(static_cast<RooPlotable*>(pull_hist),"P");
   pull_plot->SetTitle("");
   pull_plot->GetXaxis()->SetTitle(channel_to_xaxis_title(channel));
@@ -933,7 +945,7 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
     mass_min = 5.0; mass_max = 6.0;
     break;
   case 2:
-    mass_min = 4.75; mass_max = 6.0;
+    mass_min = 5.1; mass_max = 5.6;
     break;
   case 3:
     mass_min = 5.0; mass_max = 6.0;
