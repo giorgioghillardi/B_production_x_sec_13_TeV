@@ -137,7 +137,7 @@ int main(int argc, char** argv)
 	{
 	case 2:
 	  sideband_sub(*ws, 5.1, 5.4);
-    break;
+	  break;
 	case 4:
 	  sideband_sub(*ws, 5.25, 5.45);
 	  break;
