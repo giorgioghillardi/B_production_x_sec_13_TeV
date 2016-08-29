@@ -10,6 +10,7 @@
 #include <TPaveText.h>
 #include <TFile.h>
 #include <TTree.h>
+#include <TLegend.h>
 #include <TString.h>
 #include <TCanvas.h>
 #include <TNtupleD.h>
@@ -302,7 +303,12 @@ int main(int argc, char** argv)
 	  graph_eff->SetMarkerColor(4);
 	  graph_eff->SetMarkerStyle(21);
 	  graph_eff->Draw("AP");
+    
 	  ce.SaveAs("pre_filter_efficiency_err.png");
+
+
+
+
 	}
       
       //plot of the signal_yield as a function of pt, in the future should be the x-sec corrected by efficiency and other factors
@@ -311,10 +317,12 @@ int main(int argc, char** argv)
       //      pad->cd();
       pad->Draw();
 
-      TH1D* empty = new TH1D("empty", "empty", nptbins, 0, 100);
+      TH1D* empty = new TH1D("Raw Signal Yield in p_{T} Bins", "Raw Signal Yield in p_{T} Bins; p_{T} [GeV]; Signal Yield", nptbins, 0, 100);
       empty->Draw("hist");
       empty->SetMinimum(1);
-      empty->SetMaximum(4e6);
+      empty->SetMaximum(4e9);
+
+      TLegend *leg = new TLegend (0.65, 0.65, 0.85, 0.85);
 
       TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array[0], pt_bin_edges_Lo, pt_bin_edges_Hi, errLo_array[0], errHi_array[0]);
       graph->SetTitle("Raw signal yield in Pt bins");
@@ -328,6 +336,7 @@ int main(int argc, char** argv)
       graph->GetYaxis()->SetMinimum(0.);
       graph->GetYaxis()->SetMaximum(3000000.);
 			*/
+      leg->AddEntry(graph, "(#times 10^{3}) 0<|y|<0.5", "lp");
            
       for(int i=1; i<nybins; i++)
 	{
@@ -337,11 +346,23 @@ int main(int argc, char** argv)
 	  graph2->SetMarkerSize(0.5);
 	  graph2->SetMarkerStyle(20);
 	  //graph2->Draw("a2 same");
-	  graph2->Draw("p same");/*
-	  graph2->GetYaxis()->SetMinimum(0.);
+	  graph2->Draw("p same");
+
+    if(i==1)
+      leg->AddEntry(graph2,"(#times 10^{2}) 0.5<|y|<1", "lp");
+
+    if(i==2)
+      leg->AddEntry(graph2,"(#times 10) 1<|y|<1.5", "lp");
+
+    if(i==3)
+      leg->AddEntry(graph2," 1.5<|y|<2.25", "lp");
+
+
+/*    graph2->GetYaxis()->SetMinimum(0.);
 	  graph2->GetYaxis()->SetMaximum(3000000.);*/
 	}
 
+     leg->Draw("same");
       cz.Update();
       cz.SetLogy();
       cz.SaveAs("signal_yield/signal_yield_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + ".png");
