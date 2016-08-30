@@ -491,7 +491,7 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   RooRealVar lxy = *(w.var("lxy"));
   RooRealVar errlxy = *(w.var("errxy"));
   RooRealVar vtxprob = *(w.var("vtxprob"));
-  
+  RooRealVar lerrxy = *(w.var("lerrxy"));  
   //RooRealVar pt("pt","pt",0.,150.);
   RooRealVar mass = *(w.var("mass"));
   RooDataSet* data =(RooDataSet*) w.data("data");
@@ -868,6 +868,42 @@ void sideband_sub(RooWorkspace& w, double left, double right)
 
   c8.SetLogy();
   c8.SaveAs("errlxy_sideband_sub.png");
+
+
+  TH1D* lerrxy_dist_side = (TH1D*) reduceddata_side->createHistogram("lerrxy_dist_side",lerrxy);
+  lerrxy_dist_side->SetMarkerColor(kBlue);
+  lerrxy_dist_side->SetLineColor(kBlue);
+  lerrxy_dist_side->SetNameTitle("lerrxy_dist_side", "Signal and Background Distributions - l_{xy}/#sigma l_{xy} ");
+
+  TH1D* lerrxy_dist_peak = (TH1D*) reduceddata_central->createHistogram("lerrxy_dist_peak", lerrxy);
+  lerrxy_dist_peak->SetMarkerColor(kRed);
+  lerrxy_dist_peak->SetLineColor(kRed);
+  lerrxy_dist_peak->SetNameTitle("lerrxy_dist_peak", "Signal and Background Distributions - l_{xy}/#sigma l_{xy} ");
+
+  TH1D* lerrxy_dist_total = (TH1D*) data->createHistogram("lerrxy_dist_total",lerrxy);
+  lerrxy_dist_total->SetMarkerColor(kBlack);
+  lerrxy_dist_total->SetLineColor(kBlack);
+
+  lerrxy_dist_peak->Add(lerrxy_dist_side, -factor);
+  lerrxy_dist_side->Add(lerrxy_dist_side, factor);
+
+  TCanvas c9;
+
+  lerrxy_dist_total->Draw();
+  lerrxy_dist_side->Draw("same");
+  lerrxy_dist_peak->Draw("same");
+  lerrxy_dist_peak->SetXTitle("l_{xy}/#sigma l_{xy} ");
+  lerrxy_dist_side->SetXTitle("l_{xy}/#sigma l_{xy} ");
+  lerrxy_dist_total->SetXTitle("l_{xy}/#sigma l_{xy} ");
+
+  TLegend *leg9 = new TLegend (0.7, 0.5, 0.85, 0.65);
+  leg9->AddEntry("lerrxy_dist_total", "Total", "l");
+  leg9->AddEntry("lerrxy_dist_peak", "Signal", "l");
+  leg9->AddEntry("lerrxy_dist_side", "Background", "l");
+  leg9->Draw("same");
+
+  c9.SetLogy();
+  c9.SaveAs("lerrxy_sideband_sub.png");
 
 
 }
