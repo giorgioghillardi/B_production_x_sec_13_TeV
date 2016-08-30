@@ -179,10 +179,11 @@ void read_data(RooWorkspace& w, TString filename,int channel)
   TFile* f = new TFile(filename);
   TNtupleD* _nt = (TNtupleD*)f->Get(channel_to_ntuple_name(channel));
  
-  RooDataSet* data = new RooDataSet("data","data",_nt,RooArgSet( *(w.var("mass")) , *(w.var("pt")) , *(w.var("y")) , 
-								 *(w.var("mu1pt")) , *(w.var("mu2pt")) , 
-								 *(w.var("mu1eta")) , *(w.var("mu2eta")) , 
-								 *(w.var("lxy")) , *(w.var("errxy")) , *(w.var("vtxprob")) ));
+  RooArgSet arg_list(*(w.var("mass")) , *(w.var("pt")) , *(w.var("y")) , *(w.var("mu1pt")) , *(w.var("mu2pt")) , *(w.var("mu1eta")) , *(w.var("mu2eta")) , *(w.var("lxy")) , *(w.var("errxy")) );
+
+  arg_list.add(*(w.var("vtxprob")));
+
+  RooDataSet* data = new RooDataSet("data","data",_nt,arg_list);
   
   w.import(*data);
 }
