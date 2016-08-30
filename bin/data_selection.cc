@@ -530,9 +530,9 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   reduceddata_side->plotOn(massframe);
   fit_side.plotOn(massframe, Range("all"));
 
-  TCanvas c1;
+  TCanvas d;
   massframe->Draw();
-  c1.SaveAs("fit_side.png");
+  d.SaveAs("fit_side.png");
 
   std::cout << std::endl << "chisquare: " << massframe->chiSquare() << std::endl;
 //  std::cout << "LogLikelihood: " << nll->getVal() << std::endl;
