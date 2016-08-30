@@ -230,12 +230,12 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 
   TFile *fout = new TFile(data_selection_output_file,"recreate");
 
-  TNtupleD *_nt1 = new TNtupleD("ntkp","ntkp","mass:pt:eta:y");
-  TNtupleD *_nt2 = new TNtupleD("ntkstar","ntkstar","mass:pt:eta:y");
-  TNtupleD *_nt3 = new TNtupleD("ntks","ntks","mass:pt:eta:y");
-  TNtupleD *_nt4 = new TNtupleD("ntphi","ntphi","mass:pt:eta:y");
-  TNtupleD *_nt5 = new TNtupleD("ntmix","ntmix","mass:pt:eta:y");
-  TNtupleD *_nt6 = new TNtupleD("ntlambda","ntlambda","mass:pt:eta:y");
+  TNtupleD *_nt1 = new TNtupleD("ntkp","ntkp","mass:pt:eta:y:mu1pt:mu2pt:mu1eta:mu2eta:lxy:errxy:vtxprob");
+  TNtupleD *_nt2 = new TNtupleD("ntkstar","ntkstar","mass:pt:eta:y:mu1pt:mu2pt:mu1eta:mu2eta:lxy:errxy:vtxprob");
+  TNtupleD *_nt3 = new TNtupleD("ntks","ntks","mass:pt:eta:y:mu1pt:mu2pt:mu1eta:mu2eta:lxy:errxy:vtxprob");
+  TNtupleD *_nt4 = new TNtupleD("ntphi","ntphi","mass:pt:eta:y:mu1pt:mu2pt:mu1eta:mu2eta:lxy:errxy:vtxprob");
+  TNtupleD *_nt5 = new TNtupleD("ntmix","ntmix","mass:pt:eta:y:mu1pt:mu2pt:mu1eta:mu2eta:lxy:errxy:vtxprob");
+  TNtupleD *_nt6 = new TNtupleD("ntlambda","ntlambda","mass:pt:eta:y:mu1pt:mu2pt:mu1eta:mu2eta:lxy:errxy:vtxprob");
 
   /*
     switch (channel) {
@@ -285,7 +285,7 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
       if (br.lxy/br.errxy<=3.0) continue;//original cut 3.0
       if (br.cosalpha2d<=0.99) continue;//original cut 0.99
             
-      _nt1->Fill(br.mass,br.pt,br.eta,br.y);
+      _nt1->Fill(br.mass,br.pt,br.eta,br.y,br.mu1pt,br.mu2pt,br.mu1eta,br.mu2eta,br.lxy,br.errxy,br.vtxprob);
 	    
     }else
       if (channel==2) { // cuts for B0 -> J/psi K*
@@ -327,7 +327,9 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 	    }
                                  
 	    if (isBestKstarMass){
-	      _nt2->Fill(br_queue[i].mass,br_queue[i].pt,br_queue[i].eta,br_queue[i].y);
+	      _nt2->Fill(br_queue[i].mass,br_queue[i].pt,br_queue[i].eta,br_queue[i].y,
+			 br_queue[i].mu1pt,br_queue[i].mu2pt,br_queue[i].mu1eta,br_queue[i].mu2eta,
+			 br_queue[i].lxy,br_queue[i].errxy,br_queue[i].vtxprob);
 
 	    }
 
@@ -345,7 +347,7 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 	  if (br.cosalpha2d<=0.99) continue;//original cut 0.99
 	  if (fabs(br.tktkmass-KSHORT_MASS)>=0.015) continue;//original cut 0.015
                 
-	  _nt3->Fill(br.mass,br.pt,br.eta,br.y);
+	  _nt3->Fill(br.mass,br.pt,br.eta,br.y,br.mu1pt,br.mu2pt,br.mu1eta,br.mu2eta,br.lxy,br.errxy,br.vtxprob);
 
 	}else
 	  if (channel==4) { // cuts for Bs -> J/psi phi
@@ -362,7 +364,7 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 	    v4_tk2.SetPtEtaPhiM(br.tk2pt,br.tk2eta,br.tk2phi,KAON_MASS);
 	    if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=0.05) continue;
                 
-	    _nt4->Fill(br.mass,br.pt,br.eta,br.y);
+	    _nt4->Fill(br.mass,br.pt,br.eta,br.y,br.mu1pt,br.mu2pt,br.mu1eta,br.mu2eta,br.lxy,br.errxy,br.vtxprob);
 
 	  }else
 	    if (channel==5) { // cuts for psi(2S)/X(3872) -> J/psi pipi
@@ -370,7 +372,7 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 	      if (fabs(br.tk1eta)>=1.6) continue;//original cut 1.6
 	      if (fabs(br.tk2eta)>=1.6) continue;//original cut 1.6
             
-	      _nt5->Fill(br.mass,br.pt,br.eta,br.y);
+	      _nt5->Fill(br.mass,br.pt,br.eta,br.y,br.mu1pt,br.mu2pt,br.mu1eta,br.mu2eta,br.lxy,br.errxy,br.vtxprob);
 
 	    }else
 	      if (channel==6) {//cuts for lambda
@@ -385,7 +387,7 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 		v4_tk2.SetPtEtaPhiM(br.tk2pt,br.tk2eta,br.tk2phi,PION_MASS);
 		if (fabs((v4_tk1+v4_tk2).Mag()-KSHORT_MASS)<=0.015) continue;//original cut 0.015
             
-		_nt6->Fill(br.mass,br.pt,br.eta,br.y);
+		_nt6->Fill(br.mass,br.pt,br.eta,br.y,br.mu1pt,br.mu2pt,br.mu1eta,br.mu2eta,br.lxy,br.errxy,br.vtxprob);
 
 	      }
   }//end of the for for the events
@@ -443,10 +445,9 @@ void sideband_sub(RooWorkspace& w, double left, double right)
 
   reduceddata_central = (RooDataSet*) data->reduce(Form("mass>%lf",left));
   reduceddata_central = (RooDataSet*) reduceddata_central->reduce(Form("mass<%lf",right));
-  /*                                                                                                                                             
-																		 RooRealVar mean("mean", "mean", 0., 5.);                                                                                                    
-																		 RooRealVar sigma("sigma", "sigma", -1000., 1000.);                                                                                           
-  */
+  
+  /*RooRealVar mean("mean", "mean", 0., 5.);                                                                                                    
+    RooRealVar sigma("sigma", "sigma", -1000., 1000.);*/
 
   RooRealVar lambda("lambda", "lambda",-5., -20., 0.);
 
