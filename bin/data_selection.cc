@@ -430,6 +430,15 @@ void sideband_sub(RooWorkspace& w, double left, double right)
 
   //Create appropriate variables and data sets (the pt isn't imported from the RooWorkspace because its range will change)                      
   RooRealVar pt = *(w.var("pt"));                                                                                                            
+  RooRealVar y = *(w.var("y"));                                                                                                            
+  RooRealVar mu1pt = *(w.var("mu1pt"));
+  RooRealVar mu2pt = *(w.var("mu2pt"));
+  RooRealVar mu1eta = *(w.var("mu1eta"));
+  RooRealVar mu2eta = *(w.var("mu2eta"));
+  RooRealVar lxy = *(w.var("lxy"));
+  RooRealVar errlxy = *(w.var("errlxy"));
+  RooRealVar vtxprob = *(w.var("vtxprob"));
+  
   //RooRealVar pt("pt","pt",0.,150.);
   RooRealVar mass = *(w.var("mass"));
   RooDataSet* data =(RooDataSet*) w.data("data");
@@ -494,12 +503,12 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   TH1D* pt_dist_side = (TH1D*) reduceddata_side->createHistogram("pt_dist_side",pt);
   pt_dist_side->SetMarkerColor(kBlue);
   pt_dist_side->SetLineColor(kBlue);
-  pt_dist_side->SetNameTitle("pt_dist_side", "Signal and Background Distributions - pt ");
+  pt_dist_side->SetNameTitle("pt_dist_side", "Signal and Background Distributions - p_{T} (B) ");
 
   TH1D* pt_dist_peak = (TH1D*) reduceddata_central->createHistogram("pt_dist_peak", pt);
   pt_dist_peak->SetMarkerColor(kRed);
   pt_dist_peak->SetLineColor(kRed);
-  pt_dist_peak->SetNameTitle("pt_dist_peak", "Signal and Background Distributions - pt");
+  pt_dist_peak->SetNameTitle("pt_dist_peak", "Signal and Background Distributions - p_{T} (B)");
 
   TH1D* pt_dist_total = (TH1D*) data->createHistogram("pt_dist_total",pt);
   pt_dist_total->SetMarkerColor(kBlack);
@@ -513,9 +522,9 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   pt_dist_total->Draw();
   pt_dist_side->Draw("same");
   pt_dist_peak->Draw("same");
-  pt_dist_peak->SetXTitle("pt (GeV)");
-  pt_dist_side->SetXTitle("pt (GeV)");
-  pt_dist_total->SetXTitle("pt (GeV)");
+  pt_dist_peak->SetXTitle("p_{T} [GeV]");
+  pt_dist_side->SetXTitle("p_{T} [GeV]");
+  pt_dist_total->SetXTitle("p_{T} [GeV]");
 
   TLegend *leg = new TLegend (0.7, 0.5, 0.85, 0.65);
   leg->AddEntry("pt_dist_total", "Total", "l");
@@ -526,6 +535,286 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   c.SetLogy();
   c.SaveAs("pt_sideband_sub.png");
 
+
+  TH1D* mu1pt_dist_side = (TH1D*) reduceddata_side->createHistogram("mu1pt_dist_side",mu1pt);
+  mu1pt_dist_side->SetMarkerColor(kBlue);
+  mu1pt_dist_side->SetLineColor(kBlue);
+  mu1pt_dist_side->SetNameTitle("mu1pt_dist_side", "Signal and Background Distributions - p_{T} (#mu_{1}) ");
+
+  TH1D* mu1pt_dist_peak = (TH1D*) reduceddata_central->createHistogram("mu1pt_dist_peak", mu1pt);
+  mu1pt_dist_peak->SetMarkerColor(kRed);
+  mu1pt_dist_peak->SetLineColor(kRed);
+  mu1pt_dist_peak->SetNameTitle("mu1pt_dist_peak", "Signal and Background Distributions - p_{T} (#mu_{1})");
+
+  TH1D* mu1pt_dist_total = (TH1D*) data->createHistogram("mu1pt_dist_total",mu1pt);
+  mu1pt_dist_total->SetMarkerColor(kBlack);
+  mu1pt_dist_total->SetLineColor(kBlack);
+
+  mu1pt_dist_peak->Add(mu1pt_dist_side, -factor);
+  mu1pt_dist_side->Add(mu1pt_dist_side, factor);
+
+  TCanvas c1;
+
+  mu1pt_dist_total->Draw();
+  mu1pt_dist_side->Draw("same");
+  mu1pt_dist_peak->Draw("same");
+  mu1pt_dist_peak->SetXTitle("p_{T} [GeV]");
+  mu1pt_dist_side->SetXTitle("p_{T} [GeV]");
+  mu1pt_dist_total->SetXTitle("p_{T} [GeV]");
+
+  TLegend *leg1 = new TLegend (0.7, 0.5, 0.85, 0.65);
+  leg1->AddEntry("mu1pt_dist_total", "Total", "l");
+  leg1->AddEntry("mu1pt_dist_peak", "Signal", "l");
+  leg1->AddEntry("mu1pt_dist_side", "Background", "l");
+  leg1->Draw("same");
+
+  c1.SetLogy();
+  c1.SaveAs("mu1pt_sideband_sub.png");
+
+  TH1D* mu2pt_dist_side = (TH1D*) reduceddata_side->createHistogram("mu2pt_dist_side",mu2pt);
+  mu2pt_dist_side->SetMarkerColor(kBlue);
+  mu2pt_dist_side->SetLineColor(kBlue);
+  mu2pt_dist_side->SetNameTitle("mu2pt_dist_side", "Signal and Background Distributions - p_{T} (#mu_{2}) ");
+
+  TH1D* mu2pt_dist_peak = (TH1D*) reduceddata_central->createHistogram("mu2pt_dist_peak", mu2pt);
+  mu2pt_dist_peak->SetMarkerColor(kRed);
+  mu2pt_dist_peak->SetLineColor(kRed);
+  mu2pt_dist_peak->SetNameTitle("mu2pt_dist_peak", "Signal and Background Distributions - p_{T} (#mu_{2})");
+
+  TH1D* mu2pt_dist_total = (TH1D*) data->createHistogram("mu2pt_dist_total",mu2pt);
+  mu2pt_dist_total->SetMarkerColor(kBlack);
+  mu2pt_dist_total->SetLineColor(kBlack);
+
+  mu2pt_dist_peak->Add(mu2pt_dist_side, -factor);
+  mu2pt_dist_side->Add(mu2pt_dist_side, factor);
+
   TCanvas c2;
+
+  mu2pt_dist_total->Draw();
+  mu2pt_dist_side->Draw("same");
+  mu2pt_dist_peak->Draw("same");
+  mu2pt_dist_peak->SetXTitle("p_{T} [GeV]");
+  mu2pt_dist_side->SetXTitle("p_{T} [GeV]");
+  mu2pt_dist_total->SetXTitle("p_{T} [GeV]");
+
+  TLegend *leg2 = new TLegend (0.7, 0.5, 0.85, 0.65);
+  leg2->AddEntry("mu2pt_dist_total", "Total", "l");
+  leg2->AddEntry("mu2pt_dist_peak", "Signal", "l");
+  leg2->AddEntry("mu2pt_dist_side", "Background", "l");
+  leg2->Draw("same");
+
+  c2.SetLogy();
+  c2.SaveAs("mu2pt_sideband_sub.png");
+
+  TH1D* mu1eta_dist_side = (TH1D*) reduceddata_side->createHistogram("mu1eta_dist_side",mu1eta);
+  mu1eta_dist_side->SetMarkerColor(kBlue);
+  mu1eta_dist_side->SetLineColor(kBlue);
+  mu1eta_dist_side->SetNameTitle("mu1eta_dist_side", "Signal and Background Distributions - #eta (#mu_{1}) ");
+
+  TH1D* mu1eta_dist_peak = (TH1D*) reduceddata_central->createHistogram("mu1eta_dist_peak", mu1eta);
+  mu1eta_dist_peak->SetMarkerColor(kRed);
+  mu1eta_dist_peak->SetLineColor(kRed);
+  mu1eta_dist_peak->SetNameTitle("mu1eta_dist_peak", "Signal and Background Distributions - #eta (#mu_{1})");
+
+  TH1D* mu1eta_dist_total = (TH1D*) data->createHistogram("mu1eta_dist_total",mu1eta);
+  mu1eta_dist_total->SetMarkerColor(kBlack);
+  mu1eta_dist_total->SetLineColor(kBlack);
+
+  mu1eta_dist_peak->Add(mu1eta_dist_side, -factor);
+  mu1eta_dist_side->Add(mu1eta_dist_side, factor);
+
+  TCanvas c3;
+
+  mu1eta_dist_total->Draw();
+  mu1eta_dist_side->Draw("same");
+  mu1eta_dist_peak->Draw("same");
+  mu1eta_dist_peak->SetXTitle("#eta");
+  mu1eta_dist_side->SetXTitle("#eta");
+  mu1eta_dist_total->SetXTitle("#eta");
+
+  TLegend *leg3 = new TLegend (0.7, 0.5, 0.85, 0.65);
+  leg3->AddEntry("mu1eta_dist_total", "Total", "l");
+  leg3->AddEntry("mu1eta_dist_peak", "Signal", "l");
+  leg3->AddEntry("mu1eta_dist_side", "Background", "l");
+  leg3->Draw("same");
+
+  c3.SetLogy();
+  c3.SaveAs("mu1eta_sideband_sub.png");
+
+  TH1D* mu2eta_dist_side = (TH1D*) reduceddata_side->createHistogram("mu2eta_dist_side",mu2eta);
+  mu2eta_dist_side->SetMarkerColor(kBlue);
+  mu2eta_dist_side->SetLineColor(kBlue);
+  mu2eta_dist_side->SetNameTitle("mu2eta_dist_side", "Signal and Background Distributions - #eta (#mu_{2}) ");
+
+  TH1D* mu2eta_dist_peak = (TH1D*) reduceddata_central->createHistogram("mu2eta_dist_peak", mu2eta);
+  mu2eta_dist_peak->SetMarkerColor(kRed);
+  mu2eta_dist_peak->SetLineColor(kRed);
+  mu2eta_dist_peak->SetNameTitle("mu2eta_dist_peak", "Signal and Background Distributions - #eta (#mu_{2})");
+
+  TH1D* mu2eta_dist_total = (TH1D*) data->createHistogram("mu1eta_dist_total",mu2eta);
+  mu2eta_dist_total->SetMarkerColor(kBlack);
+  mu2eta_dist_total->SetLineColor(kBlack);
+
+  mu2eta_dist_peak->Add(mu2eta_dist_side, -factor);
+  mu2eta_dist_side->Add(mu2eta_dist_side, factor);
+
+  TCanvas c4;
+
+  mu2eta_dist_total->Draw();
+  mu2eta_dist_side->Draw("same");
+  mu2eta_dist_peak->Draw("same");
+  mu2eta_dist_peak->SetXTitle("#eta");
+  mu2eta_dist_side->SetXTitle("#eta");
+  mu2eta_dist_total->SetXTitle("#eta");
+
+  TLegend *leg4 = new TLegend (0.7, 0.5, 0.85, 0.65);
+  leg4->AddEntry("mu2eta_dist_total", "Total", "l");
+  leg4->AddEntry("mu2eta_dist_peak", "Signal", "l");
+  leg4->AddEntry("mu2eta_dist_side", "Background", "l");
+  leg4->Draw("same");
+
+  c4.SetLogy();
+  c4.SaveAs("mu2eta_sideband_sub.png");
+
+  TH1D* y_dist_side = (TH1D*) reduceddata_side->createHistogram("y_dist_side",y);
+  y_dist_side->SetMarkerColor(kBlue);
+  y_dist_side->SetLineColor(kBlue);
+  y_dist_side->SetNameTitle("y_dist_side", "Signal and Background Distributions - y (B) ");
+
+  TH1D* y_dist_peak = (TH1D*) reduceddata_central->createHistogram("y_dist_peak", y);
+  y_dist_peak->SetMarkerColor(kRed);
+  y_dist_peak->SetLineColor(kRed);
+  y_dist_peak->SetNameTitle("y_dist_peak", "Signal and Background Distributions - y (B)");
+
+  TH1D* y_dist_total = (TH1D*) data->createHistogram("y_dist_total",y);
+  y_dist_total->SetMarkerColor(kBlack);
+  y_dist_total->SetLineColor(kBlack);
+
+  y_dist_peak->Add(y_dist_side, -factor);
+  y_dist_side->Add(y_dist_side, factor);
+
+  TCanvas c5;
+
+  y_dist_total->Draw();
+  y_dist_side->Draw("same");
+  y_dist_peak->Draw("same");
+  y_dist_peak->SetXTitle("y");
+  y_dist_side->SetXTitle("y");
+  y_dist_total->SetXTitle("y");
+
+  TLegend *leg5 = new TLegend (0.7, 0.5, 0.85, 0.65);
+  leg5->AddEntry("y_dist_total", "Total", "l");
+  leg5->AddEntry("y_dist_peak", "Signal", "l");
+  leg5->AddEntry("y_dist_side", "Background", "l");
+  leg5->Draw("same");
+
+  c5.SetLogy();
+  c5.SaveAs("y_sideband_sub.png");
+
+  TH1D* vtxprob_dist_side = (TH1D*) reduceddata_side->createHistogram("vtxprob_dist_side",vtxprob);
+  vtxprob_dist_side->SetMarkerColor(kBlue);
+  vtxprob_dist_side->SetLineColor(kBlue);
+  vtxprob_dist_side->SetNameTitle("vtxprob_dist_side", "Signal and Background Distributions -  #chi^{2} prob ");
+
+  TH1D* vtxprob_dist_peak = (TH1D*) reduceddata_central->createHistogram("vtxprob_dist_peak", vtxprob);
+  vtxprob_dist_peak->SetMarkerColor(kRed);
+  vtxprob_dist_peak->SetLineColor(kRed);
+  vtxprob_dist_peak->SetNameTitle("vtxprob_dist_peak", "Signal and Background Distributions - #chi^{2} prob");
+
+  TH1D* vtxprob_dist_total = (TH1D*) data->createHistogram("vtxprob_dist_total",vtxprob);
+  vtxprob_dist_total->SetMarkerColor(kBlack);
+  vtxprob_dist_total->SetLineColor(kBlack);
+
+  vtxprob_dist_peak->Add(vtxprob_dist_side, -factor);
+  vtxprob_dist_side->Add(vtxprob_dist_side, factor);
+
+  TCanvas c6;
+
+  vtxprob_dist_total->Draw();
+  vtxprob_dist_side->Draw("same");
+  vtxprob_dist_peak->Draw("same");
+  vtxprob_dist_peak->SetXTitle("#chi^{2} prob");
+  vtxprob_dist_side->SetXTitle("#chi^{2} prob");
+  vtxprob_dist_total->SetXTitle("#chi^{2} prob");
+
+  TLegend *leg6 = new TLegend (0.7, 0.5, 0.85, 0.65);
+  leg6->AddEntry("vtxprob_dist_total", "Total", "l");
+  leg6->AddEntry("vtxprob_dist_peak", "Signal", "l");
+  leg6->AddEntry("vtxprob_dist_side", "Background", "l");
+  leg6->Draw("same");
+
+  c6.SetLogy();
+  c6.SaveAs("vtxprob_sideband_sub.png");
+   
+  TH1D* lxy_dist_side = (TH1D*) reduceddata_side->createHistogram("lxy_dist_side",lxy);
+  lxy_dist_side->SetMarkerColor(kBlue);
+  lxy_dist_side->SetLineColor(kBlue);
+  lxy_dist_side->SetNameTitle("lxy_dist_side", "Signal and Background Distributions -  l_{xy} ");
+
+  TH1D* lxy_dist_peak = (TH1D*) reduceddata_central->createHistogram("lxy_dist_peak", lxy);
+  lxy_dist_peak->SetMarkerColor(kRed);
+  lxy_dist_peak->SetLineColor(kRed);
+  lxy_dist_peak->SetNameTitle("lxy_dist_peak", "Signal and Background Distributions - l_{xy} ");
+
+  TH1D* lxy_dist_total = (TH1D*) data->createHistogram("lxy_dist_total",lxy);
+  lxy_dist_total->SetMarkerColor(kBlack);
+  lxy_dist_total->SetLineColor(kBlack);
+
+  lxy_dist_peak->Add(lxy_dist_side, -factor);
+  lxy_dist_side->Add(lxy_dist_side, factor);
+
+  TCanvas c7;
+
+  lxy_dist_total->Draw();
+  lxy_dist_side->Draw("same");
+  lxy_dist_peak->Draw("same");
+  lxy_dist_peak->SetXTitle("l_{xy} [cm]");
+  lxy_dist_side->SetXTitle("l_{xy} [cm]");
+  lxy_dist_total->SetXTitle("l_{xy} [cm]");
+
+  TLegend *leg7 = new TLegend (0.7, 0.5, 0.85, 0.65);
+  leg7->AddEntry("lxy_dist_total", "Total", "l");
+  leg7->AddEntry("lxy_dist_peak", "Signal", "l");
+  leg7->AddEntry("lxy_dist_side", "Background", "l");
+  leg7->Draw("same");
+
+  c7.SetLogy();
+  c7.SaveAs("lxy_sideband_sub.png");
+
+  TH1D* errlxy_dist_side = (TH1D*) reduceddata_side->createHistogram("errlxy_dist_side",errlxy);
+  errlxy_dist_side->SetMarkerColor(kBlue);
+  errlxy_dist_side->SetLineColor(kBlue);
+  errlxy_dist_side->SetNameTitle("errlxy_dist_side", "Signal and Background Distributions - #sigma l_{xy} ");
+
+  TH1D* errlxy_dist_peak = (TH1D*) reduceddata_central->createHistogram("errlxy_dist_peak", errlxy);
+  errlxy_dist_peak->SetMarkerColor(kRed);
+  errlxy_dist_peak->SetLineColor(kRed);
+  errlxy_dist_peak->SetNameTitle("errlxy_dist_peak", "Signal and Background Distributions - #sigma l_{xy} ");
+
+  TH1D* errlxy_dist_total = (TH1D*) data->createHistogram("errlxy_dist_total",errlxy);
+  errlxy_dist_total->SetMarkerColor(kBlack);
+  errlxy_dist_total->SetLineColor(kBlack);
+
+  errlxy_dist_peak->Add(errlxy_dist_side, -factor);
+  errlxy_dist_side->Add(errlxy_dist_side, factor);
+
+  TCanvas c8;
+
+  errlxy_dist_total->Draw();
+  errlxy_dist_side->Draw("same");
+  errlxy_dist_peak->Draw("same");
+  errlxy_dist_peak->SetXTitle("#sigma l_{xy} [cm]");
+  errlxy_dist_side->SetXTitle("#sigma l_{xy} [cm]");
+  errlxy_dist_total->SetXTitle("#sigma l_{xy} [cm]");
+
+  TLegend *leg8 = new TLegend (0.7, 0.5, 0.85, 0.65);
+  leg8->AddEntry("errlxy_dist_total", "Total", "l");
+  leg8->AddEntry("errlxy_dist_peak", "Signal", "l");
+  leg8->AddEntry("errlxy_dist_side", "Background", "l");
+  leg8->Draw("same");
+
+  c8.SetLogy();
+  c8.SaveAs("errlxy_sideband_sub.png");
+
 
 }
