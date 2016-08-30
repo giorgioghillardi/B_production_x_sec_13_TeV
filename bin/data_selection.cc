@@ -215,14 +215,14 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
   mu1pt_min=0;
   mu1pt_max=80;
 
-  mu1pt_min=0;
-  mu1pt_max=90;
+  mu2pt_min=0;
+  mu2pt_max=90;
 
   mu1eta_min=-3;
   mu1eta_max=3;
 
-  mu1eta_min=-3;
-  mu1eta_max=3;
+  mu2eta_min=-3;
+  mu2eta_max=3;
 
   lxy_min=0;
   lxy_max=3.5;
