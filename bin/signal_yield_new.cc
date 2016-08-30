@@ -1,4 +1,3 @@
-#include <RooPlotable.h>
 #include <RooHist.h>
 #include <TSystem.h>
 #include <sstream>
@@ -30,6 +29,8 @@
 #include <TEfficiency.h>
 #include <RooPlot.h>
 #include <RooPlotable.h>
+#include <RooThresholdCategory.h>
+#include <Roo1DTable.h>
 #include "TMath.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/myloop.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/plotDressing.h"
@@ -116,7 +117,7 @@ int main(int argc, char** argv)
   double ntkp_pt_bin_edges[]={10,20,30,40,50,60,70,80,90,100,120,150};
   double ntkstar_pt_bin_edges[]={15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 72, 80, 90, 100};
   double ntks_pt_bin_edges[]={10,20,30,40,50,60,70};
-  double ntphi_pt_bin_edges[]={10,15,20,25,30,35,40,45,50,55,60,70,90};
+  double ntphi_pt_bin_edges[]={9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90};
   double ntmix_pt_bin_edges[]={0};
   double ntlambda_pt_bin_edges[]={0};
   double* pt_bin_edges;
@@ -247,7 +248,24 @@ int main(int argc, char** argv)
       for(int c=0; c<nybins; c++)
 	{ 
 	  std::cout << "processing subsample: " << y_bin_edges[c] << " < |y| < " << y_bin_edges[c+1] << std::endl;
+
+	  /*	  RooDataSet* data_original  = new RooDataSet("data_original", "data_original", *(ws->data("data")->get()),Import( *(dynamic_cast<RooDataSet *>(ws->data("data"))) ));
+  
+	  RooRealVar pt = *(ws->var("pt"));
+	  RooThresholdCategory ptRegion("ptRegion", "region of pt", pt);
+	  ptRegion.addThreshold(*(pt_bin_edges),"below 1st bin");
 	  
+	  for(int i=0; i<nptbins; i++)
+	    {
+	      TString reg = TString::Format("PtBin%d",i+1);
+	      ptRegion.addThreshold(*(pt_bin_edges+i+1),reg);
+	    }
+	  data_original->addColumn(ptRegion);
+	  
+	  Roo1DTable * tab = data_original->table(ptRegion);
+	  tab->Print("v");
+	  delete tab;
+	  */
 	  for(int i=0; i<nptbins; i++)
 	    {
 	      std::cout << "processing subsample: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
@@ -305,10 +323,6 @@ int main(int argc, char** argv)
 	  graph_eff->Draw("AP");
     
 	  ce.SaveAs("pre_filter_efficiency_err.png");
-
-
-
-
 	}
       
       //plot of the signal_yield as a function of pt, in the future should be the x-sec corrected by efficiency and other factors
@@ -320,7 +334,7 @@ int main(int argc, char** argv)
       TH1D* empty = new TH1D("Raw Signal Yield in p_{T} Bins", "Raw Signal Yield in p_{T} Bins; p_{T} [GeV]; Signal Yield", nptbins, 0, 100);
       empty->Draw("hist");
       empty->SetMinimum(1);
-      empty->SetMaximum(4e9);
+      empty->SetMaximum(4e8);
 
       TLegend *leg = new TLegend (0.65, 0.65, 0.85, 0.85);
 
@@ -348,21 +362,21 @@ int main(int argc, char** argv)
 	  //graph2->Draw("a2 same");
 	  graph2->Draw("p same");
 
-    if(i==1)
-      leg->AddEntry(graph2,"(#times 10^{2}) 0.5<|y|<1", "lp");
+	  if(i==1)
+	    leg->AddEntry(graph2,"(#times 10^{2}) 0.5<|y|<1", "lp");
 
-    if(i==2)
-      leg->AddEntry(graph2,"(#times 10) 1<|y|<1.5", "lp");
+	  if(i==2)
+	    leg->AddEntry(graph2,"(#times 10) 1<|y|<1.5", "lp");
 
-    if(i==3)
-      leg->AddEntry(graph2," 1.5<|y|<2.25", "lp");
+	  if(i==3)
+	    leg->AddEntry(graph2," 1.5<|y|<2.25", "lp");
 
 
-/*    graph2->GetYaxis()->SetMinimum(0.);
-	  graph2->GetYaxis()->SetMaximum(3000000.);*/
+	  /*    graph2->GetYaxis()->SetMinimum(0.);
+		graph2->GetYaxis()->SetMaximum(3000000.);*/
 	}
 
-     leg->Draw("same");
+      leg->Draw("same");
       cz.Update();
       cz.SetLogy();
       cz.SaveAs("signal_yield/signal_yield_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + ".png");
