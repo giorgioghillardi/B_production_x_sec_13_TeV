@@ -28,8 +28,8 @@
 #include "TMath.h"
 using namespace RooFit;
 
-#define MASS_MIN_2 4.75
-#define MASS_MAX_2 6.0
+#define MASS_MIN_2 5.0
+#define MASS_MAX_2 5.6
 
 
 //-----------------------------------------------------------------
