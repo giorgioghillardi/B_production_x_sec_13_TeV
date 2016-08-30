@@ -193,10 +193,42 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
 {
   double mass_min, mass_max;
   double pt_min, pt_max;
+  double y_min, y_max;
+  double mu1pt_min, mu1pt_max;
+  double mu2pt_min, mu2pt_max;
+  double mu1eta_min, mu1eta_max;
+  double mu2eta_min, mu2eta_max;
+  double lxy_min, lxy_max;
+  double errxy_min, errxy_max;
+  double vtxprob_min, vtxprob_max;
 
   pt_min=0;
   pt_max=400;
   
+  y_min=-3;
+  y_max=3;
+
+  mu1pt_min=0;
+  mu1pt_max=80;
+
+  mu1pt_min=0;
+  mu1pt_max=90;
+
+  mu1eta_min=-3;
+  mu1eta_max=3;
+
+  mu1eta_min=-3;
+  mu1eta_max=3;
+
+  lxy_min=0;
+  lxy_max=3.5;
+
+  errxy_min=0;
+  errxy_max=0.05;
+
+  vtxprob_min=0;
+  vtxprob_max=1;
+
   switch (channel) {
   default:
   case 1:
@@ -221,9 +253,26 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
 
   RooRealVar mass("mass","mass",mass_min,mass_max);
   RooRealVar pt("pt","pt",pt_min,pt_max);
+  RooRealVar y("y","y",y_min,y_max);
+  RooRealVar mu1pt("mu1pt","mu1pt",mu1pt_min,mu1pt_max);
+  RooRealVar mu2pt("mu2pt","mu2pt",mu2pt_min,mu2pt_max);
+  RooRealVar mu1eta("mu1eta","mu1eta",mu1eta_min,mu1eta_max);
+  RooRealVar mu2eta("mu2eta","mu2eta",mu2eta_min,mu2eta_max);
+  RooRealVar lxy("lxy","lxy",lxy_min,lxy_max);
+  RooRealVar errxy("errxy","errxy",errxy_min,errxy_max);
+  RooRealVar vtxprob("vtxprob","vtxprob",vtxprob_min,vtxprob_max);
 
   w.import(mass);
   w.import(pt);
+  w.import(y);
+  w.import(mu1pt);
+  w.import(mu2pt);
+  w.import(mu1eta);
+  w.import(mu2eta);
+  w.import(lxy);
+  w.import(errxy);
+  w.import(vtxprob);
+
 }
 
 void data_selection(TString fin1, TString data_selection_output_file,int channel){
