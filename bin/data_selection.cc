@@ -182,6 +182,7 @@ void read_data(RooWorkspace& w, TString filename,int channel)
   RooArgSet arg_list(*(w.var("mass")) , *(w.var("pt")) , *(w.var("y")) , *(w.var("mu1pt")) , *(w.var("mu2pt")) , *(w.var("mu1eta")) , *(w.var("mu2eta")) , *(w.var("lxy")) , *(w.var("errxy")) );
 
   arg_list.add(*(w.var("vtxprob")));
+  arg_list.add(*(w.var("lerrxy")));
 
   RooDataSet* data = new RooDataSet("data","data",_nt,arg_list);
   
@@ -205,6 +206,7 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
   double lxy_min, lxy_max;
   double errxy_min, errxy_max;
   double vtxprob_min, vtxprob_max;
+  double lerrxy_min, lerrxy_max;
 
   pt_min=0;
   pt_max=400;
@@ -232,6 +234,9 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
 
   vtxprob_min=0;
   vtxprob_max=1;
+
+  lerrxy_min=0;
+  lerrxy_max=42;
 
   switch (channel) {
   default:
@@ -265,6 +270,7 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
   RooRealVar lxy("lxy","lxy",lxy_min,lxy_max);
   RooRealVar errxy("errxy","errxy",errxy_min,errxy_max);
   RooRealVar vtxprob("vtxprob","vtxprob",vtxprob_min,vtxprob_max);
+  RooRealVar lerrxy("lerrxy","lerrxy",lerrxy_min,lerrxy_max),
 
   w.import(mass);
   w.import(pt);
@@ -276,7 +282,7 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
   w.import(lxy);
   w.import(errxy);
   w.import(vtxprob);
-
+  w.import(lerrxy);
 }
 
 void data_selection(TString fin1, TString data_selection_output_file,int channel){
