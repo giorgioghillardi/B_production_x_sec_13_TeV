@@ -176,6 +176,8 @@ void plot_mass_dist(RooWorkspace& w, int channel, TString directory)
 
 void read_data(RooWorkspace& w, TString filename,int channel)
 {
+  std::cout<<std::endl<<"READ_DATA!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
+
   TFile* f = new TFile(filename);
   TNtupleD* _nt = (TNtupleD*)f->Get(channel_to_ntuple_name(channel));
  
@@ -196,6 +198,7 @@ void read_data_cut(RooWorkspace& w, RooDataSet* data)
 
 void set_up_workspace_variables(RooWorkspace& w, int channel)
 {
+  std::cout<<std::endl<<"SET_UP_WORKSPACE_VARIABLES!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
   double mass_min, mass_max;
   double pt_min, pt_max;
   double y_min, y_max;
@@ -270,7 +273,7 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
   RooRealVar lxy("lxy","lxy",lxy_min,lxy_max);
   RooRealVar errxy("errxy","errxy",errxy_min,errxy_max);
   RooRealVar vtxprob("vtxprob","vtxprob",vtxprob_min,vtxprob_max);
-  RooRealVar lerrxy("lerrxy","lerrxy",lerrxy_min,lerrxy_max),
+  RooRealVar lerrxy("lerrxy","lerrxy",lerrxy_min,lerrxy_max);
 
   w.import(mass);
   w.import(pt);
@@ -285,8 +288,9 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
   w.import(lerrxy);
 }
 
-void data_selection(TString fin1, TString data_selection_output_file,int channel){
-
+void data_selection(TString fin1, TString data_selection_output_file,int channel)
+{
+  std::cout<<std::endl<<"DATA_SELECTION!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
   TFile *fout = new TFile(data_selection_output_file,"recreate");
 
   TNtupleD *_nt1 = new TNtupleD("ntkp","ntkp","mass:pt:eta:y:mu1pt:mu2pt:mu1eta:mu2eta:lxy:errxy:vtxprob:lerrxy");
@@ -486,7 +490,7 @@ TString channel_to_ntuple_name(int channel)
 
 void sideband_sub(RooWorkspace& w, double left, double right)
 {
-
+  std::cout<<std::endl<<"SIDEBAND_SUB!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
   //Create appropriate variables and data sets (the pt isn't imported from the RooWorkspace because its range will change)                      
   RooRealVar pt = *(w.var("pt"));                                                                                                            
   RooRealVar y = *(w.var("y"));                                                                                                            
