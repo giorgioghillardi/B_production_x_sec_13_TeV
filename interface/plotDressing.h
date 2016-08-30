@@ -60,7 +60,7 @@ void Legend(int channel, int pt_low, int pt_high, bool pt_bins_flag)
   pt->SetFillStyle(0);
   pt->SetTextFont(42);
   pt->Draw();
-  TLatex * tex = new TLatex(x_pos,y_pos_s,"#surds = 13 TeV");
+  TLatex * tex = new TLatex(0.7,y_pos_s,"2.71 fb^{-1} (13 TeV)");
   tex->SetNDC(kTRUE);
   tex->SetLineWidth(2);
   tex->Draw();
