@@ -217,7 +217,7 @@ int main(int argc, char** argv)
 
   std::string caption = "Signal and Background Yields for different cuts in " + variable;
 
-  std::string title[8] = {variable+" cuts", "Signal" , "Signal Error", "Bakground", "Background Error", "FOM", "FOM Error", "Log Likelihood"};
+  std::string title[8] = {variable+" cuts", "Signal" , "Signal Error", "Background", "Background Error", "FOM", "FOM Error", "Log Likelihood"};
 
   double** number = new double* [8];
 
@@ -229,6 +229,8 @@ int main(int argc, char** argv)
   number[5]=FOM;
   number[6]=FOM_err;
   number[7]=likelihood;
+
+  if(variable=="lxy") variable="lxy/errxy";
 
   latex_table("FOM/table_"+variable, 8, size+1, title, number, caption , 1);
 }//end of signal_yield_new
