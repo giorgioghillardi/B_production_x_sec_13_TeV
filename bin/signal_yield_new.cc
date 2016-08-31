@@ -481,7 +481,7 @@ RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_
   TString dir = "";
   dir = "pt_bin_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "mass_fit_" + TString::Format("pt_from_%d_to_%d_y_from_%lf_to_%lf",(int)pt_min,(int)pt_max,y_min,y_max);
   
-  plot_mass_fit(ws_cut,channel,dir, (int) pt_min, (int) pt_max);
+  plot_mass_fit(ws_cut,channel,dir, (int) pt_max, (int) pt_min);
 
   //how to put the legend indicating each pt bin ??
   //change the plot_mass_fit to output a TCanvas, and write the legend on top after, and then have a function just to save the plots.
