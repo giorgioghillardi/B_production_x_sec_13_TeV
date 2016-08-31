@@ -157,6 +157,7 @@ int main(int argc, char** argv)
   
   if(!yield_sub_samples) //mass fit and plot the full dataset
     { 
+      
       //build the pdf for the channel selected above, it uses the dataset which is saved in ws. need to change the dataset to change the pdf.
       build_pdf(*ws,channel);     
       
@@ -166,7 +167,7 @@ int main(int argc, char** argv)
       model->fitTo(*data,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
 
       signal_res = ws->var("n_signal");
-      
+  
       std::cout <<"SIGNAL: "<< signal_res->getVal() << " " << signal_res->getAsymErrorLo() << " +" << signal_res->getAsymErrorHi() << std::endl;
       
       mass_fit_directory = "full_dataset_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION);
@@ -552,18 +553,18 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high,
     model->plotOn(frame_m,Precision(2E-4),Components("pdf_m_x3872"),LineColor(kOrange),LineWidth(2),LineStyle(kSolid),FillStyle(3008),FillColor(kOrange), VLines(), DrawOption("F"));
   
   frame_m->SetTitle("");
-  frame_m->GetXaxis()->SetTitle(channel_to_xaxis_title(channel));
-  frame_m->GetXaxis()->SetLabelFont(42);
-  frame_m->GetXaxis()->SetLabelOffset(0.01);
-  frame_m->GetXaxis()->SetTitleSize(0.06);
-  frame_m->GetXaxis()->SetTitleOffset(1.09);
-  frame_m->GetXaxis()->SetLabelFont(42);
-  frame_m->GetXaxis()->SetLabelSize(0.055);
-  frame_m->GetXaxis()->SetTitleFont(42);
+  //frame_m->GetXaxis()->SetTitle(channel_to_xaxis_title(channel));
+  //frame_m->GetXaxis()->SetLabelFont(42);
+  //frame_m->GetXaxis()->SetLabelOffset(0.01);
+  //frame_m->GetXaxis()->SetTitleSize(0.06);
+  //frame_m->GetXaxis()->SetTitleOffset(1.09);
+  //frame_m->GetXaxis()->SetLabelFont(42);
+  //frame_m->GetXaxis()->SetLabelSize(0.055);
+  //frame_m->GetXaxis()->SetTitleFont(42);
   frame_m->GetYaxis()->SetTitle(TString::Format("Events / %g MeV",(mass.getMax()-mass.getMin())*1000./channel_to_nbins(channel)));
   frame_m->GetYaxis()->SetLabelFont(42);
   frame_m->GetYaxis()->SetLabelOffset(0.01);
-  frame_m->GetYaxis()->SetTitleOffset(1.6);
+  frame_m->GetYaxis()->SetTitleOffset(0.8);
   frame_m->GetYaxis()->SetTitleSize(0.05);
   frame_m->GetYaxis()->SetTitleFont(42);
   frame_m->GetYaxis()->SetLabelFont(42);
@@ -572,27 +573,30 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high,
   RooHist* pull_hist = frame_m->pullHist("theData","thePdf");
   
   RooPlot* pull_plot = mass.frame();
-
+  
   RooGenericPdf* line_ref = new RooGenericPdf("ref_0", "ref_0", RooConst(0.));
   line_ref->plotOn(pull_plot, LineStyle(7), LineColor(13), LineWidth(2));  
 
-  pull_plot->addPlotable(static_cast<RooPlotable*>(pull_hist),"P");
 
+  pull_plot->addPlotable(static_cast<RooPlotable*>(pull_hist),"P");
   pull_plot->SetTitle("");
   pull_plot->GetXaxis()->SetTitle(channel_to_xaxis_title(channel));
   pull_plot->GetXaxis()->SetLabelFont(42);
   pull_plot->GetXaxis()->SetLabelOffset(0.01);
-  pull_plot->GetXaxis()->SetTitleSize(0.06);
+  pull_plot->GetXaxis()->SetTitleSize(0.17);
   pull_plot->GetXaxis()->SetTitleOffset(1.09);
   pull_plot->GetXaxis()->SetLabelFont(42);
-  pull_plot->GetXaxis()->SetLabelSize(0.055);
+  pull_plot->GetXaxis()->SetLabelSize(0.17);
   pull_plot->GetXaxis()->SetTitleFont(42);
-  pull_plot->GetYaxis()->SetTitle(TString::Format("Events / %g MeV",(mass.getMax()-mass.getMin())*1000./channel_to_nbins(channel)));
+  pull_plot->GetXaxis()->SetTickLength(0.15);
+  //  pull_plot->GetYaxis()->SetTitle(TString::Format("Events / %g MeV",(mass.getMax()-mass.getMin())*1000./channel_to_nbins(channel)));
   pull_plot->GetYaxis()->SetLabelFont(42);
   pull_plot->GetYaxis()->SetLabelOffset(0.01);
-  pull_plot->GetYaxis()->SetTitleOffset(1.14);
-  pull_plot->GetYaxis()->SetTitleSize(0.06);
+  pull_plot->GetYaxis()->SetLabelSize(0.17);
+  pull_plot->GetYaxis()->SetTitleOffset(1.6);
+  pull_plot->GetYaxis()->SetTitleSize(0.17);
   pull_plot->GetYaxis()->SetTitleFont(42);
+  pull_plot->GetYaxis()->SetNdivisions(305);
   TCanvas *c1 = canvasDressing("c1"); c1->cd();
   
   // TPad *p1 = new TPad("p1","p1",0,0,1,1);
@@ -601,13 +605,18 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high,
   TPad *p1 = new TPad("p1","p1",0.05,0.27,0.99,0.99);
   // TPad *p1 = new TPad("p1","p1",0.05,0.05,0.99,0.99);
   p1->SetBorderMode(0); 
+  p1->SetFrameBorderMode(0); 
+  p1->SetBorderSize(2);
+  p1->SetBottomMargin(0.0);
   p1->Draw(); 
   
     
-  TPad *p2 = new TPad("p2","p2",0.05,0.01,0.97,0.2); 
+  TPad *p2 = new TPad("p2","p2",0.05,0.075,0.99,0.27); 
   p2->SetTopMargin(0.);    
-  p2->SetBorderMode(0); 
-  p2->SetTicks(1,2); 
+  p2->SetBorderMode(0);
+  p2->SetBorderSize(2); 
+  p2->SetFrameBorderMode(0); 
+  //p2->SetTicks(1,2); 
   p2->Draw();
 //  p2->SetGridy(true);  
   RooAbsReal* nll = model->createNLL(*data);
@@ -616,31 +625,37 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high,
   ll_str >> log_likelihood;
   double chis = frame_m->chiSquare();
   double lambda_exp = lambda.getVal();
+  double lambda_exp_err = lambda.getError();
   double mean_gauss = mean.getVal();
+  double mean_gauss_err = mean.getError();
   double sigma1_gauss = sigma1.getVal();
+  double sigma1_gauss_err = sigma1.getError();
   double sigma2_gauss = sigma2.getVal();
+  double sigma2_gauss_err = sigma2.getError();
   double signal_yield = n_signal.getVal();
+  double signal_yield_err = n_signal.getError();
   double back_yield = n_back.getVal();
+  double back_yield_err = n_back.getError();
 
-  TLatex* tex1 = new TLatex(0.2, 0.88, Form("#lambda_{exp} = %.3lf",lambda_exp));
+  TLatex* tex1 = new TLatex(0.165, 0.88, Form("#lambda_{exp} = %.3lf+/-%.3lf",lambda_exp,lambda_exp_err));
   tex1->SetNDC(kTRUE);
   tex1->SetTextFont(42);
   tex1->SetTextSize(0.03);
   tex1->Draw();  
 
-  TLatex* tex2 = new TLatex(0.2, 0.84, Form("#mu_{gauss} = %.3lf",mean_gauss));
+  TLatex* tex2 = new TLatex(0.165, 0.84, Form("#mu_{gauss} = %.5lf+/-%.5lf",mean_gauss,mean_gauss_err));
   tex2->SetNDC(kTRUE);
   tex2->SetTextFont(42);
   tex2->SetTextSize(0.03);
   tex2->Draw();  
 
-  TLatex* tex3 = new TLatex(0.2, 0.80, Form("#sigma_{gauss1} = %.3lf",sigma1_gauss));
+  TLatex* tex3 = new TLatex(0.165, 0.80, Form("#sigma_{gauss1} = %.5lf+/-%.5lf",sigma1_gauss,sigma1_gauss_err));
   tex3->SetNDC(kTRUE);
   tex3->SetTextFont(42);
   tex3->SetTextSize(0.03);
   tex3->Draw();  
 
-  TLatex* tex4 = new TLatex(0.2, 0.76, Form("#sigma_{gauss2} = %.3lf",sigma2_gauss));
+  TLatex* tex4 = new TLatex(0.165, 0.76, Form("#sigma_{gauss2} = %.5lf+/-%.5lf",sigma2_gauss,sigma2_gauss_err));
   tex4->SetNDC(kTRUE);
   tex4->SetTextFont(42);
   tex4->SetTextSize(0.03);
@@ -648,25 +663,25 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high,
     tex4->Draw();  
   }
 
-  TLatex* tex5 = new TLatex(0.2, 0.70, Form("Signal = %.0lf",signal_yield));
+  TLatex* tex5 = new TLatex(0.165, 0.70, Form("Signal = %.0lf+/-%.0lf",signal_yield,signal_yield_err));
   tex5->SetNDC(kTRUE);
   tex5->SetTextFont(42);
   tex5->SetTextSize(0.03);
   tex5->Draw();  
 
-  TLatex* tex6 = new TLatex(0.2, 0.66, Form("Background = %.0lf",back_yield));
+  TLatex* tex6 = new TLatex(0.165, 0.66, Form("Background = %.0lf+/-%.0lf",back_yield,back_yield_err));
   tex6->SetNDC(kTRUE);
   tex6->SetTextFont(42);
   tex6->SetTextSize(0.03);
   tex6->Draw();  
 
-  TLatex* tex7 = new TLatex(0.2, 0.60, Form("lnL = %.3lf", log_likelihood));
+  TLatex* tex7 = new TLatex(0.165, 0.60, Form("lnL = %.3lf", log_likelihood));
   tex7->SetNDC(kTRUE);
   tex7->SetTextFont(42);
   tex7->SetTextSize(0.03);
   tex7->Draw();  
 
-  TLatex* tex8 = new TLatex(0.2, 0.56, Form("#chi^{2} = %.3lf", chis));
+  TLatex* tex8 = new TLatex(0.165, 0.56, Form("#chi^{2} = %.3lf", chis));
   tex8->SetNDC(kTRUE);
   tex8->SetTextFont(42);
   tex8->SetTextSize(0.03);
@@ -724,18 +739,18 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
     model->plotOn(frame_m,Precision(2E-4),Components("pdf_m_x3872"),LineColor(kOrange),LineWidth(2),LineStyle(kSolid),FillStyle(3008),FillColor(kOrange), VLines(), DrawOption("F"));
   
   frame_m->SetTitle("");
-  frame_m->GetXaxis()->SetTitle(channel_to_xaxis_title(channel));
-  frame_m->GetXaxis()->SetLabelFont(42);
-  frame_m->GetXaxis()->SetLabelOffset(0.01);
-  frame_m->GetXaxis()->SetTitleSize(0.06);
-  frame_m->GetXaxis()->SetTitleOffset(1.09);
-  frame_m->GetXaxis()->SetLabelFont(42);
-  frame_m->GetXaxis()->SetLabelSize(0.055);
-  frame_m->GetXaxis()->SetTitleFont(42);
+  //frame_m->GetXaxis()->SetTitle(channel_to_xaxis_title(channel));
+  //frame_m->GetXaxis()->SetLabelFont(42);
+  //frame_m->GetXaxis()->SetLabelOffset(0.01);
+  //frame_m->GetXaxis()->SetTitleSize(0.06);
+  //frame_m->GetXaxis()->SetTitleOffset(1.09);
+  //frame_m->GetXaxis()->SetLabelFont(42);
+  //frame_m->GetXaxis()->SetLabelSize(0.055);
+  //frame_m->GetXaxis()->SetTitleFont(42);
   frame_m->GetYaxis()->SetTitle(TString::Format("Events / %g MeV",(mass.getMax()-mass.getMin())*1000./channel_to_nbins(channel)));
   frame_m->GetYaxis()->SetLabelFont(42);
   frame_m->GetYaxis()->SetLabelOffset(0.01);
-  frame_m->GetYaxis()->SetTitleOffset(1.6);
+  frame_m->GetYaxis()->SetTitleOffset(0.8);
   frame_m->GetYaxis()->SetTitleSize(0.05);
   frame_m->GetYaxis()->SetTitleFont(42);
   frame_m->GetYaxis()->SetLabelFont(42);
@@ -754,17 +769,20 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
   pull_plot->GetXaxis()->SetTitle(channel_to_xaxis_title(channel));
   pull_plot->GetXaxis()->SetLabelFont(42);
   pull_plot->GetXaxis()->SetLabelOffset(0.01);
-  pull_plot->GetXaxis()->SetTitleSize(0.06);
+  pull_plot->GetXaxis()->SetTitleSize(0.17);
   pull_plot->GetXaxis()->SetTitleOffset(1.09);
   pull_plot->GetXaxis()->SetLabelFont(42);
-  pull_plot->GetXaxis()->SetLabelSize(0.055);
+  pull_plot->GetXaxis()->SetLabelSize(0.17);
   pull_plot->GetXaxis()->SetTitleFont(42);
-  pull_plot->GetYaxis()->SetTitle(TString::Format("Events / %g MeV",(mass.getMax()-mass.getMin())*1000./channel_to_nbins(channel)));
+  pull_plot->GetXaxis()->SetTickLength(0.15);
+  //  pull_plot->GetYaxis()->SetTitle(TString::Format("Events / %g MeV",(mass.getMax()-mass.getMin())*1000./channel_to_nbins(channel)));
   pull_plot->GetYaxis()->SetLabelFont(42);
   pull_plot->GetYaxis()->SetLabelOffset(0.01);
-  pull_plot->GetYaxis()->SetTitleOffset(1.14);
-  pull_plot->GetYaxis()->SetTitleSize(0.06);
-  pull_plot->GetYaxis()->SetTitleFont(42);
+  pull_plot->GetYaxis()->SetLabelSize(0.17);
+  pull_plot->GetYaxis()->SetNdivisions(305);
+  // pull_plot->GetYaxis()->SetTitleOffset(1.6);
+  //pull_plot->GetYaxis()->SetTitleSize(0.17);
+  //pull_plot->GetYaxis()->SetTitleFont(42);
   TCanvas *c1 = canvasDressing("c1"); c1->cd();
   
   // TPad *p1 = new TPad("p1","p1",0,0,1,1);
@@ -773,13 +791,18 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
   TPad *p1 = new TPad("p1","p1",0.05,0.27,0.99,0.99);
   // TPad *p1 = new TPad("p1","p1",0.05,0.05,0.99,0.99);
   p1->SetBorderMode(0); 
+  p1->SetFrameBorderMode(0); 
+  p1->SetBorderSize(2);
+  p1->SetBottomMargin(0.0);
   p1->Draw(); 
   
     
-  TPad *p2 = new TPad("p2","p2",0.05,0.01,0.97,0.2); 
+  TPad *p2 = new TPad("p2","p2",0.05,0.075,0.99,0.27); 
   p2->SetTopMargin(0.);    
-  p2->SetBorderMode(0); 
-  p2->SetTicks(1,2); 
+  p2->SetBorderMode(0);
+  p2->SetBorderSize(2); 
+  p2->SetFrameBorderMode(0); 
+  //p2->SetTicks(1,2); 
   p2->Draw();
   
   RooAbsReal* nll = model->createNLL(*data);
@@ -788,31 +811,37 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
   ll_str >> log_likelihood;
   double chis = frame_m->chiSquare();
   double lambda_exp = lambda.getVal();
+  double lambda_exp_err = lambda.getError();
   double mean_gauss = mean.getVal();
+  double mean_gauss_err = mean.getError();
   double sigma1_gauss = sigma1.getVal();
+  double sigma1_gauss_err = sigma1.getError();
   double sigma2_gauss = sigma2.getVal();
+  double sigma2_gauss_err = sigma2.getError();
   double signal_yield = n_signal.getVal();
+  double signal_yield_err = n_signal.getError();
   double back_yield = n_back.getVal();
+  double back_yield_err = n_back.getError();
 
-  TLatex* tex1 = new TLatex(0.2, 0.88, Form("#lambda_{exp} = %.3lf",lambda_exp));
+  TLatex* tex1 = new TLatex(0.165, 0.88, Form("#lambda_{exp} = %.3lf+/-%.3lf",lambda_exp,lambda_exp_err));
   tex1->SetNDC(kTRUE);
   tex1->SetTextFont(42);
   tex1->SetTextSize(0.03);
   tex1->Draw();  
 
-  TLatex* tex2 = new TLatex(0.2, 0.84, Form("#mu_{gauss} = %.3lf",mean_gauss));
+  TLatex* tex2 = new TLatex(0.165, 0.84, Form("#mu_{gauss} = %.5lf+/-%.5lf",mean_gauss,mean_gauss_err));
   tex2->SetNDC(kTRUE);
   tex2->SetTextFont(42);
   tex2->SetTextSize(0.03);
   tex2->Draw();  
 
-  TLatex* tex3 = new TLatex(0.2, 0.80, Form("#sigma_{gauss1} = %.3lf",sigma1_gauss));
+  TLatex* tex3 = new TLatex(0.165, 0.80, Form("#sigma_{gauss1} = %.5lf+/-%.5lf",sigma1_gauss,sigma1_gauss_err));
   tex3->SetNDC(kTRUE);
   tex3->SetTextFont(42);
   tex3->SetTextSize(0.03);
   tex3->Draw();  
 
-  TLatex* tex4 = new TLatex(0.2, 0.76, Form("#sigma_{gauss2} = %.3lf",sigma2_gauss));
+  TLatex* tex4 = new TLatex(0.165, 0.76, Form("#sigma_{gauss2} = %.5lf+/-%.5lf",sigma2_gauss, sigma2_gauss_err));
   tex4->SetNDC(kTRUE);
   tex4->SetTextFont(42);
   tex4->SetTextSize(0.03);
@@ -820,25 +849,25 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
     tex4->Draw();  
   }
 
-  TLatex* tex5 = new TLatex(0.2, 0.70, Form("Signal = %.0lf",signal_yield));
+  TLatex* tex5 = new TLatex(0.165, 0.70, Form("Signal = %.0lf+/-%.0lf",signal_yield, signal_yield_err));
   tex5->SetNDC(kTRUE);
   tex5->SetTextFont(42);
   tex5->SetTextSize(0.03);
   tex5->Draw();  
 
-  TLatex* tex6 = new TLatex(0.2, 0.66, Form("Background = %.0lf",back_yield));
+  TLatex* tex6 = new TLatex(0.165, 0.66, Form("Background = %.0lf+/-%.0lf",back_yield, back_yield_err));
   tex6->SetNDC(kTRUE);
   tex6->SetTextFont(42);
   tex6->SetTextSize(0.03);
   tex6->Draw();  
 
-  TLatex* tex7 = new TLatex(0.2, 0.60, Form("lnL = %.3lf", log_likelihood));
+  TLatex* tex7 = new TLatex(0.165, 0.60, Form("lnL = %.3lf", log_likelihood));
   tex7->SetNDC(kTRUE);
   tex7->SetTextFont(42);
   tex7->SetTextSize(0.03);
   tex7->Draw();  
 
-  TLatex* tex8 = new TLatex(0.2, 0.56, Form("#chi^{2} = %.3lf", chis));
+  TLatex* tex8 = new TLatex(0.165, 0.56, Form("#chi^{2} = %.3lf", chis));
   tex8->SetNDC(kTRUE);
   tex8->SetTextFont(42);
   tex8->SetTextSize(0.03);
