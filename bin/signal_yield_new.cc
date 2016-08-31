@@ -115,7 +115,7 @@ int main(int argc, char** argv)
 
   //pt bins
   double ntkp_pt_bin_edges[]={10,20,30,40,50,60,70,80,90,100,120,150};
-  double ntkstar_pt_bin_edges[]={15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 72, 80, 90, 100};
+  double ntkstar_pt_bin_edges[]={9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90};
   double ntks_pt_bin_edges[]={10,20,30,40,50,60,70};
   double ntphi_pt_bin_edges[]={9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90};
   double ntmix_pt_bin_edges[]={0};
@@ -930,12 +930,15 @@ void build_pdf(RooWorkspace& w, int channel)
   double n_signal_initial = data->sumEntries(TString::Format("abs(mass-%g)<0.015",mass_peak))
     - data->sumEntries(TString::Format("abs(mass-%g)<0.030&&abs(mass-%g)>0.015",mass_peak,mass_peak));
   
+  if(n_signal_initial<0)
+  n_signal_initial=1;
+
   double n_combinatorial_initial = data->sumEntries() - n_signal_initial;
   
   //-----------------------------------------------------------------
   // signal PDF 
-  RooRealVar m_mean("m_mean","m_mean",mass_peak,mass.getMin(),mass.getMax());
-  RooRealVar m_sigma1("m_sigma1","m_sigma1",0.015,0.001,0.050);
+  RooRealVar m_mean("m_mean","m_mean",mass_peak,mass_peak-0.09,mass_peak+0.09);
+  RooRealVar m_sigma1("m_sigma1","m_sigma1",0.015,0.005,0.07);
   RooRealVar m_sigma2("m_sigma2","m_sigma2",0.030,0.001,0.100);
   RooRealVar m_fraction("m_fraction","m_fraction",0.5);
   RooGaussian m_gaussian1("m_gaussian1","m_gaussian1",mass,m_mean,m_sigma1);
@@ -951,7 +954,7 @@ void build_pdf(RooWorkspace& w, int channel)
   //-----------------------------------------------------------------
   // combinatorial background PDF (exponential or bernstean poly.)
   
-  RooRealVar m_exp("m_exp","m_exp",-0.3,-4.,+4.);
+  RooRealVar m_exp("m_exp","m_exp",-0.3,-4.,0.);
   RooExponential pdf_m_combinatorial_exp("pdf_m_combinatorial_exp","pdf_m_combinatorial_exp",mass,m_exp);
   
   RooRealVar m_par1("m_par1","m_par2",1.,0,+10.);
@@ -1039,7 +1042,7 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
     mass_min = 5.0; mass_max = 6.0;
     break;
   case 2:
-    mass_min = 5.1; mass_max = 5.6;
+    mass_min = 5.0; mass_max = 5.6;
     break;
   case 3:
     mass_min = 5.0; mass_max = 6.0;
