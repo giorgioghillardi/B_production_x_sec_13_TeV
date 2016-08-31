@@ -198,7 +198,6 @@ void read_data_cut(RooWorkspace& w, RooDataSet* data)
 
 void set_up_workspace_variables(RooWorkspace& w, int channel)
 {
-  std::cout<<std::endl<<"SET_UP_WORKSPACE_VARIABLES!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
   double mass_min, mass_max;
   double pt_min, pt_max;
   double y_min, y_max;
@@ -212,16 +211,16 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
   double lerrxy_min, lerrxy_max;
 
   pt_min=0;
-  pt_max=400;
+  pt_max=300;
   
   y_min=-3;
   y_max=3;
 
   mu1pt_min=0;
-  mu1pt_max=80;
+  mu1pt_max=90;
 
   mu2pt_min=0;
-  mu2pt_max=90;
+  mu2pt_max=120;
 
   mu1eta_min=-3;
   mu1eta_max=3;
@@ -230,7 +229,7 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
   mu2eta_max=3;
 
   lxy_min=0;
-  lxy_max=1.5;
+  lxy_max=2;
 
   errxy_min=0;
   errxy_max=0.05;
@@ -290,7 +289,6 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
 
 void data_selection(TString fin1, TString data_selection_output_file,int channel)
 {
-  std::cout<<std::endl<<"DATA_SELECTION!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
   TFile *fout = new TFile(data_selection_output_file,"recreate");
 
   TNtupleD *_nt1 = new TNtupleD("ntkp","ntkp","mass:pt:eta:y:mu1pt:mu2pt:mu1eta:mu2eta:lxy:errxy:vtxprob:lerrxy");
@@ -490,7 +488,6 @@ TString channel_to_ntuple_name(int channel)
 
 void sideband_sub(RooWorkspace& w, double left, double right)
 {
-  std::cout<<std::endl<<"SIDEBAND_SUB!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
   //Create appropriate variables and data sets (the pt isn't imported from the RooWorkspace because its range will change)                      
   RooRealVar pt = *(w.var("pt"));                                                                                                            
   RooRealVar y = *(w.var("y"));                                                                                                            
@@ -613,7 +610,7 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   TH1D* mu1pt_dist_total = (TH1D*) data->createHistogram("mu1pt_dist_total",mu1pt);
   mu1pt_dist_total->SetMarkerColor(kBlack);
   mu1pt_dist_total->SetLineColor(kBlack);
-  mu1pt_dist_total->SetNameTitle("mu1pt_dist_peak", "Signal and Background Distributions - p_{T} (#mu_{1})");
+  mu1pt_dist_total->SetNameTitle("mu1pt_dist_total", "Signal and Background Distributions - p_{T} (#mu_{1})");
 
 
   mu1pt_dist_peak->Add(mu1pt_dist_side, -factor);
@@ -700,7 +697,7 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   mu1eta_dist_side->SetXTitle("#eta");
   mu1eta_dist_total->SetXTitle("#eta");
 
-  TLegend *leg3 = new TLegend (0.1, 0.85, 0.25, 0.95);
+  TLegend *leg3 = new TLegend (0.15, 0.8, 0.3, 0.9);
   leg3->AddEntry("mu1eta_dist_total", "Total", "l");
   leg3->AddEntry("mu1eta_dist_peak", "Signal", "l");
   leg3->AddEntry("mu1eta_dist_side", "Background", "l");
@@ -736,7 +733,7 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   mu2eta_dist_side->SetXTitle("#eta");
   mu2eta_dist_total->SetXTitle("#eta");
 
-  TLegend *leg4 = new TLegend (0.1, 0.85, 0.25, 0.95);
+  TLegend *leg4 = new TLegend (0.15, 0.8, 0.3, 0.9);
   leg4->AddEntry("mu2eta_dist_total", "Total", "l");
   leg4->AddEntry("mu2eta_dist_peak", "Signal", "l");
   leg4->AddEntry("mu2eta_dist_side", "Background", "l");
@@ -772,7 +769,7 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   y_dist_side->SetXTitle("y");
   y_dist_total->SetXTitle("y");
 
-  TLegend *leg5 = new TLegend (0.1, 0.85, 0.25, 0.95);
+  TLegend *leg5 = new TLegend (0.15, 0.8, 0.3, 0.9);
   leg5->AddEntry("y_dist_total", "Total", "l");
   leg5->AddEntry("y_dist_peak", "Signal", "l");
   leg5->AddEntry("y_dist_side", "Background", "l");
@@ -809,7 +806,7 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   vtxprob_dist_side->SetXTitle("#chi^{2} prob");
   vtxprob_dist_total->SetXTitle("#chi^{2} prob");
 
-  TLegend *leg6 = new TLegend (0.1, 0.85, 0.25, 0.95);
+  TLegend *leg6 = new TLegend (0.15, 0.8, 0.3, 0.9);
   leg6->AddEntry("vtxprob_dist_total", "Total", "l");
   leg6->AddEntry("vtxprob_dist_peak", "Signal", "l");
   leg6->AddEntry("vtxprob_dist_side", "Background", "l");
@@ -877,6 +874,7 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   errlxy_dist_total->Draw();
   errlxy_dist_side->Draw("same");
   errlxy_dist_peak->Draw("same");
+  //errlxy_dist_total->GetYaxis()->SetRangeUser(0.5,lerrxy_dist_total->GetMaximum()+2000);
   errlxy_dist_peak->SetXTitle("#sigma l_{xy} [cm]");
   errlxy_dist_side->SetXTitle("#sigma l_{xy} [cm]");
   errlxy_dist_total->SetXTitle("#sigma l_{xy} [cm]");
