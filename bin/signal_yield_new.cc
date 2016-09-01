@@ -210,6 +210,17 @@ int main(int argc, char** argv)
 	  f_param_signal->Draw();
 	  c.SaveAs("param_signal.png");
 
+	  TCanvas c2;
+	  f_error_signal->Draw();
+	  c2.SaveAs("error_signal.png");
+	  
+	  TCanvas c3;
+	  f_pull_signal->Draw();
+	  c3.SaveAs("pull_signal.png");
+
+	  TCanvas c4;
+	  f_nll->Draw();
+	  c4.SaveAs("nll_signal.png");
 	}
 
     }
