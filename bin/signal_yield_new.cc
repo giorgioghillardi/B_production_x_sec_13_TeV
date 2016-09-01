@@ -104,7 +104,7 @@ int main(int argc, char** argv)
 	  convert << argv[++i];
 	  convert >> mcstudy;
 	}
-      }
+    }
 
 
   if(channel==0)
@@ -178,10 +178,10 @@ int main(int argc, char** argv)
       model->fitTo(*data,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
 
       signal_res = ws->var("n_signal");
-     /* RooRealVar* mean = ws->var("m_mean");
-      RooRealVar* sigma1 = ws->var("m_sigma1");
-      RooRealVar* sigma2 = ws->var("m_sigma2");
-      RooRealVar* lambda = ws->var("m_exp");*/
+      /* RooRealVar* mean = ws->var("m_mean");
+	 RooRealVar* sigma1 = ws->var("m_sigma1");
+	 RooRealVar* sigma2 = ws->var("m_sigma2");
+	 RooRealVar* lambda = ws->var("m_exp");*/
   
       std::cout <<"SIGNAL: "<< signal_res->getVal() << " " << signal_res->getAsymErrorLo() << " +" << signal_res->getAsymErrorHi() << std::endl;
       
@@ -192,24 +192,25 @@ int main(int argc, char** argv)
       plot_pt_dist(*ws,channel,pt_dist_directory);
     
 
-     if(mcstudy){
+      if(mcstudy)
+	{
 
-      RooMCStudy* mctoy = new RooMCStudy (*model, *model, *mass, "", "mhv"); 
-      mctoy->generateAndFit(1000, data->sumEntries());
+	  RooMCStudy* mctoy = new RooMCStudy (*model, *model, *mass, "", "mhv"); 
+	  mctoy->generateAndFit(1000, data->sumEntries());
 
-     RooPlot* f_pull_signal = mctoy->plotPull(*signal_res, FitGauss(kTRUE));
-     RooPlot* f_param_signal = mctoy->plotParam(*signal_res);
-     RooPlot* f_error_signal = mctoy->plotError(*signal_res);
-     RooPlot* f_nll = mctoy->plotNLL();
-     //RooPlot* f_pull_sigma1 = mctoy->plotPull(sigma1, FitGauss(kTRUE));
-     //RooPlot* f_pull_mean = mctoy->plotPull(mean, FitGauss(kTRUE));
-     //RooPlot* f_pull_mean = mctoy->plotPull(mean, FitGauss(kTRUE));
+	  RooPlot* f_pull_signal = mctoy->plotPull(*signal_res, FitGauss(kTRUE));
+	  RooPlot* f_param_signal = mctoy->plotParam(*signal_res);
+	  RooPlot* f_error_signal = mctoy->plotError(*signal_res);
+	  RooPlot* f_nll = mctoy->plotNLL();
+	  //RooPlot* f_pull_sigma1 = mctoy->plotPull(sigma1, FitGauss(kTRUE));
+	  //RooPlot* f_pull_mean = mctoy->plotPull(mean, FitGauss(kTRUE));
+	  //RooPlot* f_pull_mean = mctoy->plotPull(mean, FitGauss(kTRUE));
      
-     TCanvas c;
-     f_param_signal->Draw();
-     c.SaveAs("param_signal.png");
+	  TCanvas c;
+	  f_param_signal->Draw();
+	  c.SaveAs("param_signal.png");
 
-}
+	}
 
     }
   else
