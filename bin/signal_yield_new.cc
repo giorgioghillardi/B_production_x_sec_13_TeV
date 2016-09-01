@@ -27,6 +27,7 @@
 #include <RooGenericPdf.h>
 #include <TGraphAsymmErrors.h>
 #include <TEfficiency.h>
+#include <RooMCStudy.h>
 #include <RooPlot.h>
 #include <RooPlotable.h>
 #include <RooThresholdCategory.h>
@@ -69,13 +70,13 @@ TString channel_to_ntuple_name(int channel);
 TString channel_to_xaxis_title(int channel);
 int channel_to_nbins(int channel);
 
-//input example: signal_yield_new --channel 1 --bins 1 --eff 1
+//input example: signal_yield_new --channel 1 --bins 1 --eff 1 --mc 1
 int main(int argc, char** argv)
 {
   int channel = 0;
   int yield_sub_samples = 0;
   int calculate_efficiency = 0;
-
+  int mcstudy = 0;
   for(int i=1 ; i<argc ; ++i)
     {
       std::string argument = argv[i];
@@ -96,8 +97,16 @@ int main(int argc, char** argv)
 	  convert << argv[++i];
 	  convert >> calculate_efficiency;
 	}
-    } 
+    
  
+      if(argument == "--mc")
+	{
+	  convert << argv[++i];
+	  convert >> mcstudy;
+	}
+      }
+
+
   if(channel==0)
     {
       std::cout << "No channel was provided as input. Please use --channel. Example: signal_yield_new --channel 1" << std::endl;
@@ -143,6 +152,7 @@ int main(int argc, char** argv)
   RooAbsPdf* model;
   RooFitResult* fit_res;
   RooRealVar* signal_res;
+  
 
   TString pt_dist_directory="";
   TString y_dist_directory="";
@@ -159,6 +169,7 @@ int main(int argc, char** argv)
     { 
       
       //build the pdf for the channel selected above, it uses the dataset which is saved in ws. need to change the dataset to change the pdf.
+      RooRealVar* mass = ws->var("mass"); 
       build_pdf(*ws,channel);     
       
       data = ws->data("data");
@@ -167,6 +178,10 @@ int main(int argc, char** argv)
       model->fitTo(*data,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
 
       signal_res = ws->var("n_signal");
+     /* RooRealVar* mean = ws->var("m_mean");
+      RooRealVar* sigma1 = ws->var("m_sigma1");
+      RooRealVar* sigma2 = ws->var("m_sigma2");
+      RooRealVar* lambda = ws->var("m_exp");*/
   
       std::cout <<"SIGNAL: "<< signal_res->getVal() << " " << signal_res->getAsymErrorLo() << " +" << signal_res->getAsymErrorHi() << std::endl;
       
@@ -175,6 +190,27 @@ int main(int argc, char** argv)
 
       plot_mass_fit(*ws,channel,mass_fit_directory);
       plot_pt_dist(*ws,channel,pt_dist_directory);
+    
+
+     if(mcstudy){
+
+      RooMCStudy* mctoy = new RooMCStudy (*model, *model, *mass, "", "mhv"); 
+      mctoy->generateAndFit(1000, data->sumEntries());
+
+     RooPlot* f_pull_signal = mctoy->plotPull(*signal_res, FitGauss(kTRUE));
+     RooPlot* f_param_signal = mctoy->plotParam(*signal_res);
+     RooPlot* f_error_signal = mctoy->plotError(*signal_res);
+     RooPlot* f_nll = mctoy->plotNLL();
+     //RooPlot* f_pull_sigma1 = mctoy->plotPull(sigma1, FitGauss(kTRUE));
+     //RooPlot* f_pull_mean = mctoy->plotPull(mean, FitGauss(kTRUE));
+     //RooPlot* f_pull_mean = mctoy->plotPull(mean, FitGauss(kTRUE));
+     
+     TCanvas c;
+     f_param_signal->Draw();
+     c.SaveAs("param_signal.png");
+
+}
+
     }
   else
     {
@@ -191,8 +227,7 @@ int main(int argc, char** argv)
 	pt_bin_edges = ntkstar_pt_bin_edges;
 	nptbins = (sizeof(ntkstar_pt_bin_edges) / sizeof(double)) - 1 ;
 
-	y_bin_edges = ntkstar_y_bin_edges;
-	nybins = (sizeof(ntkstar_y_bin_edges) / sizeof(double)) - 1 ;
+	y_bin_edges = ntkstar_y_bin_edges;	nybins = (sizeof(ntkstar_y_bin_edges) / sizeof(double)) - 1 ;
 	break;
       case 3:
 	pt_bin_edges = ntks_pt_bin_edges;
@@ -750,7 +785,7 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
   frame_m->GetYaxis()->SetTitle(TString::Format("Events / %g MeV",(mass.getMax()-mass.getMin())*1000./channel_to_nbins(channel)));
   frame_m->GetYaxis()->SetLabelFont(42);
   frame_m->GetYaxis()->SetLabelOffset(0.01);
-  frame_m->GetYaxis()->SetTitleOffset(0.8);
+  frame_m->GetYaxis()->SetTitleOffset(1.4);
   frame_m->GetYaxis()->SetTitleSize(0.05);
   frame_m->GetYaxis()->SetTitleFont(42);
   frame_m->GetYaxis()->SetLabelFont(42);
