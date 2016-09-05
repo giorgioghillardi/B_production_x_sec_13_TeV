@@ -74,7 +74,7 @@ int channel_to_nbins(int channel);
 int main(int argc, char** argv)
 {
   int channel = 0;
-  std::string yield_sub_samples = "";
+  std::string yield_sub_samples = "0";
   int calculate_efficiency = 0;
   int mcstudy = 0;
   for(int i=1 ; i<argc ; ++i)
