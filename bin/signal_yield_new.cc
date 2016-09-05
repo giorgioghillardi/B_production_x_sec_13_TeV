@@ -435,11 +435,15 @@ int main(int argc, char** argv)
       pad->Draw();
 
       TH1D* empty = new TH1D("Raw Signal Yield in p_{T} Bins", "Raw Signal Yield in p_{T} Bins; p_{T} [GeV]; Signal Yield", nptbins, 0, 100);
-      /*      empty->SetMinimum(1);
+      empty->SetMinimum(1);
 
       if(yield_sub_samples=="pt"||yield_sub_samples=="y")
+	empty->SetMaximum(4e4);
+      else if(yield_sub_samples=="pt/y")
 	empty->SetMaximum(4e10);
-      */ 
+
+      empty->Draw("hist");
+       
       TLegend *leg = new TLegend (0.65, 0.65, 0.85, 0.85);
 
       TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array[0], pt_bin_edges_Lo, pt_bin_edges_Hi, errLo_array[0], errHi_array[0]);
@@ -447,13 +451,13 @@ int main(int argc, char** argv)
       graph->SetMarkerColor(1);
       graph->SetMarkerSize(0.5);
       graph->SetMarkerStyle(20);
-      empty->SetMinimum(graph->GetMinimum());
-      if(nybins<=1)
+      //      empty->SetMinimum(graph->GetMinimum());
+      /*      if(nybins<=1)
 	{
 	  std::cout << "ENTRAS??" << std::endl << "graph->GetMaximum(): " << graph->GetMaximum() << std::endl << "graph->GetMinimum(): " << graph->GetMaximum() << std::endl;
 	  empty->SetMaximum(graph->GetMaximum());
 	  empty->Draw("hist");
-	}
+	  }*/
       //      graph->SetFillColor(2);
       //graph->SetFillStyle(3001);
       //      graph->Draw("a");
@@ -461,7 +465,8 @@ int main(int argc, char** argv)
       graph->GetYaxis()->SetMinimum(0.);
       graph->GetYaxis()->SetMaximum(3000000.);
 			*/
-      leg->AddEntry(graph, "(#times 10^{3}) 0<|y|<0.5", "lp");
+      if(yield_sub_samples=="pt/y")      leg->AddEntry(graph, "(#times 10^{3}) 0<|y|<0.5", "lp");
+      if(yield_sub_samples=="pt")      leg->AddEntry(graph, "|y|>0", "lp");
            
       for(int i=1; i<nybins; i++)
 	{
@@ -482,7 +487,7 @@ int main(int argc, char** argv)
 	  if(i==3)
 	    {
 	      leg->AddEntry(graph2," 1.5<|y|<2.25", "lp");
-	      empty->SetMaximum(graph2->GetMaximum());
+	      //	      empty->SetMaximum(graph2->GetMaximum());
 	    }
 	  /*    graph2->GetYaxis()->SetMinimum(0.);
 		graph2->GetYaxis()->SetMaximum(3000000.);*/
