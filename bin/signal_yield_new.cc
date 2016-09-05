@@ -70,11 +70,11 @@ TString channel_to_ntuple_name(int channel);
 TString channel_to_xaxis_title(int channel);
 int channel_to_nbins(int channel);
 
-//input example: signal_yield_new --channel 1 --bins 1 --eff 1 --mc 1
+//input example: signal_yield_new --channel 1 --bins pt/y --eff 1 --mc 1
 int main(int argc, char** argv)
 {
   int channel = 0;
-  int yield_sub_samples = 0;
+  std::string yield_sub_samples = "";
   int calculate_efficiency = 0;
   int mcstudy = 0;
   for(int i=1 ; i<argc ; ++i)
@@ -96,9 +96,7 @@ int main(int argc, char** argv)
 	{
 	  convert << argv[++i];
 	  convert >> calculate_efficiency;
-	}
-    
- 
+	} 
       if(argument == "--mc")
 	{
 	  convert << argv[++i];
@@ -129,9 +127,10 @@ int main(int argc, char** argv)
   double ntphi_pt_bin_edges[]={9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90};
   double ntmix_pt_bin_edges[]={0};
   double ntlambda_pt_bin_edges[]={0};
-  double* pt_bin_edges;
+  double total_pt_bin_edges[]={0, 400};
+  double* pt_bin_edges=total_pt_bin_edges;
   
-  int nptbins;
+  int nptbins=0;
 
   //y bins
   double ntkp_y_bin_edges[]={0.0, 0.5, 1.0, 1.5, 2.25};
@@ -140,9 +139,10 @@ int main(int argc, char** argv)
   double ntphi_y_bin_edges[]={0.0, 0.5, 1.0, 1.5, 2.25};
   double ntmix_y_bin_edges[]={0.0, 0.5, 1.0, 1.5, 2.25};
   double ntlambda_y_bin_edges[]={0.0, 0.5, 1.0, 1.5, 2.25};
-  double* y_bin_edges;
+  double total_y_bin_edges[]={0.0, 4.0};
+  double* y_bin_edges=total_y_bin_edges;
   
-  int nybins;
+  int nybins=0;
 
   
   TString data_selection_input_file = "selected_data_" + channel_to_ntuple_name(channel) + ".root";
@@ -165,7 +165,7 @@ int main(int argc, char** argv)
   read_data(*ws, data_selection_input_file,channel);
   ws->Print();
   
-  if(!yield_sub_samples) //mass fit and plot the full dataset
+  if(yield_sub_samples=="0") //mass fit and plot the full dataset
     { 
       
       //build the pdf for the channel selected above, it uses the dataset which is saved in ws. need to change the dataset to change the pdf.
@@ -226,50 +226,122 @@ int main(int argc, char** argv)
     }
   else
     {
-      switch (channel) {
-      default:
-      case 1:
-	pt_bin_edges = ntkp_pt_bin_edges;
-	nptbins = (sizeof(ntkp_pt_bin_edges) / sizeof(double)) - 1 ; //if pt_bin_edges is an empty array, then nptbins is equal to 0
+      if(yield_sub_samples=="pt")
+	{
+	  y_bin_edges = total_y_bin_edges;
+	  nybins=1;
 
-	y_bin_edges = ntkp_y_bin_edges;
-	nybins = (sizeof(ntkp_y_bin_edges) / sizeof(double)) - 1 ; //if y_bin_edges is an empty array, then nptbins is equal to 0
-	break;
-      case 2:
-	pt_bin_edges = ntkstar_pt_bin_edges;
-	nptbins = (sizeof(ntkstar_pt_bin_edges) / sizeof(double)) - 1 ;
+	  switch (channel) {
+	  default:
+	  case 1:
+	    pt_bin_edges = ntkp_pt_bin_edges;
+	    nptbins = (sizeof(ntkp_pt_bin_edges) / sizeof(double)) - 1 ; //if pt_bin_edges is an empty array, then nptbins is equal to 0
+	    break;
+	  case 2:
+	    pt_bin_edges = ntkstar_pt_bin_edges;
+	    nptbins = (sizeof(ntkstar_pt_bin_edges) / sizeof(double)) - 1 ;
+	    break;
+	  case 3:
+	    pt_bin_edges = ntks_pt_bin_edges;
+	    nptbins = (sizeof(ntks_pt_bin_edges) / sizeof(double)) - 1 ;
+	    break;
+	  case 4:
+	    pt_bin_edges = ntphi_pt_bin_edges;
+	    nptbins = (sizeof(ntphi_pt_bin_edges) / sizeof(double)) - 1 ;
+	    break;
+	  case 5:
+	    pt_bin_edges = ntmix_pt_bin_edges;
+	    nptbins = (sizeof(ntmix_pt_bin_edges) / sizeof(double)) - 1 ;
+	    break;
+	  case 6:
+	    pt_bin_edges = ntlambda_pt_bin_edges;
+	    nptbins = (sizeof(ntlambda_pt_bin_edges) / sizeof(double)) - 1 ;
+	    break;
+	  }
 
-	y_bin_edges = ntkstar_y_bin_edges;	nybins = (sizeof(ntkstar_y_bin_edges) / sizeof(double)) - 1 ;
-	break;
-      case 3:
-	pt_bin_edges = ntks_pt_bin_edges;
-	nptbins = (sizeof(ntks_pt_bin_edges) / sizeof(double)) - 1 ;
+	}
+      else if(yield_sub_samples=="y")
+	{
+	  pt_bin_edges = total_pt_bin_edges;
+	  nptbins=1;
 
-	y_bin_edges = ntks_y_bin_edges;
-	nybins = (sizeof(ntks_y_bin_edges) / sizeof(double)) - 1 ;
-	break;
-      case 4:
-	pt_bin_edges = ntphi_pt_bin_edges;
-	nptbins = (sizeof(ntphi_pt_bin_edges) / sizeof(double)) - 1 ;
+	  switch (channel) {
+	  default:
+	  case 1:
+	    y_bin_edges = ntkp_y_bin_edges;
+	    nybins = (sizeof(ntkp_y_bin_edges) / sizeof(double)) - 1 ; //if y_bin_edges is an empty array, then nptbins is equal to 0
+	    break;
+	  case 2:
+	    y_bin_edges = ntkstar_y_bin_edges;	
+	    nybins = (sizeof(ntkstar_y_bin_edges) / sizeof(double)) - 1 ;
+	    break;
+	  case 3:
+	    y_bin_edges = ntks_y_bin_edges;
+	    nybins = (sizeof(ntks_y_bin_edges) / sizeof(double)) - 1 ;
+	    break;
+	  case 4:
+	    y_bin_edges = ntphi_y_bin_edges;
+	    nybins = (sizeof(ntphi_y_bin_edges) / sizeof(double)) - 1 ;
+	    break;
+	  case 5:
+	    y_bin_edges = ntmix_y_bin_edges;
+	    nybins = (sizeof(ntmix_y_bin_edges) / sizeof(double)) - 1 ;
+	    break;
+	  case 6:
+	    y_bin_edges = ntlambda_y_bin_edges;
+	    nybins = (sizeof(ntlambda_y_bin_edges) / sizeof(double)) - 1 ;
+	    break;
+	  }
 
-	y_bin_edges = ntphi_y_bin_edges;
-	nybins = (sizeof(ntphi_y_bin_edges) / sizeof(double)) - 1 ;
-	break;
-      case 5:
-	pt_bin_edges = ntmix_pt_bin_edges;
-	nptbins = (sizeof(ntmix_pt_bin_edges) / sizeof(double)) - 1 ;
+	}
+      else if(yield_sub_samples=="pt/y")
+	{
+	  switch (channel) {
+	  default:
+	  case 1:
+	    pt_bin_edges = ntkp_pt_bin_edges;
+	    nptbins = (sizeof(ntkp_pt_bin_edges) / sizeof(double)) - 1 ; //if pt_bin_edges is an empty array, then nptbins is equal to 0
+	    
+	    y_bin_edges = ntkp_y_bin_edges;
+	    nybins = (sizeof(ntkp_y_bin_edges) / sizeof(double)) - 1 ; //if y_bin_edges is an empty array, then nptbins is equal to 0
+	    break;
+	  case 2:
+	    pt_bin_edges = ntkstar_pt_bin_edges;
+	    nptbins = (sizeof(ntkstar_pt_bin_edges) / sizeof(double)) - 1 ;
 
-	y_bin_edges = ntmix_y_bin_edges;
-	nybins = (sizeof(ntmix_y_bin_edges) / sizeof(double)) - 1 ;
-	break;
-      case 6:
-	pt_bin_edges = ntlambda_pt_bin_edges;
-	nptbins = (sizeof(ntlambda_pt_bin_edges) / sizeof(double)) - 1 ;
+	    y_bin_edges = ntkstar_y_bin_edges;	
+	    nybins = (sizeof(ntkstar_y_bin_edges) / sizeof(double)) - 1 ;
+	    break;
+	  case 3:
+	    pt_bin_edges = ntks_pt_bin_edges;
+	    nptbins = (sizeof(ntks_pt_bin_edges) / sizeof(double)) - 1 ;
+	    
+	    y_bin_edges = ntks_y_bin_edges;
+	    nybins = (sizeof(ntks_y_bin_edges) / sizeof(double)) - 1 ;
+	    break;
+	  case 4:
+	    pt_bin_edges = ntphi_pt_bin_edges;
+	    nptbins = (sizeof(ntphi_pt_bin_edges) / sizeof(double)) - 1 ;
+	    
+	    y_bin_edges = ntphi_y_bin_edges;
+	    nybins = (sizeof(ntphi_y_bin_edges) / sizeof(double)) - 1 ;
+	    break;
+	  case 5:
+	    pt_bin_edges = ntmix_pt_bin_edges;
+	    nptbins = (sizeof(ntmix_pt_bin_edges) / sizeof(double)) - 1 ;
 
-	y_bin_edges = ntlambda_y_bin_edges;
-	nybins = (sizeof(ntlambda_y_bin_edges) / sizeof(double)) - 1 ;
-	break;
-      }
+	    y_bin_edges = ntmix_y_bin_edges;
+	    nybins = (sizeof(ntmix_y_bin_edges) / sizeof(double)) - 1 ;
+	    break;
+	  case 6:
+	    pt_bin_edges = ntlambda_pt_bin_edges;
+	    nptbins = (sizeof(ntlambda_pt_bin_edges) / sizeof(double)) - 1 ;
+	    
+	    y_bin_edges = ntlambda_y_bin_edges;
+	    nybins = (sizeof(ntlambda_y_bin_edges) / sizeof(double)) - 1 ;
+	    break;
+	  }
+	}
 
       std::cout << "nybins: " << nybins << std::endl;
       std::cout << "y_bin_edges[0]: " << y_bin_edges[0] << std::endl;
@@ -297,23 +369,6 @@ int main(int argc, char** argv)
 	{ 
 	  std::cout << "processing subsample: " << y_bin_edges[c] << " < |y| < " << y_bin_edges[c+1] << std::endl;
 
-	  /*	  RooDataSet* data_original  = new RooDataSet("data_original", "data_original", *(ws->data("data")->get()),Import( *(dynamic_cast<RooDataSet *>(ws->data("data"))) ));
-  
-	  RooRealVar pt = *(ws->var("pt"));
-	  RooThresholdCategory ptRegion("ptRegion", "region of pt", pt);
-	  ptRegion.addThreshold(*(pt_bin_edges),"below 1st bin");
-	  
-	  for(int i=0; i<nptbins; i++)
-	    {
-	      TString reg = TString::Format("PtBin%d",i+1);
-	      ptRegion.addThreshold(*(pt_bin_edges+i+1),reg);
-	    }
-	  data_original->addColumn(ptRegion);
-	  
-	  Roo1DTable * tab = data_original->table(ptRegion);
-	  tab->Print("v");
-	  delete tab;
-	  */
 	  for(int i=0; i<nptbins; i++)
 	    {
 	      std::cout << "processing subsample: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
@@ -380,10 +435,11 @@ int main(int argc, char** argv)
       pad->Draw();
 
       TH1D* empty = new TH1D("Raw Signal Yield in p_{T} Bins", "Raw Signal Yield in p_{T} Bins; p_{T} [GeV]; Signal Yield", nptbins, 0, 100);
-      empty->Draw("hist");
-      empty->SetMinimum(1);
-      empty->SetMaximum(4e8);
+      /*      empty->SetMinimum(1);
 
+      if(yield_sub_samples=="pt"||yield_sub_samples=="y")
+	empty->SetMaximum(4e10);
+      */ 
       TLegend *leg = new TLegend (0.65, 0.65, 0.85, 0.85);
 
       TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array[0], pt_bin_edges_Lo, pt_bin_edges_Hi, errLo_array[0], errHi_array[0]);
@@ -391,6 +447,13 @@ int main(int argc, char** argv)
       graph->SetMarkerColor(1);
       graph->SetMarkerSize(0.5);
       graph->SetMarkerStyle(20);
+      empty->SetMinimum(graph->GetMinimum());
+      if(nybins<=1)
+	{
+	  std::cout << "ENTRAS??" << std::endl << "graph->GetMaximum(): " << graph->GetMaximum() << std::endl << "graph->GetMinimum(): " << graph->GetMaximum() << std::endl;
+	  empty->SetMaximum(graph->GetMaximum());
+	  empty->Draw("hist");
+	}
       //      graph->SetFillColor(2);
       //graph->SetFillStyle(3001);
       //      graph->Draw("a");
@@ -417,9 +480,10 @@ int main(int argc, char** argv)
 	    leg->AddEntry(graph2,"(#times 10) 1<|y|<1.5", "lp");
 
 	  if(i==3)
-	    leg->AddEntry(graph2," 1.5<|y|<2.25", "lp");
-
-
+	    {
+	      leg->AddEntry(graph2," 1.5<|y|<2.25", "lp");
+	      empty->SetMaximum(graph2->GetMaximum());
+	    }
 	  /*    graph2->GetYaxis()->SetMinimum(0.);
 		graph2->GetYaxis()->SetMaximum(3000000.);*/
 	}
@@ -427,7 +491,7 @@ int main(int argc, char** argv)
       leg->Draw("same");
       cz.Update();
       cz.SetLogy();
-      cz.SaveAs("signal_yield/signal_yield_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + ".png");
+      cz.SaveAs("signal_yield/signal_yield_" + yield_sub_samples + "_bins_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + ".png");
       
     }//end of else
 }//end of signal_yield_new
