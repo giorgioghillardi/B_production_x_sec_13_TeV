@@ -383,10 +383,18 @@ int main(int argc, char** argv)
 	      std::cout << pt_bin_edges_Lo[i] << pt_bin_edges_Hi[i] << std::endl;
 	      
 	      signal_res = bin_mass_fit(*ws,channel,pt_bin_edges[i],pt_bin_edges[i+1], y_bin_edges[c], y_bin_edges[c+1]);
-	      
-	      yield_array[c][i] = (signal_res->getVal())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]))*pow(10,nybins-c);
-	      errLo_array[c][i] = -(signal_res->getAsymErrorLo())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]))*pow(10,nybins-c);
-	      errHi_array[c][i] = (signal_res->getAsymErrorHi())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]))*pow(10,nybins-c);
+	      if(yield_sub_samples=="pt") 
+		{
+		  yield_array[c][i] = (signal_res->getVal())/(pt_bin_size[i]);
+		  errLo_array[c][i] = -(signal_res->getAsymErrorLo())/(pt_bin_size[i]);
+		  errHi_array[c][i] = (signal_res->getAsymErrorHi())/(pt_bin_size[i]);
+		}
+	      else if(yield_sub_samples=="pt/y")
+		{	      
+		  yield_array[c][i] = (signal_res->getVal())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]))*pow(10,nybins-c);
+		  errLo_array[c][i] = -(signal_res->getAsymErrorLo())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]))*pow(10,nybins-c);
+		  errHi_array[c][i] = (signal_res->getAsymErrorHi())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]))*pow(10,nybins-c);
+		}
 	    }
 	}
 
