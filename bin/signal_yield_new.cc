@@ -196,7 +196,7 @@ int main(int argc, char** argv)
 	{
 
 	  RooMCStudy* mctoy = new RooMCStudy (*model, *model, *mass, "", "mhv"); 
-	  mctoy->generateAndFit(1000, data->sumEntries());
+	  mctoy->generateAndFit(5000, data->sumEntries());
 
 	  RooPlot* f_pull_signal = mctoy->plotPull(*signal_res, FitGauss(kTRUE));
 	  RooPlot* f_param_signal = mctoy->plotParam(*signal_res);
@@ -448,7 +448,7 @@ int main(int argc, char** argv)
 
       TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array[0], pt_bin_edges_Lo, pt_bin_edges_Hi, errLo_array[0], errHi_array[0]);
       graph->SetTitle("Raw signal yield in Pt bins");
-      graph->SetMarkerColor(1);
+      graph->SetMarkerColor(2);
       graph->SetMarkerSize(0.5);
       graph->SetMarkerStyle(20);
       //      empty->SetMinimum(graph->GetMinimum());
@@ -465,19 +465,30 @@ int main(int argc, char** argv)
       graph->GetYaxis()->SetMinimum(0.);
       graph->GetYaxis()->SetMaximum(3000000.);
 			*/
+      TLatex * tex = new TLatex(0.68,0.85,"2.71 fb^{-1} (13 TeV)");
+      tex->SetNDC(kTRUE);
+      tex->SetLineWidth(2);
+      tex->SetTextSize(0.04);
+      tex->Draw();
+      tex = new TLatex(0.12,0.85,"CMS Preliminary");
+      tex->SetNDC(kTRUE);
+      tex->SetTextFont(42);
+      tex->SetTextSize(0.04);
+      tex->SetLineWidth(2);
+      tex->Draw();
+      
       if(yield_sub_samples=="pt/y")      leg->AddEntry(graph, "(#times 10^{3}) 0<|y|<0.5", "lp");
-      if(yield_sub_samples=="pt")      leg->AddEntry(graph, "|y|>0", "lp");
+//      if(yield_sub_samples=="pt")      leg->AddEntry(graph, "|y|>0", "lp");
            
       for(int i=1; i<nybins; i++)
 	{
 	  TGraphAsymmErrors* graph2 = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array[i], pt_bin_edges_Lo, pt_bin_edges_Hi, errLo_array[i], errHi_array[i]);
 	  graph2->SetTitle("Raw signal yield in Pt bins");
-	  graph2->SetMarkerColor(i+1);
+	  graph2->SetMarkerColor(i+2);
 	  graph2->SetMarkerSize(0.5);
 	  graph2->SetMarkerStyle(20);
 	  //graph2->Draw("a2 same");
 	  graph2->Draw("p same");
-
 	  if(i==1)
 	    leg->AddEntry(graph2,"(#times 10^{2}) 0.5<|y|<1", "lp");
 
@@ -492,6 +503,7 @@ int main(int argc, char** argv)
 	  /*    graph2->GetYaxis()->SetMinimum(0.);
 		graph2->GetYaxis()->SetMaximum(3000000.);*/
 	}
+      //Legend(channel, 0,0,0);
 
       leg->Draw("same");
       cz.Update();
