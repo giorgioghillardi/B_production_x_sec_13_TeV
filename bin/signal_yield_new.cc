@@ -54,7 +54,7 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory);
 
 RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max);
 double pt_bin_mean(RooWorkspace& w, double pt_min, double pt_max);
-RooRealVar* pre_filter_efficiency(int channel, double pt_min, double pt_max);
+RooRealVar* overall_efficiency(int channel, double pt_min, double pt_max);
 
 void build_pdf(RooWorkspace& w, int channel);
 void read_data(RooWorkspace& w, TString filename,int channel);
@@ -227,14 +227,15 @@ int main(int argc, char** argv)
    {
      for(int i=0; i<nptbins; i++)
        {
-	 std::cout << "calculating pre-filter efficiency: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
+	 std::cout << "calculating efficiency: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
 	 
 	 pt_bin_centres_eff[i] = pt_bin_edges[i] + (pt_bin_edges[i+1]-pt_bin_edges[i])/2;
 	 pt_bin_edges_eff_Lo[i] = pt_bin_centres_eff[i] - pt_bin_edges[i];
 	 pt_bin_edges_eff_Hi[i] = pt_bin_edges[i+1] - pt_bin_centres_eff[i];
 	 
-	 pre_filter_eff = pre_filter_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1]);
-	 
+	 //pre_filter_eff = pre_filter_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1]);
+	 pre_filter_eff = overall_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1]);
+
 	 eff_array[i] = pre_filter_eff->getVal();
 	 effLo_array[i] = -pre_filter_eff->getAsymErrorLo();
 	 effHi_array[i] = pre_filter_eff->getAsymErrorHi();
@@ -242,11 +243,11 @@ int main(int argc, char** argv)
 	 //plot of the pre-filter efficiency as a function of pT
 	 TCanvas ce;
 	 TGraphAsymmErrors* graph_eff = new TGraphAsymmErrors(nptbins, pt_bin_centres_eff, eff_array, pt_bin_edges_eff_Lo, pt_bin_edges_eff_Hi,effLo_array,effHi_array);
-	 graph_eff->SetTitle("pre filter efficiency");
+	 graph_eff->SetTitle("efficiency");
 	 graph_eff->SetMarkerColor(4);
 	 graph_eff->SetMarkerStyle(21);
 	 graph_eff->Draw("AP");
-	 ce.SaveAs("pre_filter_efficiency_err.png");
+	 ce.SaveAs("efficiency_err.png");
    }
 
  //plot of the signal_yield as a function of pt, in the future should be the x-sec corrected by efficiency and other factors
@@ -263,6 +264,99 @@ int main(int argc, char** argv)
     }//end of else
 }//end of signal_yield_new
 
+RooRealVar* overall_efficiency(int channel, double pt_min, double pt_max)
+{
+  ReducedBranches montecarlo;
+  TString mc_input_file = "myloop_mc_" + channel_to_ntuple_name(channel) + "_bfilter_no_cuts.root";
+  TFile *fin = new TFile(mc_input_file);
+  
+  TString ntuple_name = channel_to_ntuple_name(channel) + "_mc";
+  TTree *tin = (TTree*)fin->Get(ntuple_name);
+  montecarlo.setbranchadd(tin);
+
+  //use histograms to count the events, and TEfficiency for efficiency, because it takes care of the errors and propagation
+  TH1D* hist_tot = new TH1D("hist_tot","hist_tot",1,pt_min,pt_max);
+  TH1D* hist_passed = new TH1D("hist_passed","hist_passed",1,pt_min,pt_max);
+
+  int tot = 0;
+  int passed = 0;
+
+  for (int evt=0;evt<tin->GetEntries();evt++)
+    {
+      tin->GetEntry(evt);
+      
+      if (fabs(montecarlo.geneta) > 2.4) continue; //B mesons generated in the region eta < 2.4
+      
+      hist_tot->Fill(montecarlo.genpt);
+      tot +=1;
+    }
+
+  for (int evt=0;evt<tin->GetEntries();evt++)
+    {
+      tin->GetEntry(evt);
+      
+      if (fabs(montecarlo.eta) > 2.4) continue; //B mesons inside the detector region eta < 2.4           
+          
+      //if (montecarlo.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+
+      if (montecarlo.mu1pt<=4.) continue;
+      if (montecarlo.mu2pt<=4.) continue;
+      if (montecarlo.mu1eta>=2.4) continue;
+      if (montecarlo.mu2eta>=2.4) continue;
+
+      if (montecarlo.tk1pt<=1.6) continue;
+      if (montecarlo.tk1eta>=2.5) continue;
+
+      if (fabs(montecarlo.ujmass-JPSI_MASS)>=0.150) continue;                                                                                
+      if (montecarlo.ujpt<=8.0) continue;
+
+      if (montecarlo.lxy/montecarlo.errxy<=3.0) continue;
+      if (montecarlo.cosalpha2d<=0.99) continue;
+      if (montecarlo.vtxprob<=0.1) continue;
+
+      hist_passed->Fill(montecarlo.genpt);//count only the events with the selection above
+      passed +=1;
+    }
+      
+      //not yet if (!MuonInfo->SoftMuID[mu1idx]) continue;                                                                                       
+      //not yet if (!MuonInfo->SoftMuID[mu2idx]) continue;                                                                                      
+  
+      //not yet if (TrackInfo->chi2[tk1idx]/TrackInfo->ndf[tk1idx]>=5.) continue;                                                   
+      //not yet if (TrackInfo->striphit[tk1idx]+TrackInfo->pixelhit[tk1idx]<5) continue;                                                      
+                                                                                                                                                 
+  /*
+  TCanvas ch1;
+  hist_tot->Draw();
+  ch1.SaveAs(TString::Format("hist_tot_from_%d_to_%d.png",(int)pt_min,(int)pt_max));  
+  TCanvas ch2;
+  hist_passed->Draw();
+  ch2.SaveAs(TString::Format("hist_passed_from_%d_to_%d.png",(int)pt_min,(int)pt_max));
+  */
+
+  //calculates the efficiency by dividing the histograms
+  TEfficiency* efficiency = new TEfficiency(*hist_passed, *hist_tot);
+  
+  double eff;
+  double eff_lo;
+  double eff_hi;
+
+  eff = efficiency->GetEfficiency(1);
+  eff_lo = efficiency->GetEfficiencyErrorLow(1);
+  eff_hi = efficiency->GetEfficiencyErrorUp(1);
+  
+  RooRealVar* eff1 = new RooRealVar("eff1","eff1",eff);
+  eff1->setAsymError(-eff_lo,eff_hi);
+
+  std::cout << "efficiency : " << eff << " +" << eff_hi << " -" << eff_lo << std::endl;
+  std::cout << "total : " << tot << " passed : " << passed << std::endl;
+
+  fin->Close();
+  delete fin;
+
+  return eff1;
+}
+
+/*
 RooRealVar* pre_filter_efficiency(int channel, double pt_min, double pt_max)
 {
   ReducedGenBranches gen;
@@ -291,14 +385,14 @@ RooRealVar* pre_filter_efficiency(int channel, double pt_min, double pt_max)
 
       if (muon1Filter && muon2Filter) hist_passed->Fill(gen.pt);//count only the events with the muon selection above
     }
-  /*
-  TCanvas ch1;
-  hist_tot->Draw();
-  ch1.SaveAs(TString::Format("hist_tot_from_%d_to_%d.png",(int)pt_min,(int)pt_max));  
-  TCanvas ch2;
-  hist_passed->Draw();
-  ch2.SaveAs(TString::Format("hist_passed_from_%d_to_%d.png",(int)pt_min,(int)pt_max));
-  */
+  
+  //TCanvas ch1;
+  //hist_tot->Draw();
+  //ch1.SaveAs(TString::Format("hist_tot_from_%d_to_%d.png",(int)pt_min,(int)pt_max));  
+  //TCanvas ch2;
+  //hist_passed->Draw();
+  //ch2.SaveAs(TString::Format("hist_passed_from_%d_to_%d.png",(int)pt_min,(int)pt_max));
+  
 
   //calculates the efficiency by dividing the histograms
   TEfficiency* efficiency = new TEfficiency(*hist_passed, *hist_tot);
@@ -319,6 +413,7 @@ RooRealVar* pre_filter_efficiency(int channel, double pt_min, double pt_max)
 
   return eff1;
 }
+*/
 
 RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max)
 {
