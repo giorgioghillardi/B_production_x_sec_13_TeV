@@ -97,9 +97,11 @@ int main(int argc, char** argv)
     }
 
   TString data_selection_output_file="";
+  TString data_selection_output_file_mc="";
   data_selection_output_file= "selected_data_" + channel_to_ntuple_name(channel) + ".root";
+  data_selection_output_file_mc= "selected_data_" + channel_to_ntuple_name(channel) + "_mc.root";
   
-  data_selection(input_file,data_selection_output_file,channel);
+  data_selection(input_file,data_selection_output_file_mc,channel);
 
   if(show_dist)
     { 
