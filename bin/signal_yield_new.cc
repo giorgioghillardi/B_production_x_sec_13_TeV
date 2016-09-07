@@ -25,6 +25,7 @@
 #include <RooWorkspace.h>
 #include <RooAddPdf.h>
 #include <RooGenericPdf.h>
+#include <RooCBShape.h>
 #include <TGraphAsymmErrors.h>
 #include <TEfficiency.h>
 #include <RooMCStudy.h>
@@ -62,21 +63,24 @@ double pt_bin_mean(RooWorkspace& w, double pt_min, double pt_max);
 RooRealVar* pre_filter_efficiency(int channel, double pt_min, double pt_max);
 
 void build_pdf(RooWorkspace& w, int channel);
+void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string choice2);
 void read_data(RooWorkspace& w, TString filename,int channel);
 void read_data_cut(RooWorkspace& w, RooAbsData* data);
 void set_up_workspace_variables(RooWorkspace& w, int channel);
+//void set_up_workspace_variables(RooWorkspace& w, int channel, double range_lo, double range_hi);
 
 TString channel_to_ntuple_name(int channel);
 TString channel_to_xaxis_title(int channel);
 int channel_to_nbins(int channel);
 
-//input example: signal_yield_new --channel 1 --bins pt/y --eff 1 --mc 1
+//input example: signal_yield_new --channel 1 --bins pt/y --eff 1 --mc 1 --syst
 int main(int argc, char** argv)
 {
   int channel = 0;
   std::string yield_sub_samples = "0";
   int calculate_efficiency = 0;
   int mcstudy = 0;
+  int syst = 0;
   for(int i=1 ; i<argc ; ++i)
     {
       std::string argument = argv[i];
@@ -102,6 +106,14 @@ int main(int argc, char** argv)
 	  convert << argv[++i];
 	  convert >> mcstudy;
 	}
+
+      if(argument == "--syst")
+	{
+	  convert << argv[++i];
+	  convert >> syst;
+	  std::cout << "KDJKLDSJKLAD" << std::endl;
+	}
+
     }
 
 
@@ -221,6 +233,37 @@ int main(int argc, char** argv)
 	  TCanvas c4;
 	  f_nll->Draw();
 	  c4.SaveAs("nll_signal.png");
+	}
+
+      if(syst)
+	{
+	  RooWorkspace* ws1 = new RooWorkspace("ws1","Bmass");
+
+	  //set up mass, pt and y variables inside ws1  
+	  set_up_workspace_variables(*ws1,channel);
+
+	  //read data from the selected data file, and import it as a dataset into the workspace.
+	  read_data(*ws1, data_selection_input_file,channel);
+	  ws1->Print();
+
+	  std::cout << "dsajdfsklsafjklfs" << std::endl;
+	  build_pdf(*ws1,channel, "crystal", "signal");     
+      
+	  data = ws1->data("data");
+	  model = ws1->pdf("model");     
+	  
+	  model->fitTo(*data,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
+	  
+	  signal_res = ws1->var("n_signal");
+	  /* RooRealVar* mean = ws->var("m_mean");
+	     RooRealVar* sigma1 = ws->var("m_sigma1");
+	     RooRealVar* sigma2 = ws->var("m_sigma2");
+	     RooRealVar* lambda = ws->var("m_exp");*/
+	  
+	  std::cout <<"SIGNAL: "<< signal_res->getVal() << " " << signal_res->getAsymErrorLo() << " +" << signal_res->getAsymErrorHi() << std::endl;
+	  
+	  mass_fit_directory = "full_dataset_mass_fit/" + channel_to_ntuple_name(channel) + "_signal_"+ TString::Format(VERSION);
+	  plot_mass_fit(*ws1,channel,mass_fit_directory);
 	}
 
     }
@@ -843,16 +886,16 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
   RooRealVar sigma1 = *(w.var("m_sigma1"));
   RooRealVar sigma2 = *(w.var("m_sigma2"));
   RooRealVar n_signal = *(w.var("n_signal"));
-  RooRealVar n_back = *(w.var("n_combinatorial"));    
+  RooRealVar n_back = *(w.var("n_combinatorial"));  
   RooPlot* frame_m = mass.frame();
-  
+
   TH1D* histo_data = (TH1D*)data->createHistogram("histo_data", mass, Binning(channel_to_nbins(channel), mass.getMin(), mass.getMax() ));
   histo_data->Sumw2(false);
   histo_data->SetBinErrorOption(TH1::kPoisson);
   histo_data->SetMarkerStyle(20);
   histo_data->SetMarkerSize(0.8);
   histo_data->SetLineColor(kBlack);
-  
+
   for (int i=1; i<=channel_to_nbins(channel); i++)
     if (histo_data->GetBinContent(i)==0) histo_data->SetBinError(i,0.);
   
@@ -873,7 +916,7 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
     model->plotOn(frame_m,Precision(2E-4),Components("pdf_m_jpsix"),LineColor(kViolet),LineWidth(2),LineStyle(7));
   if (channel==5)
     model->plotOn(frame_m,Precision(2E-4),Components("pdf_m_x3872"),LineColor(kOrange),LineWidth(2),LineStyle(kSolid),FillStyle(3008),FillColor(kOrange), VLines(), DrawOption("F"));
-  
+
   frame_m->SetTitle("");
   //frame_m->GetXaxis()->SetTitle(channel_to_xaxis_title(channel));
   //frame_m->GetXaxis()->SetLabelFont(42);
@@ -891,14 +934,13 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
   frame_m->GetYaxis()->SetTitleFont(42);
   frame_m->GetYaxis()->SetLabelFont(42);
   frame_m->GetYaxis()->SetLabelSize(0.055);
-  
+
   RooHist* pull_hist = frame_m->pullHist("theData","thePdf");
   
   RooPlot* pull_plot = mass.frame();
   
   RooGenericPdf* line_ref = new RooGenericPdf("ref_0", "ref_0", RooConst(0.));
   line_ref->plotOn(pull_plot, LineStyle(7), LineColor(13), LineWidth(2));  
-
 
   pull_plot->addPlotable(static_cast<RooPlotable*>(pull_hist),"P");
   pull_plot->SetTitle("");
@@ -940,7 +982,7 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
   p2->SetFrameBorderMode(0); 
   //p2->SetTicks(1,2); 
   p2->Draw();
-  
+
   RooAbsReal* nll = model->createNLL(*data);
   double log_likelihood= nll->getVal();
   std::stringstream ll_str;
@@ -1008,16 +1050,17 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
   tex8->SetTextFont(42);
   tex8->SetTextSize(0.03);
   tex8->Draw();  
- 
+
   p1->cd();
   frame_m->Draw();
   histo_data->Draw("Esame");
   Legend(channel,0,0,0);
   p2->cd();
   pull_plot->Draw();
-  
+
   c1->SaveAs(directory + ".root");
-  c1->SaveAs(directory + ".png"); }
+  c1->SaveAs(directory + ".png"); 
+}
 
 void plot_pt_dist(RooWorkspace& w, int channel, TString directory)
 {
@@ -1138,6 +1181,141 @@ void build_pdf(RooWorkspace& w, int channel)
     case 5:// J/psi pipi
       model = new RooAddPdf("model","model",
 			    RooArgList(pdf_m_signal, pdf_m_combinatorial_bern, pdf_m_x3872),
+			    RooArgList(n_signal, n_combinatorial, n_x3872));
+      break;
+    }
+
+  w.import(*model);
+}
+
+void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string choice2)
+{
+  double mass_peak;
+
+  RooRealVar mass = *(w.var("mass"));
+  RooRealVar pt = *(w.var("pt"));  
+  RooAbsData* data = w.data("data");
+
+  switch (channel) {
+  default:
+  case 1:
+    mass_peak = BP_MASS;
+    break;
+  case 2:
+    mass_peak = B0_MASS;
+    break;
+  case 3:
+    mass_peak = B0_MASS;
+    break;
+  case 4:
+    mass_peak = BS_MASS;
+    break;
+  case 5:
+    mass_peak = PSI2S_MASS;
+    break;
+  case 6:
+    mass_peak = LAMBDAB_MASS;
+    break;
+  }
+  
+  double n_signal_initial = data->sumEntries(TString::Format("abs(mass-%g)<0.015",mass_peak))
+    - data->sumEntries(TString::Format("abs(mass-%g)<0.030&&abs(mass-%g)>0.015",mass_peak,mass_peak));
+  
+  if(n_signal_initial<0)
+  n_signal_initial=1;
+
+  double n_combinatorial_initial = data->sumEntries() - n_signal_initial;
+  
+  //-----------------------------------------------------------------
+  // signal PDF 
+
+  //Two Gaussians
+  RooRealVar m_mean("m_mean","m_mean",mass_peak,mass_peak-0.09,mass_peak+0.09);
+  RooRealVar m_sigma1("m_sigma1","m_sigma1",0.015,0.005,0.07);
+  RooRealVar m_sigma2("m_sigma2","m_sigma2",0.030,0.001,0.100);
+  RooRealVar m_fraction("m_fraction","m_fraction",0.5);
+  RooGaussian m_gaussian1("m_gaussian1","m_gaussian1",mass,m_mean,m_sigma1);
+  RooGaussian m_gaussian2("m_gaussian2","m_gaussian2",mass,m_mean,m_sigma2);
+
+  //Crystal Ball
+  RooRealVar alpha("alpha", "alpha", mass_peak-0.015/2, mass_peak-0.07, mass_peak-0.001);
+  RooRealVar n("n", "n", 2.7, 1, 3);
+  RooCBShape crystal("crystal", "crystal", mass, m_mean, m_sigma1, alpha, n);
+
+  RooAddPdf* pdf_m_signal;
+      
+  // use single Gaussian for J/psi Ks and J/psi Lambda due to low statistics
+  if (channel==3 || channel==6 || data->sumEntries()<250) {
+    m_sigma2.setConstant(kTRUE);
+    m_fraction.setVal(1.);
+  }
+  
+  if(choice2=="signal" && choice=="crystal")
+    {
+      pdf_m_signal = new RooAddPdf("pdf_m_signal", "pdf_m_signal", RooArgList(crystal,m_gaussian2), RooArgList(m_fraction));
+      m_sigma2.setConstant(kTRUE);
+      m_fraction.setVal(1.);
+    }
+  else if(choice2=="signal" && choice=="1gauss")
+    {
+      pdf_m_signal = new RooAddPdf("pdf_m_signal","pdf_m_signal",RooArgList(m_gaussian1,m_gaussian2),RooArgList(m_fraction));
+      m_sigma2.setConstant(kTRUE);
+      m_fraction.setVal(1.);
+    }
+  else
+    pdf_m_signal = new RooAddPdf("pdf_m_signal","pdf_m_signal",RooArgList(m_gaussian1,m_gaussian2),RooArgList(m_fraction));
+
+  //-----------------------------------------------------------------
+  // combinatorial background PDF (exponential or bernstean poly.)
+  
+  RooRealVar m_exp("m_exp","m_exp",-0.3,-4.,0.);
+  RooExponential pdf_m_combinatorial_exp("pdf_m_combinatorial_exp","pdf_m_combinatorial_exp",mass,m_exp);
+  
+  RooRealVar m_par1("m_par1","m_par2",1.,0,+10.);
+  RooRealVar m_par2("m_par2","m_par3",1.,0,+10.);
+  RooRealVar m_par3("m_par3","m_par3",1.,0,+10.);
+  
+  RooBernstein pdf_m_combinatorial_bern("pdf_m_combinatorial_bern","pdf_m_combinatorial_bern",mass,RooArgList(RooConst(1.),m_par1,m_par2,m_par3));
+  //erfc component on channel 1 and 3
+  RooFormulaVar pdf_m_jpsix("pdf_m_jpsix","2.7*erfc((mass-5.14)/(0.5*0.08))",{mass});
+  
+  //-----------------------------------------------------------------
+  // X(3872) PDF, only for J/psi pipi fit
+  
+  RooRealVar m_x3872_mean("m_x3872_mean","m_x3872_mean",3.872,3.7,3.9);
+  RooRealVar m_x3872_sigma("m_x3872_sigma","m_x3872_sigma",0.01,0.001,0.010);
+  RooGaussian pdf_m_x3872("pdf_m_x3872","pdf_m_x3872",mass,m_x3872_mean,m_x3872_sigma);
+  
+  //-----------------------------------------------------------------
+  // full model
+  
+  RooRealVar n_signal("n_signal","n_signal",n_signal_initial,0.,data->sumEntries());
+  RooRealVar n_combinatorial("n_combinatorial","n_combinatorial",n_combinatorial_initial,0.,data->sumEntries());
+  RooRealVar n_x3872("n_x3872","n_x3872",200.,0.,data->sumEntries());
+  
+  RooRealVar n_jpsix("n_jpsix","n_jpsix",data->sumEntries(TString::Format("mass>4.9&&mass<5.14")),data->sumEntries(TString::Format("mass>4.9&&mass<5.14")),data->sumEntries());
+  
+  RooAddPdf* model;
+
+  switch(channel)
+    {
+    default:
+    case 1:// B+ -> J/psi K+
+    case 3://B0 -> J/psi Ks
+      model = new RooAddPdf("model","model",
+			    RooArgList(*pdf_m_signal, pdf_m_combinatorial_exp, pdf_m_jpsix),
+			    RooArgList(n_signal, n_combinatorial, n_jpsix));
+      break;
+    case 2:// B0 -> J/psi K* 
+    case 4://Bs -> J/psi phi
+    case 6://Lambda_b -> J/psi Lambda
+      model = new RooAddPdf("model","model",
+			    RooArgList(*pdf_m_signal, pdf_m_combinatorial_exp),
+			    RooArgList(n_signal, n_combinatorial));
+      break;
+    case 5:// J/psi pipi
+      model = new RooAddPdf("model","model",
+			    RooArgList(*pdf_m_signal, pdf_m_combinatorial_bern, pdf_m_x3872),
 			    RooArgList(n_signal, n_combinatorial, n_x3872));
       break;
     }
