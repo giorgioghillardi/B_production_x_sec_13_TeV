@@ -194,10 +194,22 @@ int main(int argc, char** argv)
   for(int i=0; i<10; i++){
 
   TCanvas c;
+
+if(channel==2){
+
   histos_data[i]->Draw();
   histos_mc[i]->Draw("same");
-  if(i<3) c.SetLogy();
+}
+
+else if(channel==4){
+  histos_mc[i]->Draw("same");
+  histos_data[i]->Draw();
+  }
+
+
+if(i<3) c.SetLogy();
   TLegend* leg;
+  
   if(i>2 && i<7){
   leg = new TLegend (0.15, 0.8, 0.4, 0.9);
   }
