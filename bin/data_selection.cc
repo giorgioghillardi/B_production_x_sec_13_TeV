@@ -110,7 +110,7 @@ int main(int argc, char** argv)
       return 0;
     }
 
-  std::string input_file_mc="/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_new_"
+  TString input_file_mc="/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_new_"
     +channel_to_ntuple_name(channel)+"_bmuonfilter_with_cuts.root";
 
 
