@@ -59,7 +59,6 @@ int main(int argc, char** argv)
 {
   int channel = 0;
   std::string input_file = "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_data.root";
-  std::string input_file_mc = "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_new_ntkstar_bmuonfilter_with_cuts.root";
   bool side_sub = 0, show_dist = 0;
   int mc =0;
 
@@ -105,6 +104,10 @@ int main(int argc, char** argv)
       std::cout << "No channel was provided as input. Please use --channel. Example: data_selection --channel 1" << std::endl;
       return 0;
     }
+
+  std::string input_file_mc="/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_new_"
+    +channel_to_ntuple_name(channel)+"_bmuonfilter_with_cuts.root";
+
 
   TString data_selection_output_file="";
   TString data_selection_output_file_mc="";
