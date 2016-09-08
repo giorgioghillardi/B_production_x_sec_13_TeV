@@ -94,7 +94,7 @@ int main(int argc, char** argv)
       if(argument == "--showdist")
 	{
 	  convert << argv[++i];
-    convert >> show_dist;
+	  convert >> show_dist;
 	}
 
       if(argument == "--mc")
@@ -111,7 +111,7 @@ int main(int argc, char** argv)
     }
 
   TString input_file_mc="/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_new_"
-    +channel_to_ntuple_name(channel)+"_bmuonfilter_with_cuts.root";
+    +channel_to_ntuple_name(channel)+"_bmuonfilter_no_cuts.root";
 
 
   TString data_selection_output_file="";
@@ -183,58 +183,52 @@ int main(int argc, char** argv)
 	  histos_mc = sideband_sub(*ws_mc, 5.1, 5.4, 1);
 	  break;
 	case 4:
-	  histos_mc = sideband_sub(*ws_mc, 5.25, 5.45, 1);
+	  histos_mc = sideband_sub(*ws_mc, 5.22, 5.5, 1);
 	  break;
 	default:
 	  std::cout << "WARNING! UNDEFINED LIMITS FOR PEAK REGION" << std::endl;
 	}
 
-  std::string names[] = {"pt", "mu1pt", "mu2pt", "mu1eta", "mu2eta", "y", "vtxprob", "lxy", "errlxy", "lerrxy"};    
+      std::string names[] = {"pt", "mu1pt", "mu2pt", "mu1eta", "mu2eta", "y", "vtxprob", "lxy", "errlxy", "lerrxy"};    
 
-  for(int i=0; i<10; i++){
-
-  TCanvas c;
-
-if(channel==2){
-
-  histos_data[i]->Draw();
-  histos_mc[i]->Draw("same");
-}
-
-else if(channel==4){
-  histos_mc[i]->Draw();
-  histos_data[i]->Draw("same");
-  }
-
-if(i==6) {
-  histos_data[i]->GetYaxis()->SetRangeUser(0.1, 1000);
-  histos_mc[i]->GetYaxis()->SetRangeUser(0.1, 1000);
-
-}
-
-if(i<3) c.SetLogy();
-  TLegend* leg;
-  
-  if(i>2 && i<7){
-  leg = new TLegend (0.15, 0.8, 0.4, 0.9);
-  }
-  
-  else{
-  leg = new TLegend (0.6, 0.5, 0.85, 0.75);
-  }
-  leg->AddEntry(histos_data[i]->GetName(), "Sideband Subtraction", "l");
-  leg->AddEntry(histos_mc[i]->GetName(), "Monte Carlo", "l");
-  leg->SetTextSize(0.03);
-//  std::cout<<"NOME DO DATA: "<< histos_data[i]->GetName()<< std::endl;
- // std::cout<<"NOME DO MC: "<< histos_mc[i]->GetName()<< std::endl;
-  leg->Draw("same");
-
-  c.SaveAs((names[i]+"_mc_validation.png").c_str());
-  
-
-  }
-
-
+      for(int i=0; i<10; i++)
+	{
+	  TCanvas c;
+	  
+	  if(channel==2)
+	    {
+	      histos_data[i]->Draw();
+	      histos_mc[i]->Draw("same");
+	    }
+	  else if(channel==4)
+	    {
+	      histos_mc[i]->Draw();
+	      histos_data[i]->Draw("same");
+	    }
+	  
+	  if(i==6)
+	    {
+	      histos_data[i]->GetYaxis()->SetRangeUser(0.1, 1000);
+	      histos_mc[i]->GetYaxis()->SetRangeUser(0.1, 1000); 
+	    }
+	  
+	  if(i<3) c.SetLogy();
+	  
+	  TLegend* leg;
+	  
+	  if(i>2 && i<7) leg = new TLegend (0.15, 0.8, 0.4, 0.9);
+	  else leg = new TLegend (0.6, 0.5, 0.85, 0.75);
+	  
+	  leg->AddEntry(histos_data[i]->GetName(), "Sideband Subtraction", "l");
+	  leg->AddEntry(histos_mc[i]->GetName(), "Monte Carlo", "l");
+	  leg->SetTextSize(0.03);
+	  //  std::cout<<"NOME DO DATA: "<< histos_data[i]->GetName()<< std::endl;
+	  // std::cout<<"NOME DO MC: "<< histos_mc[i]->GetName()<< std::endl;
+	  leg->Draw("same");
+	  
+	  c.SaveAs((names[i]+"_mc_validation.png").c_str());
+	}
+      
     }
 }
 
@@ -622,10 +616,11 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   
 
   fit_side.fitTo(*reduceddata_side,Range("left,right"));
-//  RooRealVar* nll = (RooRealVar*) fit_side.createNLL(*reduceddata_side, Range("left,right"));
+  //  RooRealVar* nll = (RooRealVar*) fit_side.createNLL(*reduceddata_side, Range("left,right"));
 
   RooPlot* massframe = mass.frame();
   reduceddata_side->plotOn(massframe);
+  //data->plotOn(massframe);
   fit_side.plotOn(massframe, Range("all"));
 
   TCanvas d;
@@ -633,7 +628,7 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   d.SaveAs("fit_side.png");
 
   std::cout << std::endl << "chisquare: " << massframe->chiSquare() << std::endl;
-//  std::cout << "LogLikelihood: " << nll->getVal() << std::endl;
+  //  std::cout << "LogLikelihood: " << nll->getVal() << std::endl;
 
   //Integrating the background distribution                            
 
@@ -661,17 +656,17 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   TH1D* hist_pt_dist_peak = (TH1D*) reduceddata_central->createHistogram("pt_dist_peak", pt);
   TH1D* pt_dist_peak = new TH1D(*hist_pt_dist_peak);
   if(mc==1){
-  pt_dist_peak->SetMarkerColor(kBlack);
-  pt_dist_peak->SetLineColor(kBlack);
-  pt_dist_peak->SetName("pt_dist_peak_mc");
+    pt_dist_peak->SetMarkerColor(kBlack);
+    pt_dist_peak->SetLineColor(kBlack);
+    pt_dist_peak->SetName("pt_dist_peak_mc");
   }
   else{
-  pt_dist_peak->SetMarkerColor(kRed);
-  pt_dist_peak->SetLineColor(kRed);
-  pt_dist_peak->SetNameTitle("pt_dist_peak", "Signal and Background Distributions - p_{T} (B)");
+    pt_dist_peak->SetMarkerColor(kRed);
+    pt_dist_peak->SetLineColor(kRed);
+    pt_dist_peak->SetNameTitle("pt_dist_peak", "Signal and Background Distributions - p_{T} (B)");
   } 
-
-  histos.push_back(pt_dist_peak);
+  
+  /*if(mc==0)*/  histos.push_back(pt_dist_peak);
 
   TH1D* pt_dist_total = (TH1D*) data->createHistogram("pt_dist_total",pt);
   pt_dist_total->SetMarkerColor(kBlack);
@@ -680,6 +675,8 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
 
   pt_dist_peak->Add(pt_dist_side, -factor);
   pt_dist_side->Add(pt_dist_side, factor);
+
+  //  if(mc==1)  histos.push_back(pt_dist_total);
 
   TCanvas c;
 
@@ -708,18 +705,18 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   TH1D* hist_mu1pt_dist_peak = (TH1D*) reduceddata_central->createHistogram("mu1pt_dist_peak", mu1pt);
   TH1D* mu1pt_dist_peak = new TH1D(*hist_mu1pt_dist_peak);
   if(mc==1){
-  mu1pt_dist_peak->SetMarkerColor(kBlack);
-  mu1pt_dist_peak->SetLineColor(kBlack);
-  mu1pt_dist_peak->SetName("mu1pt_dist_peak_mc");
+    mu1pt_dist_peak->SetMarkerColor(kBlack);
+    mu1pt_dist_peak->SetLineColor(kBlack);
+    mu1pt_dist_peak->SetName("mu1pt_dist_peak_mc");
 
   }
   else{
-  mu1pt_dist_peak->SetMarkerColor(kRed);
-  mu1pt_dist_peak->SetLineColor(kRed);
-  mu1pt_dist_peak->SetNameTitle("mu1pt_dist_peak", "Signal and Background Distributions - p_{T} (#mu_{1})");
+    mu1pt_dist_peak->SetMarkerColor(kRed);
+    mu1pt_dist_peak->SetLineColor(kRed);
+    mu1pt_dist_peak->SetNameTitle("mu1pt_dist_peak", "Signal and Background Distributions - p_{T} (#mu_{1})");
   }
 
-  histos.push_back(mu1pt_dist_peak);
+  /*if(mc==0)*/  histos.push_back(mu1pt_dist_peak);
 
   TH1D* mu1pt_dist_total = (TH1D*) data->createHistogram("mu1pt_dist_total",mu1pt);
   mu1pt_dist_total->SetMarkerColor(kBlack);
@@ -729,6 +726,8 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
 
   mu1pt_dist_peak->Add(mu1pt_dist_side, -factor);
   mu1pt_dist_side->Add(mu1pt_dist_side, factor);
+
+  //  if(mc==1)  histos.push_back(mu1pt_dist_total);
 
   TCanvas c1;
 
@@ -756,18 +755,18 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   TH1D* hist_mu2pt_dist_peak = (TH1D*) reduceddata_central->createHistogram("mu2pt_dist_peak", mu2pt);
   TH1D* mu2pt_dist_peak = new TH1D(*hist_mu2pt_dist_peak);
   if(mc==1){
-  mu2pt_dist_peak->SetMarkerColor(kBlack);
-  mu2pt_dist_peak->SetLineColor(kBlack);
-  mu2pt_dist_peak->SetName("mu2pt_dist_peak_mc");
+    mu2pt_dist_peak->SetMarkerColor(kBlack);
+    mu2pt_dist_peak->SetLineColor(kBlack);
+    mu2pt_dist_peak->SetName("mu2pt_dist_peak_mc");
   }
 
   else{
-  mu2pt_dist_peak->SetMarkerColor(kRed);
-  mu2pt_dist_peak->SetLineColor(kRed);
-  mu2pt_dist_peak->SetNameTitle("mu2pt_dist_peak", "Signal and Background Distributions - p_{T} (#mu_{2})");
+    mu2pt_dist_peak->SetMarkerColor(kRed);
+    mu2pt_dist_peak->SetLineColor(kRed);
+    mu2pt_dist_peak->SetNameTitle("mu2pt_dist_peak", "Signal and Background Distributions - p_{T} (#mu_{2})");
   }
 
-  histos.push_back(mu2pt_dist_peak);
+  /*if(mc==0) */ histos.push_back(mu2pt_dist_peak);
 
   TH1D* mu2pt_dist_total = (TH1D*) data->createHistogram("mu2pt_dist_total",mu2pt);
   mu2pt_dist_total->SetMarkerColor(kBlack);
@@ -776,6 +775,8 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
 
   mu2pt_dist_peak->Add(mu2pt_dist_side, -factor);
   mu2pt_dist_side->Add(mu2pt_dist_side, factor);
+
+  //  if(mc==1)  histos.push_back(mu2pt_dist_total);
 
   TCanvas c2;
 
@@ -803,19 +804,18 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   TH1D* hist_mu1eta_dist_peak = (TH1D*) reduceddata_central->createHistogram("mu1eta_dist_peak", mu1eta);
   TH1D* mu1eta_dist_peak = new TH1D(*hist_mu1eta_dist_peak);
   if(mc==1){
-  mu1eta_dist_peak->SetMarkerColor(kBlack);
-  mu1eta_dist_peak->SetLineColor(kBlack);
-  mu1eta_dist_peak->SetName("mu1eta_dist_peak_mc");
+    mu1eta_dist_peak->SetMarkerColor(kBlack);
+    mu1eta_dist_peak->SetLineColor(kBlack);
+    mu1eta_dist_peak->SetName("mu1eta_dist_peak_mc");
 
   }
   else{
-  mu1eta_dist_peak->SetMarkerColor(kRed);
-  mu1eta_dist_peak->SetLineColor(kRed);
-  mu1eta_dist_peak->SetNameTitle("mu1eta_dist_peak", "Signal and Background Distributions - #eta (#mu_{1})");
+    mu1eta_dist_peak->SetMarkerColor(kRed);
+    mu1eta_dist_peak->SetLineColor(kRed);
+    mu1eta_dist_peak->SetNameTitle("mu1eta_dist_peak", "Signal and Background Distributions - #eta (#mu_{1})");
   }
 
-  histos.push_back(mu1eta_dist_peak);
-
+  /*if(mc==0) */ histos.push_back(mu1eta_dist_peak);
 
   TH1D* mu1eta_dist_total = (TH1D*) data->createHistogram("mu1eta_dist_total",mu1eta);
   mu1eta_dist_total->SetMarkerColor(kBlack);
@@ -824,6 +824,8 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
 
   mu1eta_dist_peak->Add(mu1eta_dist_side, -factor);
   mu1eta_dist_side->Add(mu1eta_dist_side, factor);
+
+  //if(mc==1)  histos.push_back(mu1eta_dist_total);
 
   TCanvas c3;
 
@@ -840,7 +842,7 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   leg3->AddEntry("mu1eta_dist_side", "Background", "l");
   leg3->Draw("same");
 
- // c3.SetLogy();
+  // c3.SetLogy();
   c3.SaveAs("mu1eta_sideband_sub.png");
 
   TH1D* mu2eta_dist_side = (TH1D*) reduceddata_side->createHistogram("mu2eta_dist_side",mu2eta);
@@ -851,19 +853,18 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   TH1D* hist_mu2eta_dist_peak = (TH1D*) reduceddata_central->createHistogram("mu2eta_dist_peak", mu2eta);
   TH1D* mu2eta_dist_peak = new TH1D(*hist_mu2eta_dist_peak);
   if(mc==1){
-  mu2eta_dist_peak->SetMarkerColor(kBlack);
-  mu2eta_dist_peak->SetLineColor(kBlack);
-  mu2eta_dist_peak->SetName("mu2eta_dist_peak_mc");
+    mu2eta_dist_peak->SetMarkerColor(kBlack);
+    mu2eta_dist_peak->SetLineColor(kBlack);
+    mu2eta_dist_peak->SetName("mu2eta_dist_peak_mc");
 
   }  
   else{
-  mu2eta_dist_peak->SetMarkerColor(kRed);
-  mu2eta_dist_peak->SetLineColor(kRed);
-  mu2eta_dist_peak->SetNameTitle("mu2eta_dist_peak", "Signal and Background Distributions - #eta (#mu_{2})");
+    mu2eta_dist_peak->SetMarkerColor(kRed);
+    mu2eta_dist_peak->SetLineColor(kRed);
+    mu2eta_dist_peak->SetNameTitle("mu2eta_dist_peak", "Signal and Background Distributions - #eta (#mu_{2})");
   }
 
-  histos.push_back(mu2eta_dist_peak);
-
+  /*  if(mc==0)*/  histos.push_back(mu2eta_dist_peak);
 
   TH1D* mu2eta_dist_total = (TH1D*) data->createHistogram("mu1eta_dist_total",mu2eta);
   mu2eta_dist_total->SetMarkerColor(kBlack);
@@ -872,6 +873,8 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
 
   mu2eta_dist_peak->Add(mu2eta_dist_side, -factor);
   mu2eta_dist_side->Add(mu2eta_dist_side, factor);
+
+  // if(mc==1)  histos.push_back(mu2eta_dist_total);
 
   TCanvas c4;
 
@@ -899,18 +902,18 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   TH1D* hist_y_dist_peak = (TH1D*) reduceddata_central->createHistogram("y_dist_peak", y);
   TH1D* y_dist_peak = new TH1D(*hist_y_dist_peak);
   if(mc==1){
-  y_dist_peak->SetMarkerColor(kBlack);
-  y_dist_peak->SetLineColor(kBlack);
-  y_dist_peak->SetName("y_dist_peak_mc");
+    y_dist_peak->SetMarkerColor(kBlack);
+    y_dist_peak->SetLineColor(kBlack);
+    y_dist_peak->SetName("y_dist_peak_mc");
 
   }
   else{
-  y_dist_peak->SetMarkerColor(kRed);
-  y_dist_peak->SetLineColor(kRed);
-  y_dist_peak->SetNameTitle("y_dist_peak", "Signal and Background Distributions - y (B)");
+    y_dist_peak->SetMarkerColor(kRed);
+    y_dist_peak->SetLineColor(kRed);
+    y_dist_peak->SetNameTitle("y_dist_peak", "Signal and Background Distributions - y (B)");
   }
 
-  histos.push_back(y_dist_peak);
+  /*if(mc==0) */ histos.push_back(y_dist_peak);
 
 
   TH1D* y_dist_total = (TH1D*) data->createHistogram("y_dist_total",y);
@@ -920,6 +923,8 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
 
   y_dist_peak->Add(y_dist_side, -factor);
   y_dist_side->Add(y_dist_side, factor);
+
+  //  if(mc==1)  histos.push_back(y_dist_total);
 
   TCanvas c5;
 
@@ -947,19 +952,19 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   TH1D* hist_vtxprob_dist_peak = (TH1D*) reduceddata_central->createHistogram("vtxprob_dist_peak", vtxprob);
   TH1D* vtxprob_dist_peak = new TH1D(*hist_vtxprob_dist_peak);
   if(mc==1){
-  vtxprob_dist_peak->SetMarkerColor(kBlack);
-  vtxprob_dist_peak->SetLineColor(kBlack);
-  vtxprob_dist_peak->SetName("vtxprob_dist_peak_mc");
-//  vtxprob_dist_peak->GetYaxis()->SetRangeUser(0.1, 1000);
+    vtxprob_dist_peak->SetMarkerColor(kBlack);
+    vtxprob_dist_peak->SetLineColor(kBlack);
+    vtxprob_dist_peak->SetName("vtxprob_dist_peak_mc");
+    //  vtxprob_dist_peak->GetYaxis()->SetRangeUser(0.1, 1000);
   }
   else{
-  vtxprob_dist_peak->SetMarkerColor(kRed);
-  vtxprob_dist_peak->SetLineColor(kRed);
-  vtxprob_dist_peak->SetNameTitle("vtxprob_dist_peak", "Signal and Background Distributions - #chi^{2} prob");
-  //vtxprob_dist_peak->GetYaxis()->SetRangeUser(0.1, 1000);
+    vtxprob_dist_peak->SetMarkerColor(kRed);
+    vtxprob_dist_peak->SetLineColor(kRed);
+    vtxprob_dist_peak->SetNameTitle("vtxprob_dist_peak", "Signal and Background Distributions - #chi^{2} prob");
+    //vtxprob_dist_peak->GetYaxis()->SetRangeUser(0.1, 1000);
   }
   
-  histos.push_back(vtxprob_dist_peak);
+  /*if(mc==0) */ histos.push_back(vtxprob_dist_peak);
 
 
   TH1D* vtxprob_dist_total = (TH1D*) data->createHistogram("vtxprob_dist_total",vtxprob);
@@ -969,6 +974,8 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
 
   vtxprob_dist_peak->Add(vtxprob_dist_side, -factor);
   vtxprob_dist_side->Add(vtxprob_dist_side, factor);
+
+  //  if(mc==1)  histos.push_back(vtxprob_dist_total);
 
   TCanvas c6;
 
@@ -997,17 +1004,17 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   TH1D* hist_lxy_dist_peak = (TH1D*) reduceddata_central->createHistogram("lxy_dist_peak", lxy);
   TH1D* lxy_dist_peak = new TH1D(*hist_lxy_dist_peak);
   if(mc==1){
-  lxy_dist_peak->SetMarkerColor(kBlack);
-  lxy_dist_peak->SetLineColor(kBlack);
-  lxy_dist_peak->SetName("lxy_dist_peak_mc");
+    lxy_dist_peak->SetMarkerColor(kBlack);
+    lxy_dist_peak->SetLineColor(kBlack);
+    lxy_dist_peak->SetName("lxy_dist_peak_mc");
   }
   else{
-  lxy_dist_peak->SetMarkerColor(kRed);
-  lxy_dist_peak->SetLineColor(kRed);
-  lxy_dist_peak->SetNameTitle("lxy_dist_peak", "Signal and Background Distributions - l_{xy} ");
+    lxy_dist_peak->SetMarkerColor(kRed);
+    lxy_dist_peak->SetLineColor(kRed);
+    lxy_dist_peak->SetNameTitle("lxy_dist_peak", "Signal and Background Distributions - l_{xy} ");
   }
 
-  histos.push_back(lxy_dist_peak);
+  /*  if(mc==0)*/  histos.push_back(lxy_dist_peak);
 
   TH1D* lxy_dist_total = (TH1D*) data->createHistogram("lxy_dist_total",lxy);
   lxy_dist_total->SetMarkerColor(kBlack);
@@ -1016,6 +1023,8 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
 
   lxy_dist_peak->Add(lxy_dist_side, -factor);
   lxy_dist_side->Add(lxy_dist_side, factor);
+
+  //  if(mc==1)  histos.push_back(lxy_dist_total);
 
   TCanvas c7;
 
@@ -1043,17 +1052,17 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   TH1D* hist_errlxy_dist_peak = (TH1D*) reduceddata_central->createHistogram("errlxy_dist_peak", errlxy);
   TH1D* errlxy_dist_peak = new TH1D(*hist_errlxy_dist_peak);
   if(mc==1){
-  errlxy_dist_peak->SetMarkerColor(kBlack);
-  errlxy_dist_peak->SetLineColor(kBlack);
-  errlxy_dist_peak->SetName("errlxy_dist_peak_mc");
+    errlxy_dist_peak->SetMarkerColor(kBlack);
+    errlxy_dist_peak->SetLineColor(kBlack);
+    errlxy_dist_peak->SetName("errlxy_dist_peak_mc");
   }
   else{
-  errlxy_dist_peak->SetMarkerColor(kRed);
-  errlxy_dist_peak->SetLineColor(kRed);
-  errlxy_dist_peak->SetNameTitle("errlxy_dist_peak", "Signal and Background Distributions - #sigma l_{xy} ");
+    errlxy_dist_peak->SetMarkerColor(kRed);
+    errlxy_dist_peak->SetLineColor(kRed);
+    errlxy_dist_peak->SetNameTitle("errlxy_dist_peak", "Signal and Background Distributions - #sigma l_{xy} ");
   }
 
-  histos.push_back(errlxy_dist_peak);
+  /*  if(mc==0) */ histos.push_back(errlxy_dist_peak);
 
   
   TH1D* errlxy_dist_total = (TH1D*) data->createHistogram("errlxy_dist_total",errlxy);
@@ -1063,6 +1072,8 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
 
   errlxy_dist_peak->Add(errlxy_dist_side, -factor);
   errlxy_dist_side->Add(errlxy_dist_side, factor);
+
+  //  if(mc==1)  histos.push_back(errlxy_dist_total);
 
   TCanvas c8;
 
@@ -1092,17 +1103,17 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   TH1D* hist_lerrxy_dist_peak = (TH1D*) reduceddata_central->createHistogram("lerrxy_dist_peak", lerrxy);
   TH1D* lerrxy_dist_peak = new TH1D(*hist_lerrxy_dist_peak);
   if(mc==1){
-  lerrxy_dist_peak->SetMarkerColor(kBlack);
-  lerrxy_dist_peak->SetLineColor(kBlack);
-  lerrxy_dist_peak->SetName("lerrxy_dist_peak_mc");
+    lerrxy_dist_peak->SetMarkerColor(kBlack);
+    lerrxy_dist_peak->SetLineColor(kBlack);
+    lerrxy_dist_peak->SetName("lerrxy_dist_peak_mc");
   }
   else{
-  lerrxy_dist_peak->SetMarkerColor(kRed);
-  lerrxy_dist_peak->SetLineColor(kRed);
-  lerrxy_dist_peak->SetNameTitle("lerrxy_dist_peak", "Signal and Background Distributions - l_{xy}/#sigma l_{xy} ");
+    lerrxy_dist_peak->SetMarkerColor(kRed);
+    lerrxy_dist_peak->SetLineColor(kRed);
+    lerrxy_dist_peak->SetNameTitle("lerrxy_dist_peak", "Signal and Background Distributions - l_{xy}/#sigma l_{xy} ");
   }
 
-  histos.push_back(lerrxy_dist_peak);
+  /*  if(mc==0)*/  histos.push_back(lerrxy_dist_peak);
 
   TH1D* lerrxy_dist_total = (TH1D*) data->createHistogram("lerrxy_dist_total",lerrxy);
   lerrxy_dist_total->SetMarkerColor(kBlack);
@@ -1111,6 +1122,8 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
 
   lerrxy_dist_peak->Add(lerrxy_dist_side, -factor);
   lerrxy_dist_side->Add(lerrxy_dist_side, factor);
+
+  //  if(mc==1)  histos.push_back(lerrxy_dist_total);
 
   TCanvas c9;
 
