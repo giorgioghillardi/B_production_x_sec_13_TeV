@@ -94,7 +94,7 @@ int main(int argc, char** argv)
       if(argument == "--showdist")
 	{
 	  convert << argv[++i];
-	  convert >> show_dist;
+    convert >> show_dist;
 	}
 
       if(argument == "--mc")
@@ -206,6 +206,11 @@ else if(channel==4){
   histos_data[i]->Draw("same");
   }
 
+if(i==6) {
+  histos_data[i]->GetYaxis()->SetRangeUser(0.1, 1000);
+  histos_mc[i]->GetYaxis()->SetRangeUser(0.1, 1000);
+
+}
 
 if(i<3) c.SetLogy();
   TLegend* leg;
@@ -945,13 +950,15 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   vtxprob_dist_peak->SetMarkerColor(kBlack);
   vtxprob_dist_peak->SetLineColor(kBlack);
   vtxprob_dist_peak->SetName("vtxprob_dist_peak_mc");
+//  vtxprob_dist_peak->GetYaxis()->SetRangeUser(0.1, 1000);
   }
   else{
   vtxprob_dist_peak->SetMarkerColor(kRed);
   vtxprob_dist_peak->SetLineColor(kRed);
   vtxprob_dist_peak->SetNameTitle("vtxprob_dist_peak", "Signal and Background Distributions - #chi^{2} prob");
+  //vtxprob_dist_peak->GetYaxis()->SetRangeUser(0.1, 1000);
   }
-
+  
   histos.push_back(vtxprob_dist_peak);
 
 
