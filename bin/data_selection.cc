@@ -54,14 +54,13 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
 
 void data_selection(TString fin1,TString data_selection_output_file,int channel,int mc);
 
-//input example: data_selection --channel 1 --input /some/place/ --sub 1 --showdist 1 --mc 0
+//input example: data_selection --channel 1 --input /some/place/ --sub 1 --showdist 1 --mc 0 --select 1
 int main(int argc, char** argv)
 {
   int channel = 0;
   std::string input_file = "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_data.root";
-  std::string input_file_mc = "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_new_ntkstar_bmuonfilter_with_cuts.root";
-  bool side_sub = 0, show_dist = 0;
-  int mc =0;
+  bool side_sub = 0, show_dist = 0, select = 1;
+  int mc = 0;
 
   for(int i=1 ; i<argc ; ++i)
     {
@@ -73,6 +72,12 @@ int main(int argc, char** argv)
           convert << argv[++i];
           convert >> channel;
         }
+
+      if(argument == "--select")
+	{
+	  convert << argv[++i];
+	  convert >> select;
+	}
 
       if(argument == "--input")
         {
@@ -92,7 +97,6 @@ int main(int argc, char** argv)
 	  convert >> show_dist;
 	}
 
-
       if(argument == "--mc")
 	{
 	  convert << argv[++i];
@@ -106,13 +110,18 @@ int main(int argc, char** argv)
       return 0;
     }
 
+  std::string input_file_mc="/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_new_"
+    +channel_to_ntuple_name(channel)+"_bmuonfilter_with_cuts.root";
+
+
   TString data_selection_output_file="";
   TString data_selection_output_file_mc="";
   data_selection_output_file= "selected_data_" + channel_to_ntuple_name(channel) + ".root";
   data_selection_output_file_mc= "selected_data_" + channel_to_ntuple_name(channel) + "_mc.root";
   
-  data_selection(input_file,data_selection_output_file,channel, 0);
-  data_selection(input_file_mc, data_selection_output_file_mc, channel, mc);
+  if(select)  data_selection(input_file,data_selection_output_file,channel, 0);
+  if(mc==1) data_selection(input_file_mc, data_selection_output_file_mc, channel, mc);
+
   if(show_dist)
     { 
       RooWorkspace* ws = new RooWorkspace("ws","Bmass");
