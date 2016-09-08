@@ -188,8 +188,14 @@ int main(int argc, char** argv)
   histos_data[i]->Draw();
   histos_mc[i]->Draw("same");
   if(i<3) c.SetLogy();
+  TLegend* leg;
+  if(i>2 && i<7){
+  leg = new TLegend (0.15, 0.8, 0.4, 0.9);
+  }
   
-  TLegend *leg = new TLegend (0.6, 0.5, 0.85, 0.75);
+  else{
+  leg = new TLegend (0.6, 0.5, 0.85, 0.75);
+  }
   leg->AddEntry(histos_data[i]->GetName(), "Sideband Subtraction", "l");
   leg->AddEntry(histos_mc[i]->GetName(), "Monte Carlo", "l");
   leg->SetTextSize(0.03);
