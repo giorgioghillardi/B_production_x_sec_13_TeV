@@ -202,8 +202,8 @@ if(channel==2){
 }
 
 else if(channel==4){
-  histos_mc[i]->Draw("same");
-  histos_data[i]->Draw();
+  histos_mc[i]->Draw();
+  histos_data[i]->Draw("same");
   }
 
 
