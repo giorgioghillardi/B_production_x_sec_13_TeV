@@ -1,4 +1,5 @@
 #include <sstream>
+#include <vector>
 #include <TStyle.h>
 #include <TAxis.h>
 #include <TLatex.h>
@@ -49,7 +50,7 @@ void read_data_cut(RooWorkspace& w, RooDataSet* data);
 void set_up_workspace_variables(RooWorkspace& w, int channel);
 TString channel_to_ntuple_name(int channel);
 
-void sideband_sub(RooWorkspace& w, double left, double right);
+std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int mc);
 
 void data_selection(TString fin1,TString data_selection_output_file,int channel,int mc);
 
@@ -58,6 +59,7 @@ int main(int argc, char** argv)
 {
   int channel = 0;
   std::string input_file = "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_data.root";
+  std::string input_file_mc = "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_new_ntkstar_bmuonfilter_with_cuts.root";
   bool side_sub = 0, show_dist = 0;
   int mc =0;
 
@@ -109,8 +111,8 @@ int main(int argc, char** argv)
   data_selection_output_file= "selected_data_" + channel_to_ntuple_name(channel) + ".root";
   data_selection_output_file_mc= "selected_data_" + channel_to_ntuple_name(channel) + "_mc.root";
   
-  data_selection(input_file,data_selection_output_file_mc,channel,mc);
-
+  data_selection(input_file,data_selection_output_file,channel, 0);
+  data_selection(input_file_mc, data_selection_output_file_mc, channel, mc);
   if(show_dist)
     { 
       RooWorkspace* ws = new RooWorkspace("ws","Bmass");
@@ -142,18 +144,65 @@ int main(int argc, char** argv)
 
       //read data from the selected data file, and import it as a dataset into the workspace.
       read_data(*ws, data_selection_output_file,channel);
+      
+      std::vector<TH1D*> histos_data;
+      std::vector<TH1D*> histos_mc;
+
 
       switch(channel)
 	{
 	case 2:
-	  sideband_sub(*ws, 5.1, 5.4);
+	  histos_data = sideband_sub(*ws, 5.1, 5.4, 0);
 	  break;
 	case 4:
-	  sideband_sub(*ws, 5.25, 5.45);
+	  histos_data = sideband_sub(*ws, 5.25, 5.45, 0);
 	  break;
 	default:
 	  std::cout << "WARNING! UNDEFINED LIMITS FOR PEAK REGION" << std::endl;
 	}
+
+      RooWorkspace* ws_mc = new RooWorkspace("ws_mc","Bmass");
+      //set up mass and pt variables inside ws  
+      set_up_workspace_variables(*ws_mc,channel);
+
+      //read data from the selected data file, and import it as a dataset into the workspace.
+      read_data(*ws_mc, data_selection_output_file_mc,channel);
+
+      switch(channel)
+	{
+	case 2:
+	  histos_mc = sideband_sub(*ws_mc, 5.1, 5.4, 1);
+	  break;
+	case 4:
+	  histos_mc = sideband_sub(*ws_mc, 5.25, 5.45, 1);
+	  break;
+	default:
+	  std::cout << "WARNING! UNDEFINED LIMITS FOR PEAK REGION" << std::endl;
+	}
+
+  std::string names[] = {"pt", "mu1pt", "mu2pt", "mu1eta", "mu2eta", "y", "vtxprob", "lxy", "errlxy", "lerrxy"};    
+
+  for(int i=0; i<10; i++){
+
+  TCanvas c;
+  histos_data[i]->Draw();
+  histos_mc[i]->Draw("same");
+  if(i<3) c.SetLogy();
+  
+  TLegend *leg = new TLegend (0.6, 0.5, 0.85, 0.75);
+  leg->AddEntry(histos_data[i]->GetName(), "Sideband Subtraction", "l");
+  leg->AddEntry(histos_mc[i]->GetName(), "Monte Carlo", "l");
+  leg->SetTextSize(0.03);
+//  std::cout<<"NOME DO DATA: "<< histos_data[i]->GetName()<< std::endl;
+ // std::cout<<"NOME DO MC: "<< histos_mc[i]->GetName()<< std::endl;
+  leg->Draw("same");
+
+  c.SaveAs((names[i]+"_mc_validation.png").c_str());
+  
+
+  }
+
+
     }
 }
 
@@ -186,7 +235,6 @@ void plot_mass_dist(RooWorkspace& w, int channel, TString directory)
 
 void read_data(RooWorkspace& w, TString filename,int channel)
 {
-  std::cout<<std::endl<<"READ_DATA!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
 
   TFile* f = new TFile(filename);
   TNtupleD* _nt = (TNtupleD*)f->Get(channel_to_ntuple_name(channel));
@@ -496,7 +544,7 @@ TString channel_to_ntuple_name(int channel)
   return ntuple_name;
 }
 
-void sideband_sub(RooWorkspace& w, double left, double right)
+std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int mc)
 {
   //Create appropriate variables and data sets (the pt isn't imported from the RooWorkspace because its range will change)                      
   RooRealVar pt = *(w.var("pt"));                                                                                                            
@@ -570,15 +618,28 @@ void sideband_sub(RooWorkspace& w, double left, double right)
 
   //Build and draw signal and background distributionsx                
 
+  std::vector<TH1D*> histos;
+
+
   TH1D* pt_dist_side = (TH1D*) reduceddata_side->createHistogram("pt_dist_side",pt);
   pt_dist_side->SetMarkerColor(kBlue);
   pt_dist_side->SetLineColor(kBlue);
   pt_dist_side->SetNameTitle("pt_dist_side", "Signal and Background Distributions - p_{T} (B) ");
 
-  TH1D* pt_dist_peak = (TH1D*) reduceddata_central->createHistogram("pt_dist_peak", pt);
+  TH1D* hist_pt_dist_peak = (TH1D*) reduceddata_central->createHistogram("pt_dist_peak", pt);
+  TH1D* pt_dist_peak = new TH1D(*hist_pt_dist_peak);
+  if(mc==1){
+  pt_dist_peak->SetMarkerColor(kBlack);
+  pt_dist_peak->SetLineColor(kBlack);
+  pt_dist_peak->SetName("pt_dist_peak_mc");
+  }
+  else{
   pt_dist_peak->SetMarkerColor(kRed);
   pt_dist_peak->SetLineColor(kRed);
   pt_dist_peak->SetNameTitle("pt_dist_peak", "Signal and Background Distributions - p_{T} (B)");
+  } 
+
+  histos.push_back(pt_dist_peak);
 
   TH1D* pt_dist_total = (TH1D*) data->createHistogram("pt_dist_total",pt);
   pt_dist_total->SetMarkerColor(kBlack);
@@ -612,10 +673,21 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   mu1pt_dist_side->SetLineColor(kBlue);
   mu1pt_dist_side->SetNameTitle("mu1pt_dist_side", "Signal and Background Distributions - p_{T} (#mu_{1}) ");
 
-  TH1D* mu1pt_dist_peak = (TH1D*) reduceddata_central->createHistogram("mu1pt_dist_peak", mu1pt);
+  TH1D* hist_mu1pt_dist_peak = (TH1D*) reduceddata_central->createHistogram("mu1pt_dist_peak", mu1pt);
+  TH1D* mu1pt_dist_peak = new TH1D(*hist_mu1pt_dist_peak);
+  if(mc==1){
+  mu1pt_dist_peak->SetMarkerColor(kBlack);
+  mu1pt_dist_peak->SetLineColor(kBlack);
+  mu1pt_dist_peak->SetName("mu1pt_dist_peak_mc");
+
+  }
+  else{
   mu1pt_dist_peak->SetMarkerColor(kRed);
   mu1pt_dist_peak->SetLineColor(kRed);
   mu1pt_dist_peak->SetNameTitle("mu1pt_dist_peak", "Signal and Background Distributions - p_{T} (#mu_{1})");
+  }
+
+  histos.push_back(mu1pt_dist_peak);
 
   TH1D* mu1pt_dist_total = (TH1D*) data->createHistogram("mu1pt_dist_total",mu1pt);
   mu1pt_dist_total->SetMarkerColor(kBlack);
@@ -649,10 +721,21 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   mu2pt_dist_side->SetLineColor(kBlue);
   mu2pt_dist_side->SetNameTitle("mu2pt_dist_side", "Signal and Background Distributions - p_{T} (#mu_{2}) ");
 
-  TH1D* mu2pt_dist_peak = (TH1D*) reduceddata_central->createHistogram("mu2pt_dist_peak", mu2pt);
+  TH1D* hist_mu2pt_dist_peak = (TH1D*) reduceddata_central->createHistogram("mu2pt_dist_peak", mu2pt);
+  TH1D* mu2pt_dist_peak = new TH1D(*hist_mu2pt_dist_peak);
+  if(mc==1){
+  mu2pt_dist_peak->SetMarkerColor(kBlack);
+  mu2pt_dist_peak->SetLineColor(kBlack);
+  mu2pt_dist_peak->SetName("mu2pt_dist_peak_mc");
+  }
+
+  else{
   mu2pt_dist_peak->SetMarkerColor(kRed);
   mu2pt_dist_peak->SetLineColor(kRed);
   mu2pt_dist_peak->SetNameTitle("mu2pt_dist_peak", "Signal and Background Distributions - p_{T} (#mu_{2})");
+  }
+
+  histos.push_back(mu2pt_dist_peak);
 
   TH1D* mu2pt_dist_total = (TH1D*) data->createHistogram("mu2pt_dist_total",mu2pt);
   mu2pt_dist_total->SetMarkerColor(kBlack);
@@ -685,10 +768,22 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   mu1eta_dist_side->SetLineColor(kBlue);
   mu1eta_dist_side->SetNameTitle("mu1eta_dist_side", "Signal and Background Distributions - #eta (#mu_{1}) ");
 
-  TH1D* mu1eta_dist_peak = (TH1D*) reduceddata_central->createHistogram("mu1eta_dist_peak", mu1eta);
+  TH1D* hist_mu1eta_dist_peak = (TH1D*) reduceddata_central->createHistogram("mu1eta_dist_peak", mu1eta);
+  TH1D* mu1eta_dist_peak = new TH1D(*hist_mu1eta_dist_peak);
+  if(mc==1){
+  mu1eta_dist_peak->SetMarkerColor(kBlack);
+  mu1eta_dist_peak->SetLineColor(kBlack);
+  mu1eta_dist_peak->SetName("mu1eta_dist_peak_mc");
+
+  }
+  else{
   mu1eta_dist_peak->SetMarkerColor(kRed);
   mu1eta_dist_peak->SetLineColor(kRed);
   mu1eta_dist_peak->SetNameTitle("mu1eta_dist_peak", "Signal and Background Distributions - #eta (#mu_{1})");
+  }
+
+  histos.push_back(mu1eta_dist_peak);
+
 
   TH1D* mu1eta_dist_total = (TH1D*) data->createHistogram("mu1eta_dist_total",mu1eta);
   mu1eta_dist_total->SetMarkerColor(kBlack);
@@ -721,10 +816,22 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   mu2eta_dist_side->SetLineColor(kBlue);
   mu2eta_dist_side->SetNameTitle("mu2eta_dist_side", "Signal and Background Distributions - #eta (#mu_{2}) ");
 
-  TH1D* mu2eta_dist_peak = (TH1D*) reduceddata_central->createHistogram("mu2eta_dist_peak", mu2eta);
+  TH1D* hist_mu2eta_dist_peak = (TH1D*) reduceddata_central->createHistogram("mu2eta_dist_peak", mu2eta);
+  TH1D* mu2eta_dist_peak = new TH1D(*hist_mu2eta_dist_peak);
+  if(mc==1){
+  mu2eta_dist_peak->SetMarkerColor(kBlack);
+  mu2eta_dist_peak->SetLineColor(kBlack);
+  mu2eta_dist_peak->SetName("mu2eta_dist_peak_mc");
+
+  }  
+  else{
   mu2eta_dist_peak->SetMarkerColor(kRed);
   mu2eta_dist_peak->SetLineColor(kRed);
   mu2eta_dist_peak->SetNameTitle("mu2eta_dist_peak", "Signal and Background Distributions - #eta (#mu_{2})");
+  }
+
+  histos.push_back(mu2eta_dist_peak);
+
 
   TH1D* mu2eta_dist_total = (TH1D*) data->createHistogram("mu1eta_dist_total",mu2eta);
   mu2eta_dist_total->SetMarkerColor(kBlack);
@@ -757,10 +864,22 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   y_dist_side->SetLineColor(kBlue);
   y_dist_side->SetNameTitle("y_dist_side", "Signal and Background Distributions - y (B) ");
 
-  TH1D* y_dist_peak = (TH1D*) reduceddata_central->createHistogram("y_dist_peak", y);
+  TH1D* hist_y_dist_peak = (TH1D*) reduceddata_central->createHistogram("y_dist_peak", y);
+  TH1D* y_dist_peak = new TH1D(*hist_y_dist_peak);
+  if(mc==1){
+  y_dist_peak->SetMarkerColor(kBlack);
+  y_dist_peak->SetLineColor(kBlack);
+  y_dist_peak->SetName("y_dist_peak_mc");
+
+  }
+  else{
   y_dist_peak->SetMarkerColor(kRed);
   y_dist_peak->SetLineColor(kRed);
   y_dist_peak->SetNameTitle("y_dist_peak", "Signal and Background Distributions - y (B)");
+  }
+
+  histos.push_back(y_dist_peak);
+
 
   TH1D* y_dist_total = (TH1D*) data->createHistogram("y_dist_total",y);
   y_dist_total->SetMarkerColor(kBlack);
@@ -793,10 +912,21 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   vtxprob_dist_side->SetLineColor(kBlue);
   vtxprob_dist_side->SetNameTitle("vtxprob_dist_side", "Signal and Background Distributions -  #chi^{2} prob ");
 
-  TH1D* vtxprob_dist_peak = (TH1D*) reduceddata_central->createHistogram("vtxprob_dist_peak", vtxprob);
+  TH1D* hist_vtxprob_dist_peak = (TH1D*) reduceddata_central->createHistogram("vtxprob_dist_peak", vtxprob);
+  TH1D* vtxprob_dist_peak = new TH1D(*hist_vtxprob_dist_peak);
+  if(mc==1){
+  vtxprob_dist_peak->SetMarkerColor(kBlack);
+  vtxprob_dist_peak->SetLineColor(kBlack);
+  vtxprob_dist_peak->SetName("vtxprob_dist_peak_mc");
+  }
+  else{
   vtxprob_dist_peak->SetMarkerColor(kRed);
   vtxprob_dist_peak->SetLineColor(kRed);
   vtxprob_dist_peak->SetNameTitle("vtxprob_dist_peak", "Signal and Background Distributions - #chi^{2} prob");
+  }
+
+  histos.push_back(vtxprob_dist_peak);
+
 
   TH1D* vtxprob_dist_total = (TH1D*) data->createHistogram("vtxprob_dist_total",vtxprob);
   vtxprob_dist_total->SetMarkerColor(kBlack);
@@ -830,10 +960,20 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   lxy_dist_side->SetLineColor(kBlue);
   lxy_dist_side->SetNameTitle("lxy_dist_side", "Signal and Background Distributions -  l_{xy} ");
 
-  TH1D* lxy_dist_peak = (TH1D*) reduceddata_central->createHistogram("lxy_dist_peak", lxy);
+  TH1D* hist_lxy_dist_peak = (TH1D*) reduceddata_central->createHistogram("lxy_dist_peak", lxy);
+  TH1D* lxy_dist_peak = new TH1D(*hist_lxy_dist_peak);
+  if(mc==1){
+  lxy_dist_peak->SetMarkerColor(kBlack);
+  lxy_dist_peak->SetLineColor(kBlack);
+  lxy_dist_peak->SetName("lxy_dist_peak_mc");
+  }
+  else{
   lxy_dist_peak->SetMarkerColor(kRed);
   lxy_dist_peak->SetLineColor(kRed);
   lxy_dist_peak->SetNameTitle("lxy_dist_peak", "Signal and Background Distributions - l_{xy} ");
+  }
+
+  histos.push_back(lxy_dist_peak);
 
   TH1D* lxy_dist_total = (TH1D*) data->createHistogram("lxy_dist_total",lxy);
   lxy_dist_total->SetMarkerColor(kBlack);
@@ -866,11 +1006,22 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   errlxy_dist_side->SetLineColor(kBlue);
   errlxy_dist_side->SetNameTitle("errlxy_dist_side", "Signal and Background Distributions - #sigma l_{xy} ");
 
-  TH1D* errlxy_dist_peak = (TH1D*) reduceddata_central->createHistogram("errlxy_dist_peak", errlxy);
+  TH1D* hist_errlxy_dist_peak = (TH1D*) reduceddata_central->createHistogram("errlxy_dist_peak", errlxy);
+  TH1D* errlxy_dist_peak = new TH1D(*hist_errlxy_dist_peak);
+  if(mc==1){
+  errlxy_dist_peak->SetMarkerColor(kBlack);
+  errlxy_dist_peak->SetLineColor(kBlack);
+  errlxy_dist_peak->SetName("errlxy_dist_peak_mc");
+  }
+  else{
   errlxy_dist_peak->SetMarkerColor(kRed);
   errlxy_dist_peak->SetLineColor(kRed);
   errlxy_dist_peak->SetNameTitle("errlxy_dist_peak", "Signal and Background Distributions - #sigma l_{xy} ");
+  }
 
+  histos.push_back(errlxy_dist_peak);
+
+  
   TH1D* errlxy_dist_total = (TH1D*) data->createHistogram("errlxy_dist_total",errlxy);
   errlxy_dist_total->SetMarkerColor(kBlack);
   errlxy_dist_total->SetLineColor(kBlack);
@@ -904,10 +1055,20 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   lerrxy_dist_side->SetLineColor(kBlue);
   lerrxy_dist_side->SetNameTitle("lerrxy_dist_side", "Signal and Background Distributions - l_{xy}/#sigma l_{xy} ");
 
-  TH1D* lerrxy_dist_peak = (TH1D*) reduceddata_central->createHistogram("lerrxy_dist_peak", lerrxy);
+  TH1D* hist_lerrxy_dist_peak = (TH1D*) reduceddata_central->createHistogram("lerrxy_dist_peak", lerrxy);
+  TH1D* lerrxy_dist_peak = new TH1D(*hist_lerrxy_dist_peak);
+  if(mc==1){
+  lerrxy_dist_peak->SetMarkerColor(kBlack);
+  lerrxy_dist_peak->SetLineColor(kBlack);
+  lerrxy_dist_peak->SetName("lerrxy_dist_peak_mc");
+  }
+  else{
   lerrxy_dist_peak->SetMarkerColor(kRed);
   lerrxy_dist_peak->SetLineColor(kRed);
   lerrxy_dist_peak->SetNameTitle("lerrxy_dist_peak", "Signal and Background Distributions - l_{xy}/#sigma l_{xy} ");
+  }
+
+  histos.push_back(lerrxy_dist_peak);
 
   TH1D* lerrxy_dist_total = (TH1D*) data->createHistogram("lerrxy_dist_total",lerrxy);
   lerrxy_dist_total->SetMarkerColor(kBlack);
@@ -936,5 +1097,5 @@ void sideband_sub(RooWorkspace& w, double left, double right)
   c9.SetLogy();
   c9.SaveAs("lerrxy_sideband_sub.png");
 
-
+  return histos;
 }
