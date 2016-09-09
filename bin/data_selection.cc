@@ -205,16 +205,16 @@ int main(int argc, char** argv)
 	  else if(channel==4)
 	    {
 	      histos_mc[i]->Scale(1/histos_mc[i]->Integral());
-	      histos_mc[i]->Draw();
 	      histos_data[i]->Scale(1/histos_data[i]->Integral());
-	      histos_data[i]->Draw("same");
+	      histos_data[i]->Draw();
+	      histos_mc[i]->Draw("same");
 	    }
 	  
-	  if(i==6)
+	  /*	  if(i==6)
 	    {
 	      histos_data[i]->GetYaxis()->SetRangeUser(0.1, 1000);
 	      histos_mc[i]->GetYaxis()->SetRangeUser(0.1, 1000); 
-	    }
+	      }*/
 	  
 	  if(i<3) c.SetLogy();
 	  

@@ -68,13 +68,15 @@ void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string cho
 void read_data(RooWorkspace& w, TString filename,int channel);
 void read_data_cut(RooWorkspace& w, RooAbsData* data);
 void set_up_workspace_variables(RooWorkspace& w, int channel);
-//void set_up_workspace_variables(RooWorkspace& w, int channel, double range_lo, double range_hi);
+void set_up_workspace_variables(RooWorkspace& w, int channel, double mass_min, double mass_max);
 
 TString channel_to_ntuple_name(int channel);
 TString channel_to_xaxis_title(int channel);
 int channel_to_nbins(int channel);
 
-//input example: signal_yield_new --channel 1 --bins pt/y --eff 1 --mc 1 --syst
+void latex_table(std::string filename, int n_col, int n_lin, std::string* title, double** number, std::string caption, int type);
+
+//input example: signal_yield_new --channel 1 --bins pt/y --eff 1 --mc 1 --syst 1
 int main(int argc, char** argv)
 {
   int channel = 0;
@@ -101,19 +103,17 @@ int main(int argc, char** argv)
 	{
 	  convert << argv[++i];
 	  convert >> calculate_efficiency;
-	} 
+	}
       if(argument == "--mc")
 	{
 	  convert << argv[++i];
 	  convert >> mcstudy;
 	}
-
       if(argument == "--syst")
 	{
 	  convert << argv[++i];
 	  convert >> syst;
 	}
-
     }
 
 
@@ -179,8 +179,7 @@ int main(int argc, char** argv)
   ws->Print();
   
   if(yield_sub_samples=="0") //mass fit and plot the full dataset
-    { 
-      
+    {
       //build the pdf for the channel selected above, it uses the dataset which is saved in ws. need to change the dataset to change the pdf.
       RooRealVar* mass = ws->var("mass"); 
       build_pdf(*ws,channel);     
@@ -207,7 +206,6 @@ int main(int argc, char** argv)
 
       if(mcstudy)
 	{
-
 	  RooMCStudy* mctoy = new RooMCStudy (*model, *model, *mass, "", "mhv"); 
 	  mctoy->generateAndFit(5000, data->sumEntries());
 
@@ -238,34 +236,146 @@ int main(int argc, char** argv)
 
       if(syst)
 	{
-	  RooWorkspace* ws1 = new RooWorkspace("ws1","Bmass");
+	  std::vector<std::string> background = {"2exp", "bern", "power"};
+	  std::vector<std::string> signal = {"crystal", "1gauss", "3gauss"};
 
-	  //set up mass, pt and y variables inside ws1  
-	  set_up_workspace_variables(*ws1,channel);
+	  std::vector<double> mass_min(2);	  
+	  std::vector<double> mass_max(2);
+	  std::vector<std::string> mass_min_str(2);
+	  std::vector<std::string> mass_max_str(2);
 
-	  //read data from the selected data file, and import it as a dataset into the workspace.
-	  read_data(*ws1, data_selection_input_file,channel);
-	  ws1->Print();
+	  if(channel==2) 
+	    {
+	      mass_min[0] = 4.65;
+	      mass_min[1] = 5.05;
+	      mass_max[0] = 5.5;
+	      mass_max[1] = 6.0;
 
-	  build_pdf(*ws1,channel, "2exp", "background");     
-      
-	  data = ws1->data("data");
-	  model = ws1->pdf("model");     
+	      mass_min_str[0] = "4.65";
+	      mass_min_str[1] = "5.05";
+	      mass_max_str[0] = "5.5";
+	      mass_max_str[1] = "6.0";
+	    }
+	  else if(channel==4) 
+	    {
+	      mass_min[0] = 4.65;
+	      mass_min[1] = 5.11;
+	      mass_max[0] = 5.75;
+	      mass_max[1] = 6.2;
+
+	      mass_min_str[0] = "4.65";
+	      mass_min_str[1] = "5.11";
+	      mass_max_str[0] = "5.75";
+	      mass_max_str[1] = "6.2";
+	    }
+
+	  std::vector<RooRealVar*> signal_syst;
+
+	  signal_syst.push_back(signal_res);
+
+	  //Background Systematics
+	  for(int i=0; i<3; i++)
+	    {
+	      RooWorkspace* ws1 = new RooWorkspace("ws1","Bmass");
+	      
+	      //set up mass, pt and y variables inside ws1  
+	      set_up_workspace_variables(*ws1,channel);
+
+	      //read data from the selected data file, and import it as a dataset into the workspace.
+	      read_data(*ws1, data_selection_input_file,channel);
+	      ws1->Print();
+	      
+	      build_pdf(*ws1,channel, background[i], "background");     
+	      
+	      data = ws1->data("data");
+	      model = ws1->pdf("model");     
+	      
+	      model->fitTo(*data,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
+	      
+	      signal_syst.push_back(ws1->var("n_signal"));
+	      /* RooRealVar* mean = ws->var("m_mean");
+		 RooRealVar* sigma1 = ws->var("m_sigma1");
+		 RooRealVar* sigma2 = ws->var("m_sigma2");
+		 RooRealVar* lambda = ws->var("m_exp");*/
+	      
+	      std::cout <<"SIGNAL: "<< signal_syst[i+1]->getVal() << " " 
+			<< signal_syst[i+1]->getAsymErrorLo() << " +" << signal_syst[i+1]->getAsymErrorHi() << std::endl;
 	  
-	  model->fitTo(*data,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
+	      mass_fit_directory = "full_dataset_mass_fit/" + channel_to_ntuple_name(channel) + 
+		"_background_" + background[i] + "_" + TString::Format(VERSION);
+	      plot_mass_fit(*ws1,channel,mass_fit_directory);
+	    }
+
+	  //Signal Systematics
+	  for(int i=0; i<3; i++)
+	    {
+	      RooWorkspace* ws1 = new RooWorkspace("ws1","Bmass");
+	      
+	      //set up mass, pt and y variables inside ws1  
+	      set_up_workspace_variables(*ws1,channel);
+
+	      //read data from the selected data file, and import it as a dataset into the workspace.
+	      read_data(*ws1, data_selection_input_file,channel);
+	      ws1->Print();
+	      
+	      build_pdf(*ws1,channel, signal[i], "signal");     
+	      
+	      data = ws1->data("data");
+	      model = ws1->pdf("model");     
+	      
+	      model->fitTo(*data,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
+	      
+	      signal_syst.push_back(ws1->var("n_signal"));
+	      /* RooRealVar* mean = ws->var("m_mean");
+		 RooRealVar* sigma1 = ws->var("m_sigma1");
+		 RooRealVar* sigma2 = ws->var("m_sigma2");
+		 RooRealVar* lambda = ws->var("m_exp");*/
+	      
+	      std::cout <<"SIGNAL: "<< signal_syst[i+4]->getVal() << " " 
+			<< signal_syst[i+4]->getAsymErrorLo() << " +" << signal_syst[i+4]->getAsymErrorHi() << std::endl;
 	  
-	  signal_res = ws1->var("n_signal");
-	  /* RooRealVar* mean = ws->var("m_mean");
-	     RooRealVar* sigma1 = ws->var("m_sigma1");
-	     RooRealVar* sigma2 = ws->var("m_sigma2");
-	     RooRealVar* lambda = ws->var("m_exp");*/
+	      mass_fit_directory = "full_dataset_mass_fit/" + channel_to_ntuple_name(channel) +  
+		"_signal_" + signal[i] + "_" + TString::Format(VERSION);
+	      plot_mass_fit(*ws1,channel,mass_fit_directory);
+	    }
+
+	  //Mass Range Systematics
+	  for(int i=0; i<2; i++)
+	    {
+	      RooWorkspace* ws1 = new RooWorkspace("ws1","Bmass");
+	      
+	      //set up mass, pt and y variables inside ws1  
+	      set_up_workspace_variables(*ws1,channel,mass_min[i],mass_max[1-i]);
+
+	      //read data from the selected data file, and import it as a dataset into the workspace.
+	      read_data(*ws1, data_selection_input_file,channel);
+	      ws1->Print();
+	      
+	      build_pdf(*ws1,channel);     
+	      
+	      data = ws1->data("data");
+	      model = ws1->pdf("model");     
+	      
+	      model->fitTo(*data,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
+	      
+	      signal_syst.push_back(ws1->var("n_signal"));
+	      /* RooRealVar* mean = ws->var("m_mean");
+		 RooRealVar* sigma1 = ws->var("m_sigma1");
+		 RooRealVar* sigma2 = ws->var("m_sigma2");
+		 RooRealVar* lambda = ws->var("m_exp");*/
+	      
+	      std::cout << "SIGNAL: " << signal_syst[i+7]->getVal() << " " 
+			<< signal_syst[i+7]->getAsymErrorLo() << " +" << signal_syst[i+7]->getAsymErrorHi() << std::endl;
 	  
-	  std::cout <<"SIGNAL: "<< signal_res->getVal() << " " << signal_res->getAsymErrorLo() << " +" << signal_res->getAsymErrorHi() << std::endl;
-	  
-	  mass_fit_directory = "full_dataset_mass_fit/" + channel_to_ntuple_name(channel) + "_signal_"+ TString::Format(VERSION);
-	  plot_mass_fit(*ws1,channel,mass_fit_directory);
+	      mass_fit_directory = "full_dataset_mass_fit/" + channel_to_ntuple_name(channel) +  
+		"_range_" + mass_min_str[i] + "_" + mass_max_str[1-i] + "_" + TString::Format(VERSION);
+	      plot_mass_fit(*ws1,channel,mass_fit_directory);
+	    }
+
+	  for(unsigned int i=0; i<signal_syst.size(); i++)
+	    std::cout << "signal_syst[" << i << "]: " << signal_syst[i]->getVal() << " +/- " << signal_syst[i]->getError() << std::endl;
+
 	}
-
     }
   else
     {
@@ -301,41 +411,6 @@ int main(int argc, char** argv)
 	    nptbins = (sizeof(ntlambda_pt_bin_edges) / sizeof(double)) - 1 ;
 	    break;
 	  }
-
-	}
-      else if(yield_sub_samples=="y")
-	{
-	  pt_bin_edges = total_pt_bin_edges;
-	  nptbins=1;
-
-	  switch (channel) {
-	  default:
-	  case 1:
-	    y_bin_edges = ntkp_y_bin_edges;
-	    nybins = (sizeof(ntkp_y_bin_edges) / sizeof(double)) - 1 ; //if y_bin_edges is an empty array, then nptbins is equal to 0
-	    break;
-	  case 2:
-	    y_bin_edges = ntkstar_y_bin_edges;	
-	    nybins = (sizeof(ntkstar_y_bin_edges) / sizeof(double)) - 1 ;
-	    break;
-	  case 3:
-	    y_bin_edges = ntks_y_bin_edges;
-	    nybins = (sizeof(ntks_y_bin_edges) / sizeof(double)) - 1 ;
-	    break;
-	  case 4:
-	    y_bin_edges = ntphi_y_bin_edges;
-	    nybins = (sizeof(ntphi_y_bin_edges) / sizeof(double)) - 1 ;
-	    break;
-	  case 5:
-	    y_bin_edges = ntmix_y_bin_edges;
-	    nybins = (sizeof(ntmix_y_bin_edges) / sizeof(double)) - 1 ;
-	    break;
-	  case 6:
-	    y_bin_edges = ntlambda_y_bin_edges;
-	    nybins = (sizeof(ntlambda_y_bin_edges) / sizeof(double)) - 1 ;
-	    break;
-	  }
-
 	}
       else if(yield_sub_samples=="pt/y")
 	{
@@ -445,10 +520,11 @@ int main(int argc, char** argv)
       for(int c=0; c<nybins; c++)
 	{
 	  std::cout << "BIN y: " << y_bin_edges[c] << " to " << y_bin_edges[c+1] << " : " << std::endl;
+	  
 	  for(int i=0; i<nptbins; i++)
-	    {
-	      std::cout << "BIN pt: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " <<  yield_array[c][i] << " +" << errHi_array[c][i] << " -"<< errLo_array[c][i] << std::endl;
-	    }
+	    std::cout << "BIN pt: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " 
+		      <<  yield_array[c][i] << " +" << errHi_array[c][i] << " -"<< errLo_array[c][i] << std::endl;
+	  
 	  std::cout << std::endl;
 	}
 
@@ -1438,6 +1514,27 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
   w.import(y);
 }
 
+void set_up_workspace_variables(RooWorkspace& w, int channel, double mass_min, double mass_max)
+{
+  double pt_min, pt_max;
+  double y_min, y_max;
+
+  pt_min=0;
+  pt_max=400;
+
+  y_min=-2.4;
+  y_max=2.4;
+  
+  RooRealVar mass("mass","mass",mass_min,mass_max);
+  RooRealVar pt("pt","pt",pt_min,pt_max);
+  RooRealVar y("y", "y", y_min, y_max);
+
+  w.import(mass);
+  w.import(pt);
+  w.import(y);
+}
+
+
 TString channel_to_ntuple_name(int channel)
 {
   //returns a TString with the ntuple name corresponding to the channel. It can be used to find the data on each channel saved in a file. or to write the name of a directory
@@ -1532,6 +1629,90 @@ void create_dir(std::vector<std::string> list)
       gSystem->Exec(("mkdir -p " + list[i]).c_str());
     }
 }
+
+void latex_table(std::string filename, int n_col, int n_lin, std::string* title, double** number, std::string caption, int type)
+{
+  std::ofstream file;
+
+  //Begin Document                                                                                                                               
+
+  file.open(filename + ".tex");
+
+  file << "\\documentclass{article}" << std::endl;
+  //file << "\\usepackage[utf8]{inputenc}" << std::endl;                                                                                        
+
+  file << "\\usepackage{cancel}" << std::endl;
+  file << "\\usepackage{geometry}" << std::endl;
+  file << "\\usepackage{booktabs}" << std::endl;
+  file << "\\geometry{a4paper, total={170mm,257mm}, left=20mm, top=20mm,}" << std::endl;
+
+  file << "\\title{B production at 13 TeV}" << std::endl;
+  file << "\\author{Joao Melo & Julia Silva}" << std::endl;
+  file << "\\date{July 2016}" << std::endl;
+  file << "\\begin{document}" << std::endl;
+  file << "\\maketitle" << std::endl;
+
+  // Create table                                                                                                                                
+  file << "\\begin{table}[!h]" << std::endl;
+  // file << "\\centering" << std::endl;                                                                                                         
+  //setup table size                                                                                                                             
+  std::string col="c";
+
+  for(int i=1; i<n_col; i++)
+    col+="|c";
+
+  file << "\\begin{tabular}{"+col+"}" << std::endl;
+  file << "\\toprule" << std::endl;
+
+  switch(type)
+    {
+    case 1:
+      //write top line                                                                                                                           
+      for(int i=0; i<n_col-1; i++)
+        file << title[i]+" & ";
+
+      file << title[n_col-1];
+
+      file << "\\\\  \\midrule" << std::endl;
+      //insert numbers                                                                                                                           
+      for(int i=0; i<n_lin-1; i++)
+        {
+          for(int c=0; c<n_col-1; c++)
+            file << number[c][i] << " & ";
+
+          file << number[n_col-1][i] << " \\\\" << std::endl;
+        }
+
+      file << "\\bottomrule" << std::endl;
+      break;
+    case 2:
+      //insert numbers                                                                                                                           
+      for(int i=0; i<n_lin; i++)
+        {
+          file << title[i]+" & ";
+
+          for(int c=1; c>n_col-1; c++)
+            file << number[c][i] << " & ";
+
+          file << number[n_col-1][i] << " \\\\" << std::endl;
+	}
+
+      file << "\\bottomrule" << std::endl;
+      break;
+    }
+  //End Table                                                                                                                                    
+  file << "\\end{tabular}" << std::endl;
+  file << "\\caption{"+caption+"}" << std::endl;
+
+  file << "\\end{table}" << std::endl;
+  //End document                                                                                                                                 
+
+  file << "\\end{document}" << std::endl;
+
+  system(("pdflatex " + filename + ".tex").c_str());
+  system(("gnome-open " + filename + ".pdf").c_str());
+}
+
 
 /*
   switch (channel) {
