@@ -303,40 +303,6 @@ int main(int argc, char** argv)
 	  }
 
 	}
-      else if(yield_sub_samples=="y")
-	{
-	  pt_bin_edges = total_pt_bin_edges;
-	  nptbins=1;
-
-	  switch (channel) {
-	  default:
-	  case 1:
-	    y_bin_edges = ntkp_y_bin_edges;
-	    nybins = (sizeof(ntkp_y_bin_edges) / sizeof(double)) - 1 ; //if y_bin_edges is an empty array, then nptbins is equal to 0
-	    break;
-	  case 2:
-	    y_bin_edges = ntkstar_y_bin_edges;	
-	    nybins = (sizeof(ntkstar_y_bin_edges) / sizeof(double)) - 1 ;
-	    break;
-	  case 3:
-	    y_bin_edges = ntks_y_bin_edges;
-	    nybins = (sizeof(ntks_y_bin_edges) / sizeof(double)) - 1 ;
-	    break;
-	  case 4:
-	    y_bin_edges = ntphi_y_bin_edges;
-	    nybins = (sizeof(ntphi_y_bin_edges) / sizeof(double)) - 1 ;
-	    break;
-	  case 5:
-	    y_bin_edges = ntmix_y_bin_edges;
-	    nybins = (sizeof(ntmix_y_bin_edges) / sizeof(double)) - 1 ;
-	    break;
-	  case 6:
-	    y_bin_edges = ntlambda_y_bin_edges;
-	    nybins = (sizeof(ntlambda_y_bin_edges) / sizeof(double)) - 1 ;
-	    break;
-	  }
-
-	}
       else if(yield_sub_samples=="pt/y")
 	{
 	  switch (channel) {
