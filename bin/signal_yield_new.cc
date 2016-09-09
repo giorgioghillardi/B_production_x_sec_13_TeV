@@ -112,7 +112,6 @@ int main(int argc, char** argv)
 	{
 	  convert << argv[++i];
 	  convert >> syst;
-	  std::cout << "KDJKLDSJKLAD" << std::endl;
 	}
 
     }
@@ -159,6 +158,7 @@ int main(int argc, char** argv)
 
   
   TString data_selection_input_file = "selected_data_" + channel_to_ntuple_name(channel) + ".root";
+  TString data_selection_input_file_mc = "selected_data_" + channel_to_ntuple_name(channel) + "_mc.root";
   
   RooWorkspace* ws = new RooWorkspace("ws","Bmass");
   RooAbsData* data;

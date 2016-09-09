@@ -197,12 +197,16 @@ int main(int argc, char** argv)
 	  
 	  if(channel==2)
 	    {
+	      histos_data[i]->Scale(1/histos_data[i]->Integral());
 	      histos_data[i]->Draw();
+	      histos_mc[i]->Scale(1/histos_mc[i]->Integral());
 	      histos_mc[i]->Draw("same");
 	    }
 	  else if(channel==4)
 	    {
+	      histos_mc[i]->Scale(1/histos_mc[i]->Integral());
 	      histos_mc[i]->Draw();
+	      histos_data[i]->Scale(1/histos_data[i]->Integral());
 	      histos_data[i]->Draw("same");
 	    }
 	  
@@ -628,8 +632,8 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   //  RooRealVar* nll = (RooRealVar*) fit_side.createNLL(*reduceddata_side, Range("left,right"));
 
   RooPlot* massframe = mass.frame();
-  reduceddata_side->plotOn(massframe);
-  //data->plotOn(massframe);
+  //reduceddata_side->plotOn(massframe);
+  data->plotOn(massframe);
   fit_side.plotOn(massframe, Range("all"));
 
   TCanvas d;
