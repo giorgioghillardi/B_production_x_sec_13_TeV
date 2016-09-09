@@ -159,7 +159,7 @@ int main(int argc, char** argv)
   
   TString data_selection_input_file = "selected_data_" + channel_to_ntuple_name(channel) + ".root";
   TString data_selection_input_file_mc = "selected_data_" + channel_to_ntuple_name(channel) + "_mc.root";
-  
+  TString input_no_cuts = "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_new_ntkstar_bmuonfilter_no_cuts.root";  
   RooWorkspace* ws = new RooWorkspace("ws","Bmass");
   RooAbsData* data;
   RooAbsPdf* model;
@@ -987,7 +987,7 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
   double log_likelihood= nll->getVal();
   std::stringstream ll_str;
   ll_str >> log_likelihood;
-  double chis = frame_m->chiSquare();
+  double chis = frame_m->chiSquare(6);
   double lambda_exp = lambda.getVal();
   double lambda_exp_err = lambda.getError();
   double mean_gauss = mean.getVal();
@@ -1045,7 +1045,7 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
   tex7->SetTextSize(0.03);
   tex7->Draw();  
 
-  TLatex* tex8 = new TLatex(0.165, 0.56, Form("#chi^{2} = %.3lf", chis));
+  TLatex* tex8 = new TLatex(0.165, 0.56, Form("#chi^{2}/DOF = %.3lf", chis));
   tex8->SetNDC(kTRUE);
   tex8->SetTextFont(42);
   tex8->SetTextSize(0.03);
@@ -1117,9 +1117,14 @@ void build_pdf(RooWorkspace& w, int channel)
   //-----------------------------------------------------------------
   // signal PDF 
   RooRealVar m_mean("m_mean","m_mean",mass_peak,mass_peak-0.09,mass_peak+0.09);
-  RooRealVar m_sigma1("m_sigma1","m_sigma1",0.015,0.005,0.07);
-  RooRealVar m_sigma2("m_sigma2","m_sigma2",0.030,0.001,0.100);
-  RooRealVar m_fraction("m_fraction","m_fraction",0.17);
+  RooRealVar m_sigma1("m_sigma1","m_sigma1",0.015, 0.005, 0.07);
+  RooRealVar m_sigma2("m_sigma2","m_sigma2",0.030, 0.001, 0.100);
+
+ RooRealVar m_fraction_2("m_fraction","m_fraction",0.169);
+ RooRealVar m_fraction("m_fraction","m_fraction",0.5);
+
+ if(channel==2) m_fraction=m_fraction_2;
+
   RooGaussian m_gaussian1("m_gaussian1","m_gaussian1",mass,m_mean,m_sigma1);
   RooGaussian m_gaussian2("m_gaussian2","m_gaussian2",mass,m_mean,m_sigma2);
   RooAddPdf pdf_m_signal("pdf_m_signal","pdf_m_signal",RooArgList(m_gaussian1,m_gaussian2),RooArgList(m_fraction));
