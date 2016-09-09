@@ -607,8 +607,17 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
     RooRealVar sigma("sigma", "sigma", -1000., 1000.);*/
 
   RooRealVar lambda("lambda", "lambda",-5., -20., 0.);
+  
+  //Bernstein try
+  RooRealVar m_par1("m_par1","m_par2",1.,0,+10.);
+  RooRealVar m_par2("m_par2","m_par3",1.,0,+10.);
+  RooRealVar m_par3("m_par3","m_par3",1.,0,+10.);
+  RooRealVar m_par4("m_par4","m_par4",1.,0,+10.);
+  RooRealVar m_par5("m_par5","m_par5",1.,0,+10.);
+  
+  RooBernstein fit_side("fit_side","fit_side",mass,RooArgList(RooConst(1.),m_par1,m_par2,m_par3,m_par4, m_par5));
 
-  RooExponential fit_side("fit_side", "fit_side_exp", mass, lambda);
+//  RooExponential fit_side("fit_side", "fit_side_exp", mass, lambda);
 
   mass.setRange("all", mass.getMin(),mass.getMax());
   mass.setRange("right",right,mass.getMax());
