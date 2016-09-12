@@ -1,6 +1,7 @@
 #include <RooHist.h>
 #include <TSystem.h>
 #include <sstream>
+#include <fstream>
 #include <vector>
 #include <string>
 #include <fstream>
@@ -174,24 +175,36 @@ int main(int argc, char** argv)
 
   //set up mass, pt and y variables inside ws  
   set_up_workspace_variables(*ws,channel);
-
+  std::cout<< "SHIT HAPPENS1"<<std::endl;
   //read data from the selected data file, and import it as a dataset into the workspace.
   read_data(*ws, data_selection_input_file,channel);
+  std::cout<< "SHIT HAPPENS2"<<std::endl;
+
   ws->Print();
+  std::cout<< "SHIT HAPPENS3"<<std::endl;
   
   if(yield_sub_samples=="0") //mass fit and plot the full dataset
     {
       //build the pdf for the channel selected above, it uses the dataset which is saved in ws. need to change the dataset to change the pdf.
-      RooRealVar* mass = ws->var("mass"); 
+      RooRealVar* mass = ws->var("mass");
+      std::cout<< "SHIT HAPPENS4"<<std::endl;
+
       build_pdf(*ws,channel);     
-      
+      std::cout<< "SHIT HAPPENS5"<<std::endl;
+
       data = ws->data("data");
+      std::cout<< "SHIT HAPPENS6"<<std::endl;
+
       model = ws->pdf("model");     
-      
+      std::cout<< "SHIT HAPPENS7"<<std::endl;
+
       model->fitTo(*data,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
+      std::cout<< "SHIT HAPPENS8"<<std::endl;
 
       signal_res = ws->var("n_signal");
-      /* RooRealVar* mean = ws->var("m_mean");
+      std::cout<< "SHIT HAPPENS9"<<std::endl;
+      
+/* RooRealVar* mean = ws->var("m_mean");
 	 RooRealVar* sigma1 = ws->var("m_sigma1");
 	 RooRealVar* sigma2 = ws->var("m_sigma2");
 	 RooRealVar* lambda = ws->var("m_exp");*/
@@ -1158,7 +1171,9 @@ void build_pdf(RooWorkspace& w, int channel)
   double mass_peak;
 
   RooRealVar mass = *(w.var("mass"));
+  std::cout<<"SHIT HAPPENS 4.1"<<std::endl;
   RooRealVar pt = *(w.var("pt"));  
+  std::cout<<"SHIT HAPPENS 4.2"<<std::endl;
   RooAbsData* data = w.data("data");
 
   switch (channel) {
@@ -1185,12 +1200,16 @@ void build_pdf(RooWorkspace& w, int channel)
   
   double n_signal_initial = data->sumEntries(TString::Format("abs(mass-%g)<0.015",mass_peak))
     - data->sumEntries(TString::Format("abs(mass-%g)<0.030&&abs(mass-%g)>0.015",mass_peak,mass_peak));
-  
+  std::cout<<"SHIT HAPPENS 4.3"<<std::endl;
+
   if(n_signal_initial<0)
   n_signal_initial=1;
+  std::cout<<"SHIT HAPPENS 4.4"<<std::endl;
+
 
   double n_combinatorial_initial = data->sumEntries() - n_signal_initial;
-  
+  std::cout<<"SHIT HAPPENS 4.5"<<std::endl;
+
   //-----------------------------------------------------------------
   // signal PDF 
   RooRealVar m_mean("m_mean","m_mean",mass_peak,mass_peak-0.09,mass_peak+0.09);
@@ -1199,19 +1218,23 @@ void build_pdf(RooWorkspace& w, int channel)
 
  RooRealVar m_fraction_2("m_fraction","m_fraction",0.169);
  RooRealVar m_fraction("m_fraction","m_fraction",0.5);
+std::cout<<"SHIT HAPPENS 4.6"<<std::endl;
 
  if(channel==2) m_fraction=m_fraction_2;
+std::cout<<"SHIT HAPPENS 4.7"<<std::endl;
 
   RooGaussian m_gaussian1("m_gaussian1","m_gaussian1",mass,m_mean,m_sigma1);
   RooGaussian m_gaussian2("m_gaussian2","m_gaussian2",mass,m_mean,m_sigma2);
   RooAddPdf pdf_m_signal("pdf_m_signal","pdf_m_signal",RooArgList(m_gaussian1,m_gaussian2),RooArgList(m_fraction));
+std::cout<<"SHIT HAPPENS 4.8"<<std::endl;
   
   // use single Gaussian for J/psi Ks and J/psi Lambda due to low statistics
   if (channel==3 || channel==6 || data->sumEntries()<250) {
     m_sigma2.setConstant(kTRUE);
     m_fraction.setVal(1.);
   }
-  
+  std::cout<<"SHIT HAPPENS 4.9"<<std::endl;
+
   //-----------------------------------------------------------------
   // combinatorial background PDF (exponential or bernstean poly.)
   
@@ -1223,9 +1246,12 @@ void build_pdf(RooWorkspace& w, int channel)
   RooRealVar m_par3("m_par3","m_par3",1.,0,+10.);
   
   RooBernstein pdf_m_combinatorial_bern("pdf_m_combinatorial_bern","pdf_m_combinatorial_bern",mass,RooArgList(RooConst(1.),m_par1,m_par2,m_par3));
-  //erfc component on channel 1 and 3
-  RooFormulaVar pdf_m_jpsix("pdf_m_jpsix","2.7*erfc((mass-5.14)/(0.5*0.08))",{mass});
+std::cout<<"SHIT HAPPENS 4.10"<<std::endl;
   
+//erfc component on channel 1 and 3
+  RooFormulaVar pdf_m_jpsix("pdf_m_jpsix","2.7*erfc((mass-5.14)/(0.5*0.08))",{mass});
+  std::cout<<"SHIT HAPPENS 4.11"<<std::endl;
+
   //-----------------------------------------------------------------
   // X(3872) PDF, only for J/psi pipi fit
   
@@ -1241,7 +1267,8 @@ void build_pdf(RooWorkspace& w, int channel)
   RooRealVar n_x3872("n_x3872","n_x3872",200.,0.,data->sumEntries());
   
   RooRealVar n_jpsix("n_jpsix","n_jpsix",data->sumEntries(TString::Format("mass>4.9&&mass<5.14")),data->sumEntries(TString::Format("mass>4.9&&mass<5.14")),data->sumEntries());
-  
+ std::cout<<"SHIT HAPPENS 4.12"<<std::endl;
+
   RooAddPdf* model;
 
   switch(channel)
@@ -1266,8 +1293,11 @@ void build_pdf(RooWorkspace& w, int channel)
 			    RooArgList(n_signal, n_combinatorial, n_x3872));
       break;
     }
+std::cout<<"SHIT HAPPENS 4.13"<<std::endl;
 
   w.import(*model);
+std::cout<<"SHIT HAPPENS 4.14"<<std::endl;
+
 }
 
 void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string choice2)
