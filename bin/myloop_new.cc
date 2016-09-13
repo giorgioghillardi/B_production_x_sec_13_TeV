@@ -336,8 +336,8 @@ int main(int argc, char** argv)
 	      {
 		//-----------------------------------------------------------------
 		// Basic muon selections
-		if (MuonInfo->pt[mu1idx]<=4.) continue;
-		if (MuonInfo->pt[mu2idx]<=4.) continue;
+		/*		if (MuonInfo->pt[mu1idx]<=4.) continue;
+				if (MuonInfo->pt[mu2idx]<=4.) continue;*/
 		if (fabs(MuonInfo->eta[mu1idx])>=2.4) continue;
 		if (fabs(MuonInfo->eta[mu2idx])>=2.4) continue;
 		if (!MuonInfo->SoftMuID[mu1idx]) continue;
@@ -365,7 +365,7 @@ int main(int argc, char** argv)
 		// J/psi cut
 		// KFC: May need to consider an y dependent cut?
 		if (fabs(BInfo->uj_mass[ujidx]-JPSI_MASS)>=0.150) continue;
-		if (BInfo->uj_pt[ujidx]<=8.0) continue;
+		/*if (BInfo->uj_pt[ujidx]<=8.0) continue;
 		
 		//-----------------------------------------------------------------
 		// ditrack selections
@@ -385,7 +385,7 @@ int main(int argc, char** argv)
 		if (b_type==8 || b_type==9) // Lambda mode
 		  {
 		    if (fabs(BInfo->tktk_mass[bidx]-LAMBDA_MASS)>=0.060) continue;
-		  }
+		    }*/
 	      } //end of cuts
 	    
             //-----------------------------------------------------------------
