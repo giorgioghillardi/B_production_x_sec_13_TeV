@@ -1215,11 +1215,11 @@ void build_pdf(RooWorkspace& w, int channel)
   RooRealVar m_sigma1("m_sigma1","m_sigma1",0.015, 0.005, 0.07);
   RooRealVar m_sigma2("m_sigma2","m_sigma2",0.030, 0.001, 0.100);
 
- RooRealVar m_fraction_2("m_fraction","m_fraction",0.169);
+ RooRealVar m_fraction_2("m_fraction_2","m_fraction_2",0.169);
  RooRealVar m_fraction("m_fraction","m_fraction",0.5);
 std::cout<<"SHIT HAPPENS 4.6"<<std::endl;
 
- if(channel==2) m_fraction=m_fraction_2;
+ if(channel==2) m_fraction_2.Copy(m_fraction);
 std::cout<<"SHIT HAPPENS 4.7"<<std::endl;
 
   RooGaussian m_gaussian1("m_gaussian1","m_gaussian1",mass,m_mean,m_sigma1);
