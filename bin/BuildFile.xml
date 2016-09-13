@@ -10,6 +10,7 @@
   <bin name="data_selection"   file="data_selection.cc"></bin>
   <bin name="optimize_cuts"   file="optimize_cuts.cc"></bin>
   <bin name="draw_FOM"   file="draw_FOM.cc"></bin>
+  <bin name="myloop_new"   file="myloop_new.cc"></bin>
 </environment>
 
 <Flags CXXFLAGS="-g"/>
