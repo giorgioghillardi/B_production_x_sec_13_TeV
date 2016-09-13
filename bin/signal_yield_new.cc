@@ -76,7 +76,8 @@ TString channel_to_ntuple_name(int channel);
 TString channel_to_xaxis_title(int channel);
 int channel_to_nbins(int channel);
 
-void latex_table(std::string filename, int n_col, int n_lin, std::string* title, double** number, std::string caption, int type);
+void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::string> col_name, std::vector<std::string> labels, 
+		 std::vector<std::vector<double> > numbers, std::string caption);
 
 //input example: signal_yield_new --channel 1 --bins pt/y --eff 1 --mc 1 --syst 1
 int main(int argc, char** argv)
@@ -175,36 +176,27 @@ int main(int argc, char** argv)
 
   //set up mass, pt and y variables inside ws  
   set_up_workspace_variables(*ws,channel);
-  std::cout<< "SHIT HAPPENS1"<<std::endl;
   //read data from the selected data file, and import it as a dataset into the workspace.
   read_data(*ws, data_selection_input_file,channel);
-  std::cout<< "SHIT HAPPENS2"<<std::endl;
 
   ws->Print();
-  std::cout<< "SHIT HAPPENS3"<<std::endl;
-  
+   
   if(yield_sub_samples=="0") //mass fit and plot the full dataset
     {
       //build the pdf for the channel selected above, it uses the dataset which is saved in ws. need to change the dataset to change the pdf.
       RooRealVar* mass = ws->var("mass");
-      std::cout<< "SHIT HAPPENS4"<<std::endl;
-
+ 
       build_pdf(*ws,channel);     
-      std::cout<< "SHIT HAPPENS5"<<std::endl;
-
+ 
       data = ws->data("data");
-      std::cout<< "SHIT HAPPENS6"<<std::endl;
-
+ 
       model = ws->pdf("model");     
-      std::cout<< "SHIT HAPPENS7"<<std::endl;
-
+ 
       model->fitTo(*data,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
-      std::cout<< "SHIT HAPPENS8"<<std::endl;
-
+ 
       signal_res = ws->var("n_signal");
-      std::cout<< "SHIT HAPPENS9"<<std::endl;
-      
-/* RooRealVar* mean = ws->var("m_mean");
+       
+      /* RooRealVar* mean = ws->var("m_mean");
 	 RooRealVar* sigma1 = ws->var("m_sigma1");
 	 RooRealVar* sigma2 = ws->var("m_sigma2");
 	 RooRealVar* lambda = ws->var("m_exp");*/
@@ -389,6 +381,34 @@ int main(int argc, char** argv)
 	  for(unsigned int i=0; i<signal_syst.size(); i++)
 	    std::cout << "signal_syst[" << i << "]: " << signal_syst[i]->getVal() << " +/- " << signal_syst[i]->getError() << std::endl;
 
+	  std::vector<std::string> col_name = {"Label", "Signal Yield", "Statistical Uncertainty", "Deviation from base fit (\%)"};
+	  std::vector<std::string> labels = {"Base fit", "Background: 2 Exponential", "Background: Bernstein Polynomial", 
+					     "Background: Power Law", "Signal: 1 Gaussian", "Signal: 3 Gaussians", "Signal: Crystal Ball",
+					     "Mass Range: "+mass_min_str[0]+" to "+mass_max_str[1], 
+					     "Mass Range: "+mass_min_str[1]+" to "+mass_max_str[0]};
+	  std::vector<std::vector<double> > numbers;
+
+	  std::vector<double> aux;
+
+	  for(unsigned int i=0; i<signal_syst.size(); i++)
+	    aux.push_back(signal_syst[i]->getVal());
+	  numbers.push_back(aux);
+	  aux.clear();
+
+	  for(unsigned int i=0; i<signal_syst.size(); i++)
+	    aux.push_back(signal_syst[i]->getError());	  
+	  numbers.push_back(aux);
+	  aux.clear();
+	  
+	  for(unsigned int i=0; i<signal_syst.size(); i++)
+	    {
+	      double deviation=abs(signal_syst[i]->getVal() - signal_syst[0]->getVal())/signal_syst[0]->getVal()*100;
+	      aux.push_back(deviation);	  
+	    }
+	  numbers.push_back(aux);
+	  aux.clear();
+
+	  latex_table("systematics_table", 4, (int)(1+signal_syst.size()), col_name, labels, numbers, "Systematic Errors");
 	}
     }
   else
@@ -594,18 +614,18 @@ int main(int argc, char** argv)
       graph->SetMarkerStyle(20);
       //      empty->SetMinimum(graph->GetMinimum());
       /*      if(nybins<=1)
-	{
-	  std::cout << "ENTRAS??" << std::endl << "graph->GetMaximum(): " << graph->GetMaximum() << std::endl << "graph->GetMinimum(): " << graph->GetMaximum() << std::endl;
-	  empty->SetMaximum(graph->GetMaximum());
-	  empty->Draw("hist");
-	  }*/
+	      {
+	      std::cout << "ENTRAS??" << std::endl << "graph->GetMaximum(): " << graph->GetMaximum() << std::endl << "graph->GetMinimum(): " << graph->GetMaximum() << std::endl;
+	      empty->SetMaximum(graph->GetMaximum());
+	      empty->Draw("hist");
+	      }*/
       //      graph->SetFillColor(2);
       //graph->SetFillStyle(3001);
       //      graph->Draw("a");
       graph->Draw("p same");/*
-      graph->GetYaxis()->SetMinimum(0.);
-      graph->GetYaxis()->SetMaximum(3000000.);
-			*/
+			      graph->GetYaxis()->SetMinimum(0.);
+			      graph->GetYaxis()->SetMaximum(3000000.);
+			    */
       TLatex * tex = new TLatex(0.68,0.85,"2.71 fb^{-1} (13 TeV)");
       tex->SetNDC(kTRUE);
       tex->SetLineWidth(2);
@@ -619,7 +639,7 @@ int main(int argc, char** argv)
       tex->Draw();
       
       if(yield_sub_samples=="pt/y")      leg->AddEntry(graph, "(#times 10^{3}) 0<|y|<0.5", "lp");
-//      if(yield_sub_samples=="pt")      leg->AddEntry(graph, "|y|>0", "lp");
+      //      if(yield_sub_samples=="pt")      leg->AddEntry(graph, "|y|>0", "lp");
            
       for(int i=1; i<nybins; i++)
 	{
@@ -887,7 +907,7 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high,
   p2->SetFrameBorderMode(0); 
   //p2->SetTicks(1,2); 
   p2->Draw();
-//  p2->SetGridy(true);  
+  //  p2->SetGridy(true);  
   RooAbsReal* nll = model->createNLL(*data);
   double log_likelihood= nll->getVal();
   std::stringstream ll_str;
@@ -1171,9 +1191,7 @@ void build_pdf(RooWorkspace& w, int channel)
   double mass_peak;
 
   RooRealVar mass = *(w.var("mass"));
-  std::cout<<"SHIT HAPPENS 4.1"<<std::endl;
   RooRealVar pt = *(w.var("pt"));  
-  std::cout<<"SHIT HAPPENS 4.2"<<std::endl;
   RooAbsData* data = w.data("data");
 
   switch (channel) {
@@ -1200,41 +1218,34 @@ void build_pdf(RooWorkspace& w, int channel)
   
   double n_signal_initial = data->sumEntries(TString::Format("abs(mass-%g)<0.015",mass_peak))
     - data->sumEntries(TString::Format("abs(mass-%g)<0.030&&abs(mass-%g)>0.015",mass_peak,mass_peak));
-  std::cout<<"SHIT HAPPENS 4.3"<<std::endl;
-
+  
   if(n_signal_initial<0)
-  n_signal_initial=1;
-  std::cout<<"SHIT HAPPENS 4.4"<<std::endl;
-
+    n_signal_initial=1;
+  
 
   double n_combinatorial_initial = data->sumEntries() - n_signal_initial;
-  std::cout<<"SHIT HAPPENS 4.5"<<std::endl;
-
+  
   //-----------------------------------------------------------------
   // signal PDF 
   RooRealVar m_mean("m_mean","m_mean",mass_peak,mass_peak-0.09,mass_peak+0.09);
   RooRealVar m_sigma1("m_sigma1","m_sigma1",0.015, 0.005, 0.07);
   RooRealVar m_sigma2("m_sigma2","m_sigma2",0.030, 0.001, 0.100);
 
- RooRealVar m_fraction_2("m_fraction","m_fraction",0.169);
- RooRealVar m_fraction("m_fraction","m_fraction",0.5);
-std::cout<<"SHIT HAPPENS 4.6"<<std::endl;
-
- if(channel==2) m_fraction=m_fraction_2;
-std::cout<<"SHIT HAPPENS 4.7"<<std::endl;
-
+  RooRealVar m_fraction_2("m_fraction","m_fraction",0.169);
+  RooRealVar m_fraction("m_fraction","m_fraction",0.5);
+  
+  if(channel==2) m_fraction=m_fraction_2;
+  
   RooGaussian m_gaussian1("m_gaussian1","m_gaussian1",mass,m_mean,m_sigma1);
   RooGaussian m_gaussian2("m_gaussian2","m_gaussian2",mass,m_mean,m_sigma2);
   RooAddPdf pdf_m_signal("pdf_m_signal","pdf_m_signal",RooArgList(m_gaussian1,m_gaussian2),RooArgList(m_fraction));
-std::cout<<"SHIT HAPPENS 4.8"<<std::endl;
-  
+    
   // use single Gaussian for J/psi Ks and J/psi Lambda due to low statistics
   if (channel==3 || channel==6 || data->sumEntries()<250) {
     m_sigma2.setConstant(kTRUE);
     m_fraction.setVal(1.);
   }
-  std::cout<<"SHIT HAPPENS 4.9"<<std::endl;
-
+  
   //-----------------------------------------------------------------
   // combinatorial background PDF (exponential or bernstean poly.)
   
@@ -1245,13 +1256,12 @@ std::cout<<"SHIT HAPPENS 4.8"<<std::endl;
   RooRealVar m_par2("m_par2","m_par3",1.,0,+10.);
   RooRealVar m_par3("m_par3","m_par3",1.,0,+10.);
   
-  RooBernstein pdf_m_combinatorial_bern("pdf_m_combinatorial_bern","pdf_m_combinatorial_bern",mass,RooArgList(RooConst(1.),m_par1,m_par2,m_par3));
-std::cout<<"SHIT HAPPENS 4.10"<<std::endl;
-  
-//erfc component on channel 1 and 3
+  RooBernstein pdf_m_combinatorial_bern("pdf_m_combinatorial_bern","pdf_m_combinatorial_bern",
+					mass,RooArgList(RooConst(1.),m_par1,m_par2,m_par3));
+    
+  //erfc component on channel 1 and 3
   RooFormulaVar pdf_m_jpsix("pdf_m_jpsix","2.7*erfc((mass-5.14)/(0.5*0.08))",{mass});
-  std::cout<<"SHIT HAPPENS 4.11"<<std::endl;
-
+ 
   //-----------------------------------------------------------------
   // X(3872) PDF, only for J/psi pipi fit
   
@@ -1266,9 +1276,9 @@ std::cout<<"SHIT HAPPENS 4.10"<<std::endl;
   RooRealVar n_combinatorial("n_combinatorial","n_combinatorial",n_combinatorial_initial,0.,data->sumEntries());
   RooRealVar n_x3872("n_x3872","n_x3872",200.,0.,data->sumEntries());
   
-  RooRealVar n_jpsix("n_jpsix","n_jpsix",data->sumEntries(TString::Format("mass>4.9&&mass<5.14")),data->sumEntries(TString::Format("mass>4.9&&mass<5.14")),data->sumEntries());
- std::cout<<"SHIT HAPPENS 4.12"<<std::endl;
-
+  RooRealVar n_jpsix("n_jpsix","n_jpsix",data->sumEntries(TString::Format("mass>4.9&&mass<5.14")),
+		     data->sumEntries(TString::Format("mass>4.9&&mass<5.14")),data->sumEntries());
+ 
   RooAddPdf* model;
 
   switch(channel)
@@ -1293,11 +1303,8 @@ std::cout<<"SHIT HAPPENS 4.10"<<std::endl;
 			    RooArgList(n_signal, n_combinatorial, n_x3872));
       break;
     }
-std::cout<<"SHIT HAPPENS 4.13"<<std::endl;
 
   w.import(*model);
-std::cout<<"SHIT HAPPENS 4.14"<<std::endl;
-
 }
 
 void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string choice2)
@@ -1334,7 +1341,7 @@ void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string cho
     - data->sumEntries(TString::Format("abs(mass-%g)<0.030&&abs(mass-%g)>0.015",mass_peak,mass_peak));
   
   if(n_signal_initial<0)
-  n_signal_initial=1;
+    n_signal_initial=1;
 
   double n_combinatorial_initial = data->sumEntries() - n_signal_initial;
   
@@ -1661,7 +1668,8 @@ void create_dir(std::vector<std::string> list)
     }
 }
 
-void latex_table(std::string filename, int n_col, int n_lin, std::string* title, double** number, std::string caption, int type)
+void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::string> col_name, std::vector<std::string> labels, 
+		 std::vector<std::vector<double> > numbers, std::string caption)
 {
   std::ofstream file;
 
@@ -1695,42 +1703,23 @@ void latex_table(std::string filename, int n_col, int n_lin, std::string* title,
   file << "\\begin{tabular}{"+col+"}" << std::endl;
   file << "\\toprule" << std::endl;
 
-  switch(type)
+  for(int c=0; c<n_col; c++)
+    file << col_name[c] << " & ";
+
+  file << "\\\\ \\midrule" << std::endl;
+
+  for(int i=1; i<n_lin; i++)
     {
-    case 1:
-      //write top line                                                                                                                           
-      for(int i=0; i<n_col-1; i++)
-        file << title[i]+" & ";
+      file << labels[i-1] << " & ";
 
-      file << title[n_col-1];
+      for(int c=1; c<n_col; c++)
+	file << numbers[c-1][i-1] << " & ";
 
-      file << "\\\\  \\midrule" << std::endl;
-      //insert numbers                                                                                                                           
-      for(int i=0; i<n_lin-1; i++)
-        {
-          for(int c=0; c<n_col-1; c++)
-            file << number[c][i] << " & ";
-
-          file << number[n_col-1][i] << " \\\\" << std::endl;
-        }
-
-      file << "\\bottomrule" << std::endl;
-      break;
-    case 2:
-      //insert numbers                                                                                                                           
-      for(int i=0; i<n_lin; i++)
-        {
-          file << title[i]+" & ";
-
-          for(int c=1; c>n_col-1; c++)
-            file << number[c][i] << " & ";
-
-          file << number[n_col-1][i] << " \\\\" << std::endl;
-	}
-
-      file << "\\bottomrule" << std::endl;
-      break;
+      file << "\\\\" << std::endl;
     }
+
+  file << "\\bottomrule" << std::endl;
+
   //End Table                                                                                                                                    
   file << "\\end{tabular}" << std::endl;
   file << "\\caption{"+caption+"}" << std::endl;
