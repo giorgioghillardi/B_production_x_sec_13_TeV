@@ -502,9 +502,9 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 	}else
 	  if (channel==4) { // cuts for Bs -> J/psi phi
 	    if (mc!=1 && br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
-	    /*	    if (br.vtxprob<=0.1) continue;//original cut 0.1
-	    if (br.lxy/br.errxy<=3.0) continue;//original cut 3.0
-	    if (br.cosalpha2d<=0.99) continue;//original cut 0.99
+	    if (br.vtxprob<=0.2) continue;//original cut 0.1
+	    if (br.lxy/br.errxy<=4.5) continue;//original cut 3.0
+	    if (br.cosalpha2d<=0.996) continue;//original cut 0.99
 	    if (fabs(br.tktkmass-PHI_MASS)>=0.010) continue;//original cut 0.010
             
 	    v4_tk1.SetPtEtaPhiM(br.tk1pt,br.tk1eta,br.tk1phi,KAON_MASS);
@@ -513,7 +513,7 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 	    v4_tk1.SetPtEtaPhiM(br.tk1pt,br.tk1eta,br.tk1phi,PION_MASS);
 	    v4_tk2.SetPtEtaPhiM(br.tk2pt,br.tk2eta,br.tk2phi,KAON_MASS);
 	    if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=0.05) continue;
-	    */
+	    
 	    _nt4->Fill(br.mass,br.pt,br.eta,br.y,br.mu1pt,br.mu2pt,br.mu1eta,br.mu2eta,br.lxy,br.errxy,br.vtxprob, br.lxy/br.errxy);
 
 	  }else
