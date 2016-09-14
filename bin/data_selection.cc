@@ -609,15 +609,15 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   RooRealVar lambda("lambda", "lambda",-5., -20., 0.);
   
   //Bernstein try
-  RooRealVar m_par1("m_par1","m_par2",1.,0,+10.);
+/*  RooRealVar m_par1("m_par1","m_par2",1.,0,+10.);
   RooRealVar m_par2("m_par2","m_par3",1.,0,+10.);
   RooRealVar m_par3("m_par3","m_par3",1.,0,+10.);
   RooRealVar m_par4("m_par4","m_par4",1.,0,+10.);
   RooRealVar m_par5("m_par5","m_par5",1.,0,+10.);
   
-  RooBernstein fit_side("fit_side","fit_side",mass,RooArgList(RooConst(1.),m_par1,m_par2,m_par3,m_par4, m_par5));
+  RooBernstein fit_side("fit_side","fit_side",mass,RooArgList(RooConst(1.),m_par1,m_par2,m_par3,m_par4, m_par5));*/
 
-//  RooExponential fit_side("fit_side", "fit_side_exp", mass, lambda);
+  RooExponential fit_side("fit_side", "fit_side_exp", mass, lambda);
 
   mass.setRange("all", mass.getMin(),mass.getMax());
   mass.setRange("right",right,mass.getMax());
@@ -631,14 +631,44 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   fit_side.fitTo(*reduceddata_side,Range("left,right"));
   //  RooRealVar* nll = (RooRealVar*) fit_side.createNLL(*reduceddata_side, Range("left,right"));
 
-  RooPlot* massframe = mass.frame();
-  //reduceddata_side->plotOn(massframe);
+  RooPlot* massframe = mass.frame(Title("Exponential Fit - Sideband Subtraction"));
+//  reduceddata_side->plotOn(massframe);
   data->plotOn(massframe);
   fit_side.plotOn(massframe, Range("all"));
-
+  massframe->GetYaxis()->SetTitleOffset(1.2);
+//  massframe->SetNameTitle("sideband_fit", "Exponential Fit - Sideband Subtraction");
   TCanvas d;
-  massframe->Draw();
-  d.SaveAs("fit_side.png");
+  massframe->Draw(); 
+  TLatex* tex11 = new TLatex(0.68,0.8,"2.71 fb^{-1} (13 TeV)");
+  tex11->SetNDC(kTRUE);
+  tex11->SetLineWidth(2);
+  tex11->SetTextSize(0.04);
+  tex11->Draw();
+  tex11 = new TLatex(0.68,0.85,"CMS Preliminary");
+  tex11->SetNDC(kTRUE);
+  tex11->SetTextFont(42);
+  tex11->SetTextSize(0.04);
+  tex11->SetLineWidth(2);
+  tex11->Draw();
+
+  double lambda_str = lambda.getVal();
+  double lambda_err = lambda.getError();
+  double chis = massframe->chiSquare();
+
+  TLatex* tex12 = new TLatex(0.15, 0.85, Form("#lambda_{exp} = %.3lf #pm %.3lf",lambda_str,lambda_err));
+  tex12->SetNDC(kTRUE);
+  tex12->SetTextFont(42);
+  tex12->SetTextSize(0.04);
+  tex12->Draw();   
+
+  TLatex* tex13 = new TLatex(0.15, 0.8, Form("#chi/DOF = %.3lf",chis));
+  tex13->SetNDC(kTRUE);
+  tex13->SetTextFont(42);
+  tex13->SetTextSize(0.04);
+  //tex13->Draw();   
+
+  
+  if(mc==0)  d.SaveAs("fit_side.png");
 
   std::cout << std::endl << "chisquare: " << massframe->chiSquare() << std::endl;
   //  std::cout << "LogLikelihood: " << nll->getVal() << std::endl;
@@ -690,7 +720,9 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   pt_dist_side->Add(pt_dist_side, factor);
 
   //  if(mc==1)  histos.push_back(pt_dist_total);
-
+  pt_dist_peak->SetStats(0);
+  pt_dist_side->SetStats(0);
+  pt_dist_total->SetStats(0);
   TCanvas c;
 
   pt_dist_total->Draw();
@@ -699,6 +731,18 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   pt_dist_peak->SetXTitle("p_{T} [GeV]");
   pt_dist_side->SetXTitle("p_{T} [GeV]");
   pt_dist_total->SetXTitle("p_{T} [GeV]");
+  
+  TLatex* tex = new TLatex(0.68,0.8,"2.71 fb^{-1} (13 TeV)");
+  tex->SetNDC(kTRUE);
+  tex->SetLineWidth(2);
+  tex->SetTextSize(0.04);
+  tex->Draw();
+  tex = new TLatex(0.68,0.85,"CMS Preliminary");
+  tex->SetNDC(kTRUE);
+  tex->SetTextFont(42);
+  tex->SetTextSize(0.04);
+  tex->SetLineWidth(2);
+  tex->Draw();
 
   TLegend *leg = new TLegend (0.7, 0.5, 0.85, 0.65);
   leg->AddEntry("pt_dist_total", "Total", "l");
@@ -707,7 +751,7 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   leg->Draw("same");
 
   c.SetLogy();
-  c.SaveAs("pt_sideband_sub.png");
+  if(mc==0)  c.SaveAs("pt_sideband_sub.png");
 
 
   TH1D* mu1pt_dist_side = (TH1D*) reduceddata_side->createHistogram("mu1pt_dist_side",mu1pt);
@@ -735,12 +779,17 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   mu1pt_dist_total->SetMarkerColor(kBlack);
   mu1pt_dist_total->SetLineColor(kBlack);
   mu1pt_dist_total->SetNameTitle("mu1pt_dist_total", "Signal and Background Distributions - p_{T} (#mu_{1})");
-
+  
 
   mu1pt_dist_peak->Add(mu1pt_dist_side, -factor);
   mu1pt_dist_side->Add(mu1pt_dist_side, factor);
 
   //  if(mc==1)  histos.push_back(mu1pt_dist_total);
+
+  mu1pt_dist_peak->SetStats(0);
+  mu1pt_dist_side->SetStats(0);
+  mu1pt_dist_total->SetStats(0);
+
 
   TCanvas c1;
 
@@ -757,8 +806,22 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   leg1->AddEntry("mu1pt_dist_side", "Background", "l");
   leg1->Draw("same");
 
+  TLatex* tex1 = new TLatex(0.68,0.8,"2.71 fb^{-1} (13 TeV)");
+  tex1->SetNDC(kTRUE);
+  tex1->SetLineWidth(2);
+  tex1->SetTextSize(0.04);
+  tex1->Draw();
+  tex1 = new TLatex(0.68,0.85,"CMS Preliminary");
+  tex1->SetNDC(kTRUE);
+  tex1->SetTextFont(42);
+  tex1->SetTextSize(0.04);
+  tex1->SetLineWidth(2);
+  tex1->Draw();
+
+
+
   c1.SetLogy();
-  c1.SaveAs("mu1pt_sideband_sub.png");
+  if(mc==0) c1.SaveAs("mu1pt_sideband_sub.png");
 
   TH1D* mu2pt_dist_side = (TH1D*) reduceddata_side->createHistogram("mu2pt_dist_side",mu2pt);
   mu2pt_dist_side->SetMarkerColor(kBlue);
@@ -790,7 +853,11 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   mu2pt_dist_side->Add(mu2pt_dist_side, factor);
 
   //  if(mc==1)  histos.push_back(mu2pt_dist_total);
-
+  mu2pt_dist_peak->SetStats(0);
+  mu2pt_dist_side->SetStats(0);
+  mu2pt_dist_total->SetStats(0);
+  
+  
   TCanvas c2;
 
   mu2pt_dist_total->Draw();
@@ -806,8 +873,21 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   leg2->AddEntry("mu2pt_dist_side", "Background", "l");
   leg2->Draw("same");
 
+  TLatex* tex2 = new TLatex(0.68,0.8,"2.71 fb^{-1} (13 TeV)");
+  tex2->SetNDC(kTRUE);
+  tex2->SetLineWidth(2);
+  tex2->SetTextSize(0.04);
+  tex2->Draw();
+  tex2 = new TLatex(0.68,0.85,"CMS Preliminary");
+  tex2->SetNDC(kTRUE);
+  tex2->SetTextFont(42);
+  tex2->SetTextSize(0.04);
+  tex2->SetLineWidth(2);
+  tex2->Draw();
+
+
   c2.SetLogy();
-  c2.SaveAs("mu2pt_sideband_sub.png");
+  if(mc==0) c2.SaveAs("mu2pt_sideband_sub.png");
 
   TH1D* mu1eta_dist_side = (TH1D*) reduceddata_side->createHistogram("mu1eta_dist_side",mu1eta);
   mu1eta_dist_side->SetMarkerColor(kBlue);
@@ -839,6 +919,9 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   mu1eta_dist_side->Add(mu1eta_dist_side, factor);
 
   //if(mc==1)  histos.push_back(mu1eta_dist_total);
+  mu1eta_dist_peak->SetStats(0);
+  mu1eta_dist_side->SetStats(0);
+  mu1eta_dist_total->SetStats(0);
 
   TCanvas c3;
 
@@ -855,8 +938,21 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   leg3->AddEntry("mu1eta_dist_side", "Background", "l");
   leg3->Draw("same");
 
+
+  TLatex* tex4 = new TLatex(0.68,0.8,"2.71 fb^{-1} (13 TeV)");
+  tex4->SetNDC(kTRUE);
+  tex4->SetLineWidth(2);
+  tex4->SetTextSize(0.04);
+  tex4->Draw();
+  tex4 = new TLatex(0.68,0.85,"CMS Preliminary");
+  tex4->SetNDC(kTRUE);
+  tex4->SetTextFont(42);
+  tex4->SetTextSize(0.04);
+  tex4->SetLineWidth(2);
+  tex4->Draw();
+
   // c3.SetLogy();
-  c3.SaveAs("mu1eta_sideband_sub.png");
+  if(mc==0) c3.SaveAs("mu1eta_sideband_sub.png");
 
   TH1D* mu2eta_dist_side = (TH1D*) reduceddata_side->createHistogram("mu2eta_dist_side",mu2eta);
   mu2eta_dist_side->SetMarkerColor(kBlue);
@@ -888,6 +984,9 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   mu2eta_dist_side->Add(mu2eta_dist_side, factor);
 
   // if(mc==1)  histos.push_back(mu2eta_dist_total);
+  mu2eta_dist_peak->SetStats(0);
+  mu2eta_dist_side->SetStats(0);
+  mu2eta_dist_total->SetStats(0);
 
   TCanvas c4;
 
@@ -904,8 +1003,21 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   leg4->AddEntry("mu2eta_dist_side", "Background", "l");
   leg4->Draw("same");
 
+
+  TLatex* tex5 = new TLatex(0.68,0.8,"2.71 fb^{-1} (13 TeV)");
+  tex5->SetNDC(kTRUE);
+  tex5->SetLineWidth(2);
+  tex5->SetTextSize(0.04);
+  tex5->Draw();
+  tex5 = new TLatex(0.68,0.85,"CMS Preliminary");
+  tex5->SetNDC(kTRUE);
+  tex5->SetTextFont(42);
+  tex5->SetTextSize(0.04);
+  tex5->SetLineWidth(2);
+  tex5->Draw();
+
   //c4.SetLogy();
-  c4.SaveAs("mu2eta_sideband_sub.png");
+  if(mc==0) c4.SaveAs("mu2eta_sideband_sub.png");
 
   TH1D* y_dist_side = (TH1D*) reduceddata_side->createHistogram("y_dist_side",y);
   y_dist_side->SetMarkerColor(kBlue);
@@ -938,6 +1050,9 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   y_dist_side->Add(y_dist_side, factor);
 
   //  if(mc==1)  histos.push_back(y_dist_total);
+  y_dist_peak->SetStats(0);
+  y_dist_side->SetStats(0);
+  y_dist_total->SetStats(0);
 
   TCanvas c5;
 
@@ -954,8 +1069,21 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   leg5->AddEntry("y_dist_side", "Background", "l");
   leg5->Draw("same");
 
+  TLatex* tex6 = new TLatex(0.68,0.8,"2.71 fb^{-1} (13 TeV)");
+  tex6->SetNDC(kTRUE);
+  tex6->SetLineWidth(2);
+  tex6->SetTextSize(0.04);
+  tex6->Draw();
+  tex6 = new TLatex(0.68,0.85,"CMS Preliminary");
+  tex6->SetNDC(kTRUE);
+  tex6->SetTextFont(42);
+  tex6->SetTextSize(0.04);
+  tex6->SetLineWidth(2);
+  tex6->Draw();
+
+
   //c5.SetLogy();
-  c5.SaveAs("y_sideband_sub.png");
+  if(mc==0) c5.SaveAs("y_sideband_sub.png");
 
   TH1D* vtxprob_dist_side = (TH1D*) reduceddata_side->createHistogram("vtxprob_dist_side",vtxprob);
   vtxprob_dist_side->SetMarkerColor(kBlue);
@@ -989,6 +1117,9 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   vtxprob_dist_side->Add(vtxprob_dist_side, factor);
 
   //  if(mc==1)  histos.push_back(vtxprob_dist_total);
+  vtxprob_dist_peak->SetStats(0);
+  vtxprob_dist_side->SetStats(0);
+  vtxprob_dist_total->SetStats(0);
 
   TCanvas c6;
 
@@ -1006,13 +1137,26 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   leg6->AddEntry("vtxprob_dist_side", "Background", "l");
   leg6->Draw("same");
 
+  TLatex* tex7 = new TLatex(0.68,0.8,"2.71 fb^{-1} (13 TeV)");
+  tex7->SetNDC(kTRUE);
+  tex7->SetLineWidth(2);
+  tex7->SetTextSize(0.04);
+  tex7->Draw();
+  tex7 = new TLatex(0.68,0.85,"CMS Preliminary");
+  tex7->SetNDC(kTRUE);
+  tex7->SetTextFont(42);
+  tex7->SetTextSize(0.04);
+  tex7->SetLineWidth(2);
+  tex7->Draw();
+
+
   //c6.SetLogy();
-  c6.SaveAs("vtxprob_sideband_sub.png");
+  if(mc==0) c6.SaveAs("vtxprob_sideband_sub.png");
    
   TH1D* lxy_dist_side = (TH1D*) reduceddata_side->createHistogram("lxy_dist_side",lxy);
   lxy_dist_side->SetMarkerColor(kBlue);
   lxy_dist_side->SetLineColor(kBlue);
-  lxy_dist_side->SetNameTitle("lxy_dist_side", "Signal and Background Distributions -  l_{xy} ");
+  lxy_dist_side->SetNameTitle("lxy_dist_side", "Signal and Background Distributions -  L_{xy} ");
 
   TH1D* hist_lxy_dist_peak = (TH1D*) reduceddata_central->createHistogram("lxy_dist_peak", lxy);
   TH1D* lxy_dist_peak = new TH1D(*hist_lxy_dist_peak);
@@ -1024,7 +1168,7 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   else{
     lxy_dist_peak->SetMarkerColor(kRed);
     lxy_dist_peak->SetLineColor(kRed);
-    lxy_dist_peak->SetNameTitle("lxy_dist_peak", "Signal and Background Distributions - l_{xy} ");
+    lxy_dist_peak->SetNameTitle("lxy_dist_peak", "Signal and Background Distributions - L_{xy} ");
   }
 
   /*  if(mc==0)*/  histos.push_back(lxy_dist_peak);
@@ -1032,12 +1176,15 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   TH1D* lxy_dist_total = (TH1D*) data->createHistogram("lxy_dist_total",lxy);
   lxy_dist_total->SetMarkerColor(kBlack);
   lxy_dist_total->SetLineColor(kBlack);
-  lxy_dist_total->SetNameTitle("lxy_dist_total", "Signal and Background Distributions - l_{xy} ");
+  lxy_dist_total->SetNameTitle("lxy_dist_total", "Signal and Background Distributions - L_{xy} ");
 
   lxy_dist_peak->Add(lxy_dist_side, -factor);
   lxy_dist_side->Add(lxy_dist_side, factor);
 
   //  if(mc==1)  histos.push_back(lxy_dist_total);
+  lxy_dist_peak->SetStats(0);
+  lxy_dist_side->SetStats(0);
+  lxy_dist_total->SetStats(0);
 
   TCanvas c7;
 
@@ -1054,13 +1201,25 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   leg7->AddEntry("lxy_dist_side", "Background", "l");
   leg7->Draw("same");
 
+  TLatex* tex8 = new TLatex(0.68,0.8,"2.71 fb^{-1} (13 TeV)");
+  tex8->SetNDC(kTRUE);
+  tex8->SetLineWidth(2);
+  tex8->SetTextSize(0.04);
+  tex8->Draw();
+  tex8 = new TLatex(0.68,0.85,"CMS Preliminary");
+  tex8->SetNDC(kTRUE);
+  tex8->SetTextFont(42);
+  tex8->SetTextSize(0.04);
+  tex8->SetLineWidth(2);
+  tex8->Draw();
+
   c7.SetLogy();
-  c7.SaveAs("lxy_sideband_sub.png");
+  if(mc==0) c7.SaveAs("lxy_sideband_sub.png");
 
   TH1D* errlxy_dist_side = (TH1D*) reduceddata_side->createHistogram("errlxy_dist_side",errlxy);
   errlxy_dist_side->SetMarkerColor(kBlue);
   errlxy_dist_side->SetLineColor(kBlue);
-  errlxy_dist_side->SetNameTitle("errlxy_dist_side", "Signal and Background Distributions - #sigma l_{xy} ");
+  errlxy_dist_side->SetNameTitle("errlxy_dist_side", "Signal and Background Distributions - #sigma L_{xy} ");
 
   TH1D* hist_errlxy_dist_peak = (TH1D*) reduceddata_central->createHistogram("errlxy_dist_peak", errlxy);
   TH1D* errlxy_dist_peak = new TH1D(*hist_errlxy_dist_peak);
@@ -1072,7 +1231,7 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   else{
     errlxy_dist_peak->SetMarkerColor(kRed);
     errlxy_dist_peak->SetLineColor(kRed);
-    errlxy_dist_peak->SetNameTitle("errlxy_dist_peak", "Signal and Background Distributions - #sigma l_{xy} ");
+    errlxy_dist_peak->SetNameTitle("errlxy_dist_peak", "Signal and Background Distributions - #sigma L_{xy} ");
   }
 
   /*  if(mc==0) */ histos.push_back(errlxy_dist_peak);
@@ -1081,12 +1240,15 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   TH1D* errlxy_dist_total = (TH1D*) data->createHistogram("errlxy_dist_total",errlxy);
   errlxy_dist_total->SetMarkerColor(kBlack);
   errlxy_dist_total->SetLineColor(kBlack);
-  errlxy_dist_total->SetNameTitle("errlxy_dist_total", "Signal and Background Distributions - #sigma l_{xy} ");
+  errlxy_dist_total->SetNameTitle("errlxy_dist_total", "Signal and Background Distributions - #sigma L_{xy} ");
 
   errlxy_dist_peak->Add(errlxy_dist_side, -factor);
   errlxy_dist_side->Add(errlxy_dist_side, factor);
 
   //  if(mc==1)  histos.push_back(errlxy_dist_total);
+  errlxy_dist_peak->SetStats(0);
+  errlxy_dist_side->SetStats(0);
+  errlxy_dist_total->SetStats(0);
 
   TCanvas c8;
 
@@ -1104,14 +1266,26 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   leg8->AddEntry("errlxy_dist_side", "Background", "l");
   leg8->Draw("same");
 
+  TLatex* tex9 = new TLatex(0.68,0.8,"2.71 fb^{-1} (13 TeV)");
+  tex9->SetNDC(kTRUE);
+  tex9->SetLineWidth(2);
+  tex9->SetTextSize(0.04);
+  tex9->Draw();
+  tex9 = new TLatex(0.68,0.85,"CMS Preliminary");
+  tex9->SetNDC(kTRUE);
+  tex9->SetTextFont(42);
+  tex9->SetTextSize(0.04);
+  tex9->SetLineWidth(2);
+  tex9->Draw();
+
   c8.SetLogy();
-  c8.SaveAs("errlxy_sideband_sub.png");
+  if(mc==0) c8.SaveAs("errlxy_sideband_sub.png");
 
 
   TH1D* lerrxy_dist_side = (TH1D*) reduceddata_side->createHistogram("lerrxy_dist_side",lerrxy);
   lerrxy_dist_side->SetMarkerColor(kBlue);
   lerrxy_dist_side->SetLineColor(kBlue);
-  lerrxy_dist_side->SetNameTitle("lerrxy_dist_side", "Signal and Background Distributions - l_{xy}/#sigma l_{xy} ");
+  lerrxy_dist_side->SetNameTitle("lerrxy_dist_side", "Signal and Background Distributions - L_{xy}/#sigma L_{xy} ");
 
   TH1D* hist_lerrxy_dist_peak = (TH1D*) reduceddata_central->createHistogram("lerrxy_dist_peak", lerrxy);
   TH1D* lerrxy_dist_peak = new TH1D(*hist_lerrxy_dist_peak);
@@ -1123,7 +1297,7 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   else{
     lerrxy_dist_peak->SetMarkerColor(kRed);
     lerrxy_dist_peak->SetLineColor(kRed);
-    lerrxy_dist_peak->SetNameTitle("lerrxy_dist_peak", "Signal and Background Distributions - l_{xy}/#sigma l_{xy} ");
+    lerrxy_dist_peak->SetNameTitle("lerrxy_dist_peak", "Signal and Background Distributions - L_{xy}/#sigma L_{xy} ");
   }
 
   /*  if(mc==0)*/  histos.push_back(lerrxy_dist_peak);
@@ -1131,12 +1305,15 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   TH1D* lerrxy_dist_total = (TH1D*) data->createHistogram("lerrxy_dist_total",lerrxy);
   lerrxy_dist_total->SetMarkerColor(kBlack);
   lerrxy_dist_total->SetLineColor(kBlack);
-  lerrxy_dist_total->SetNameTitle("lerrxy_dist_total", "Signal and Background Distributions - l_{xy}/#sigma l_{xy} ");
+  lerrxy_dist_total->SetNameTitle("lerrxy_dist_total", "Signal and Background Distributions - L_{xy}/#sigma L_{xy} ");
 
   lerrxy_dist_peak->Add(lerrxy_dist_side, -factor);
   lerrxy_dist_side->Add(lerrxy_dist_side, factor);
 
   //  if(mc==1)  histos.push_back(lerrxy_dist_total);
+  lerrxy_dist_peak->SetStats(0);
+  lerrxy_dist_side->SetStats(0);
+  lerrxy_dist_total->SetStats(0);
 
   TCanvas c9;
 
@@ -1154,8 +1331,22 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   leg9->AddEntry("lerrxy_dist_side", "Background", "l");
   leg9->Draw("same");
 
+  TLatex* tex10 = new TLatex(0.68,0.8,"2.71 fb^{-1} (13 TeV)");
+  tex10->SetNDC(kTRUE);
+  tex10->SetLineWidth(2);
+  tex10->SetTextSize(0.04);
+  tex10->Draw();
+  tex10 = new TLatex(0.68,0.85,"CMS Preliminary");
+  tex10->SetNDC(kTRUE);
+  tex10->SetTextFont(42);
+  tex10->SetTextSize(0.04);
+  tex10->SetLineWidth(2);
+  tex10->Draw();
+
+
+
   c9.SetLogy();
-  c9.SaveAs("lerrxy_sideband_sub.png");
+  if(mc==0) c9.SaveAs("lerrxy_sideband_sub.png");
 
   return histos;
 }
