@@ -112,6 +112,7 @@ int main(int argc, char** argv)
 
   TString input_file_mc="/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_new_"
     +channel_to_ntuple_name(channel)+"_bmuonfilter_no_cuts.root";
+  TString input_file_mc_2="myloop_new_"+channel_to_ntuple_name(channel)+"_bmuonfilter_with_cuts.root";
 
 
   TString data_selection_output_file="";
@@ -120,7 +121,7 @@ int main(int argc, char** argv)
   data_selection_output_file_mc= "selected_data_" + channel_to_ntuple_name(channel) + "_mc.root";
   
   if(select)  data_selection(input_file,data_selection_output_file,channel, 0);
-  if(mc==1) data_selection(input_file_mc, data_selection_output_file_mc, channel, mc);
+  if(mc==1) data_selection(input_file_mc_2, data_selection_output_file_mc, channel, mc);
 
   if(show_dist)
     { 
