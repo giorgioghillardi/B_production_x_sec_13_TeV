@@ -63,12 +63,12 @@ void plot_pt_dist(RooWorkspace& w, int channel, TString directory);
 void plot_mass_fit(RooWorkspace& w, int channel, TString directory,int pt_high, int pt_low);
 void plot_mass_fit(RooWorkspace& w, int channel, TString directory);
 RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, int mcstudy);
-RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, 
+double bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, 
 			 std::string choice, std::string choice2);
 double pt_bin_mean(RooWorkspace& w, double pt_min, double pt_max);
 RooRealVar* pre_filter_efficiency(int channel, double pt_min, double pt_max);
-double bin_systematics(int channel, double pt_min, double pt_max, double y_min, double y_max, 
-			    RooRealVar* signal_res, TString data_selection_input_file);
+double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_max, double y_min, double y_max, 
+		       double signal_res, TString data_selection_input_file, int syst);
 
 void build_pdf(RooWorkspace& w, int channel);
 void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string choice2);
@@ -530,7 +530,6 @@ int main(int argc, char** argv)
       for(int c=0; c<nybins; c++)
 	{ 
 	  std::cout << "processing subsample: " << y_bin_edges[c] << " < |y| < " << y_bin_edges[c+1] << std::endl;
-
 	  for(int i=0; i<nptbins; i++)
 	    {
 	      std::cout << "processing subsample: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
@@ -551,19 +550,18 @@ int main(int argc, char** argv)
 		  yield_array[c][i] = (signal_res->getVal())/(pt_bin_size[i]);
 		  errLo_array[c][i] = -(signal_res->getAsymErrorLo())/(pt_bin_size[i]);
 		  errHi_array[c][i] = (signal_res->getAsymErrorHi())/(pt_bin_size[i]);
-		  errSyst_array[c][i] = (bin_systematics(channel, pt_bin_edges[i], pt_bin_edges[i+1], y_bin_edges[c], y_bin_edges[c+1],
-							signal_res, data_selection_input_file))/(pt_bin_size[i]);
-		}
+		  errSyst_array[c][i] = (bin_systematics(*ws, channel, pt_bin_edges[i], pt_bin_edges[i+1], y_bin_edges[c], y_bin_edges[c+1],
+							 signal_res->getVal(), data_selection_input_file, syst))/(pt_bin_size[i]);
+				}
 	      else if(yield_sub_samples=="pt/y")
 		{	      
 		  yield_array[c][i] = (signal_res->getVal())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]))*pow(10,nybins-c);
 		  errLo_array[c][i] = -(signal_res->getAsymErrorLo())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]))*pow(10,nybins-c);
 		  errHi_array[c][i] = (signal_res->getAsymErrorHi())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]))*pow(10,nybins-c);
-		  errSyst_array[c][i] = (bin_systematics(channel, pt_bin_edges[i], pt_bin_edges[i+1], y_bin_edges[c], y_bin_edges[c+1],
-							 signal_res, data_selection_input_file))/
+		  errSyst_array[c][i] = (bin_systematics(*ws, channel, pt_bin_edges[i], pt_bin_edges[i+1], y_bin_edges[c], y_bin_edges[c+1],
+							 signal_res->getVal(), data_selection_input_file, syst))/
 		    (pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]))*pow(10,nybins-c);
 		}
-	      std::cout << errSyst_array[c][i] << std::endl;
 	    }
 	}
 
@@ -630,25 +628,24 @@ int main(int argc, char** argv)
        
       TLegend *leg = new TLegend (0.65, 0.65, 0.85, 0.85);
 
-      TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array[0], pt_bin_edges_Lo, pt_bin_edges_Hi, errLo_array[0], errHi_array[0]);
+      TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array[0], pt_bin_edges_Lo, pt_bin_edges_Hi, 
+						       errLo_array[0], errHi_array[0]);
       graph->SetTitle("Raw signal yield in Pt bins");
       graph->SetMarkerColor(2);
       graph->SetMarkerSize(0.5);
       graph->SetMarkerStyle(20);
-      //      empty->SetMinimum(graph->GetMinimum());
-      /*      if(nybins<=1)
-	      {
-	      std::cout << "ENTRAS??" << std::endl << "graph->GetMaximum(): " << graph->GetMaximum() << std::endl << "graph->GetMinimum(): " << graph->GetMaximum() << std::endl;
-	      empty->SetMaximum(graph->GetMaximum());
-	      empty->Draw("hist");
-	      }*/
-      //      graph->SetFillColor(2);
-      //graph->SetFillStyle(3001);
-      //      graph->Draw("a");
-      graph->Draw("p same");/*
-			      graph->GetYaxis()->SetMinimum(0.);
-			      graph->GetYaxis()->SetMaximum(3000000.);
-			    */
+      graph->Draw("p same");
+
+      //systematics erros
+      TGraphAsymmErrors* graph_syst = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array[0], pt_bin_edges_Lo, pt_bin_edges_Hi, 
+							    errSyst_array[0], errSyst_array[0]);
+      graph_syst->SetTitle("Raw signal yield in Pt bins");
+      graph_syst->SetMarkerColor(2);
+      graph_syst->SetMarkerSize(0.5);
+      graph_syst->SetMarkerStyle(20);
+      graph_syst->Draw("a2 same");
+
+
       TLatex * tex = new TLatex(0.68,0.85,"2.71 fb^{-1} (13 TeV)");
       tex->SetNDC(kTRUE);
       tex->SetLineWidth(2);
@@ -770,7 +767,7 @@ RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_
 
   data_original = w.data("data");
   
-  set_up_workspace_variables(ws_cut,channel);
+  //  set_up_workspace_variables(ws_cut,channel);
    
   std::cout << "y_low.getVal(): " << y_low.getVal() << std::endl;  
   std::cout << "y_high.getVal(): " << y_high.getVal() << std::endl;  
@@ -837,7 +834,7 @@ RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_
   return signal_res;
 }
 
-RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, 
+double bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, 
 			 std::string choice, std::string choice2)
 {
   RooRealVar pt = *(w.var("pt"));
@@ -850,7 +847,7 @@ RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_
   RooAbsData* data_cut;
   RooWorkspace ws_cut;
   RooAbsPdf* model_cut;
-  RooRealVar* signal_res;
+  //  RooRealVar* signal_res;
 
   data_original = w.data("data");
   
@@ -883,15 +880,67 @@ RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_
   //change the plot_mass_fit to output a TCanvas, and write the legend on top after, and then have a function just to save the plots.
   //Legend(channel,(int)pt_bin_lo,(int)pt_bin_hi,1);
   
-  signal_res = ws_cut.var("n_signal");
+  /*  signal_res = ws_cut.var("n_signal");
   
-  return signal_res;
+      return signal_res;*/
+  return (ws_cut.var("n_signal")->getVal());
 }
 
-
-double bin_systematics(int channel, double pt_min, double pt_max, double y_min, double y_max, 
-		       RooRealVar* signal_res, TString data_selection_input_file)
+double bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, double mass_min, double mass_max)
 {
+  RooRealVar pt = *(w.var("pt"));
+  RooRealVar pt_low("pt_low","pt_low",pt_min);
+  RooRealVar pt_high("pt_high","pt_high",pt_max);
+  RooRealVar y = *(w.var("y"));
+  RooRealVar y_low("y_low","y_low",y_min);
+  RooRealVar y_high("y_high","y_high",y_max);
+  RooAbsData* data_original;
+  RooAbsData* data_cut;
+  RooWorkspace ws_cut;
+  RooAbsPdf* model_cut;
+  //  RooRealVar* signal_res;
+
+  data_original = w.data("data");
+  
+  set_up_workspace_variables(ws_cut,channel,mass_min,mass_max);
+   
+  std::cout << "y_low.getVal(): " << y_low.getVal() << std::endl;  
+  std::cout << "y_high.getVal(): " << y_high.getVal() << std::endl;  
+  std::cout << "y_min: " << y_min << std::endl;  
+  std::cout << "y_max: " << y_max << std::endl;  
+
+  RooFormulaVar cut("cut","pt>pt_low && pt<pt_high && ((y>y_low && y<y_high) || (y>-y_high && y<-y_low))",
+		    RooArgList(pt,pt_low,pt_high,y,y_low,y_high));
+  
+  data_cut = data_original->reduce(cut);
+  read_data_cut(ws_cut,data_cut);
+
+  build_pdf(ws_cut,channel);
+  
+  model_cut = ws_cut.pdf("model");
+  //ws_cut.Print();
+  
+  model_cut->fitTo(*data_cut,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
+
+  TString dir = "";
+  dir = "pt_bin_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "mass_fit_" + TString::Format("pt_from_%d_to_%d_y_from_%lf_to_%lf",(int)pt_min,(int)pt_max,y_min,y_max);
+  
+  plot_mass_fit(ws_cut,channel,dir, (int) pt_max, (int) pt_min);
+
+  //how to put the legend indicating each pt bin ??
+  //change the plot_mass_fit to output a TCanvas, and write the legend on top after, and then have a function just to save the plots.
+  //Legend(channel,(int)pt_bin_lo,(int)pt_bin_hi,1);
+  
+  /*  signal_res = ws_cut.var("n_signal");
+  
+      return signal_res;*/
+  return (ws_cut.var("n_signal")->getVal());
+}
+
+double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_max, double y_min, double y_max, 
+		       double signal_res, TString data_selection_input_file, int syst)
+{
+  if(syst==0) return 0.;
   std::vector<std::string> background = {"2exp", "bern", "power"};
   std::vector<std::string> signal = {"crystal", "1gauss", "3gauss"};
 
@@ -924,62 +973,50 @@ double bin_systematics(int channel, double pt_min, double pt_max, double y_min, 
       mass_max_str[0] = "5.75";
       mass_max_str[1] = "6.2";
     }
-
-  std::vector<RooRealVar*> signal_syst;
-
+  std::vector<double> signal_syst;
+  signal_syst.reserve(9);
   signal_syst.push_back(signal_res);
+  
+  std::cout << std::endl << std::endl << std::endl << "  signal_syst[0]: " << signal_syst[0] << std::endl << std::endl << std::endl;
 
   //Background Systematics
   for(int i=0; i<3; i++)
     {
-      RooWorkspace* ws1 = new RooWorkspace("ws1","Bmass");
-	      
-      //set up mass, pt and y variables inside ws1  
-      set_up_workspace_variables(*ws1,channel);
+      signal_syst.push_back(bin_mass_fit(ws, channel, pt_min, pt_max, y_min, y_max, background[i], "background"));
 
-      //read data from the selected data file, and import it as a dataset into the workspace.
-      read_data(*ws1, data_selection_input_file,channel);
-	      
-      signal_syst.push_back(bin_mass_fit(*ws1, channel, pt_min, pt_max, y_min, y_max, background[i], "background"));
+      std::cout << std::endl << std::endl << std::endl << "  signal_syst[" << i+1 << "]: " << signal_syst[i+1]  << std::endl << std::endl << std::endl;
     }
 
   //Signal Systematics
   for(int i=0; i<3; i++)
     {
-      RooWorkspace* ws1 = new RooWorkspace("ws1","Bmass");
-	      
-      //set up mass, pt and y variables inside ws1  
-      set_up_workspace_variables(*ws1,channel);
+      signal_syst.push_back(bin_mass_fit(ws, channel, pt_min, pt_max, y_min, y_max, signal[i], "signal"));
 
-      //read data from the selected data file, and import it as a dataset into the workspace.
-      read_data(*ws1, data_selection_input_file,channel);
-		      
-      signal_syst.push_back(bin_mass_fit(*ws1, channel, pt_min, pt_max, y_min, y_max, signal[i], "signal"));
+      std::cout << std::endl << std::endl << std::endl << "  signal_syst[" << i+4 << "]: " << signal_syst[i+1] << std::endl << std::endl << std::endl;
     }
-
+  
   //Mass Range Systematics
   for(int i=0; i<2; i++)
     {
       RooWorkspace* ws1 = new RooWorkspace("ws1","Bmass");
-	      
+
       //set up mass, pt and y variables inside ws1  
       set_up_workspace_variables(*ws1,channel,mass_min[i],mass_max[1-i]);
-
       //read data from the selected data file, and import it as a dataset into the workspace.
       read_data(*ws1, data_selection_input_file,channel);
-	      
-      signal_syst.push_back(bin_mass_fit(*ws1, channel, pt_min, pt_max, y_min, y_max, 0));
-     	      
-      signal_syst.push_back(ws1->var("n_signal"));
+
+      signal_syst.push_back(bin_mass_fit(*ws1, channel, pt_min, pt_max, y_min, y_max, mass_min[i], mass_max[1-i]));
+
+      std::cout << std::endl << std::endl << std::endl << "  signal_syst[" << i+7 << "]: " << signal_syst[i+1] << std::endl << std::endl << std::endl;
     }
-
+  
   for(unsigned int i=0; i<signal_syst.size(); i++)
-    std::cout << "signal_syst[" << i << "]: " << signal_syst[i]->getVal() << " +/- " << signal_syst[i]->getError() << std::endl;
-
+    std::cout << "signal_syst[" << i << "]: " << signal_syst[i] << std::endl;
+  
   std::vector<double> deviation;
 
   for(unsigned int i=0; i<signal_syst.size(); i++)
-    deviation.push_back(abs(signal_syst[i]->getVal() - signal_syst[0]->getVal()));	  
+    deviation.push_back(abs(signal_syst[i] - signal_syst[0]));	  
 
   return *(max_element(deviation.begin(), deviation.end()));
 }
@@ -1574,7 +1611,9 @@ void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string cho
   // use single Gaussian for J/psi Ks and J/psi Lambda due to low statistics
   if (channel==3 || channel==6 || data->sumEntries()<250) {
     m_sigma2.setConstant(kTRUE);
+    m_sigma3.setConstant(kTRUE);
     m_fraction.setVal(1.);
+    m_fraction2.setVal(1.);
   }
   
   if(choice2=="signal" && choice=="crystal")
