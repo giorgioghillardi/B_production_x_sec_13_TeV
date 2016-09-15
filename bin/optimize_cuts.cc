@@ -56,6 +56,11 @@ int main(int argc, char** argv)
 {
   int channel = 0;
   std::string input_file = "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_data.root";
+  TString input_file_mc="/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_new_"
+    +channel_to_ntuple_name(channel)+"_bmuonfilter_with_cuts.root";
+  TString input_file_mc_2="myloop_new_"+channel_to_ntuple_name(channel)+"_bmuonfilter_with_cuts.root"; 
+
+
   bool side_sub = 0, show_dist=0;
   std::string outDir = "";
 
@@ -72,7 +77,7 @@ int main(int argc, char** argv)
         {
           convert << argv[++i];
           convert >> channel;
-	  convert.clear();     
+      	  convert.clear();     
 	}
 
     if(argument == "--outDir")
@@ -138,18 +143,25 @@ int main(int argc, char** argv)
       convert << cuts.at(i);
       convert >> s_cut;
 
-      TString data_selection_output_file="";
-      data_selection_output_file= "selected_data_" + channel_to_ntuple_name(channel) + "_" + variable + "_" + s_cut + ".root";
-      if(outDir != "")
-        data_selection_output_file = outDir + "/" + data_selection_output_file;
+
   
-      std::cout << "Calling data_selection(...). varible: " << variable << std::endl;
+
+      TString data_selection_output_file="";
+      TString data_selection_output_file_mc="";
+      data_selection_output_file= "selected_data_" + channel_to_ntuple_name(channel) + "_" + variable + "_" + s_cut + ".root";
+      data_selection_output_file_mc= "selected_data_" + channel_to_ntuple_name(channel) +"_" + variable + "_" + s_cut + "_mc.root";
+      if(outDir != ""){
+        data_selection_output_file = outDir + "/" + data_selection_output_file;
+        data_selection_output_file_mc = outDir + "/" + data_selection_output_file_mc;
+      }
       data_selection(input_file, data_selection_output_file, channel, variable, cuts.at(i));
+      data_selection(input_file_mc, data_selection_output_file_mc, channel, variable, cuts.at(i));
       std::cout << "Done data_selection(..)" << std::endl;
 
       if(show_dist)
 	{ 
 	  RooWorkspace* ws = new RooWorkspace("ws","Bmass");
+	  RooWorkspace* ws_mc = new RooWorkspace("ws_mc","Bmass");
 	  TString pt_dist_directory="";
 	  TString mass_dist_directory="";
  
@@ -157,17 +169,20 @@ int main(int argc, char** argv)
 	  
 	  //set up mass and pt variables inside ws  
 	  set_up_workspace_variables(*ws,channel);
+	  set_up_workspace_variables(*ws_mc,channel);
 	  
 	  //read data from the selected data file, and import it as a dataset into the workspace.
 	  read_data(*ws, data_selection_output_file,channel);
+	  read_data(*ws_mc, data_selection_output_file_mc,channel);
 	  
 	  RooAbsData* data = ws->data("data");
+	  RooAbsData* data_mc = ws_mc->data("data_mc");
 	  
-	  pt_dist_directory = "full_dataset_mass_pt_dist_"+variable+"_"+s_cut+"/" + channel_to_ntuple_name(channel) + "_pt";
+/*	  pt_dist_directory = "full_dataset_mass_pt_dist_"+variable+"_"+s_cut+"/" + channel_to_ntuple_name(channel) + "_pt";
 	  plot_pt_dist(*ws,channel,pt_dist_directory);
 	  
 	  mass_dist_directory = "full_dataset_mass_pt_dist_"+variable+"_"+s_cut+"/" + channel_to_ntuple_name(channel) + "_mass";
-	  plot_mass_dist(*ws,channel,mass_dist_directory);
+	  plot_mass_dist(*ws,channel,mass_dist_directory);*/
 	}
     }
   
