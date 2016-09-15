@@ -148,7 +148,7 @@ int main(int argc, char** argv)
 
       TString data_selection_input_file="";
       data_selection_input_file= "selected_data_" + channel_to_ntuple_name(channel) + "_" + variable + "_" + s_cut + ".root";
-      data_selection_input_file_mc= "selected_data_" + channel_to_ntuple_name(channel) + "_" + variable + "_" + s_cut + "mc.root";
+      TString data_selection_input_file_mc= "selected_data_" + channel_to_ntuple_name(channel) + "_" + variable + "_" + s_cut + "mc.root";
 
       std::cout << data_selection_input_file << std::endl;
 
