@@ -54,7 +54,7 @@ void create_dir(std::vector<std::string> list);
 void plot_pt_dist(RooWorkspace& w, int channel, TString directory);
 void plot_mass_fit(RooWorkspace& w, int channel, TString directory);
 
-void build_pdf(RooWorkspace& w, int channel);
+void build_pdf(RooWorkspace& w, int channel, double lim_min, double lim_max);
 void read_data(RooWorkspace& w, TString filename,int channel);
 void read_data_cut(RooWorkspace& w, RooAbsData* data);
 void set_up_workspace_variables(RooWorkspace& w, int channel);
@@ -147,15 +147,20 @@ int main(int argc, char** argv)
       convert >> s_cut;
 
       TString data_selection_input_file="";
+      TString data_selection_input_file_mc="";
       data_selection_input_file= "selected_data_" + channel_to_ntuple_name(channel) + "_" + variable + "_" + s_cut + ".root";
       TString data_selection_input_file_mc= "selected_data_" + channel_to_ntuple_name(channel) + "_" + variable + "_" + s_cut + "mc.root";
 
       std::cout << data_selection_input_file << std::endl;
 
       RooWorkspace* ws = new RooWorkspace("ws","Bmass");
+      RooWorkspace* ws_mc = new RooWorkspace("ws_mc","Bmass");
       RooAbsData* data;
+      RooAbsData* data_mc;
       RooAbsPdf* model;
+      RooAbsPdf* model_mc;
       RooFitResult* fit_res;
+      RooFitResult* fit_res_mc;
       RooRealVar* signal_res;
       RooRealVar* back_res;      
       RooRealVar* log_like;      
@@ -165,21 +170,40 @@ int main(int argc, char** argv)
       
       //set up mass and pt variables inside ws  
       set_up_workspace_variables(*ws,channel);
+      set_up_workspace_variables(*ws_mc,channel);
       
       //read data from the selected data file, and import it as a dataset into the workspace.
       read_data(*ws, data_selection_input_file,channel);
       ws->Print();
+      read_data(*ws_mc, data_selection_input_file_mc,channel);
+      ws_mc->Print();
       
       //build the pdf for the channel selected above, it uses the dataset which is saved in ws. need to change the dataset to change the pdf.
-      build_pdf(*ws,channel);     
+     switch(channel){
+     
+     case 2:
+      build_pdf(*ws,channel, 5.1, 5.4);
+      break;     
+     case 4:
+      build_pdf(*ws,channel, 5.25, 5.45);     
+      break;
+     default:
+     std::cout<<"YO BRO, U JUST STRAIGHT UP FUCKED UP" << std::endl;
+     } 
+
+      build_pdf(*ws_mc,channel, 5, 6);//O 5 e o 6 sao aleatorios     
       
       data = ws->data("data");
+      data_mc = ws_mc->data("data_mc");
       model = ws->pdf("model");     
+      model_mc = ws_mc->pdf("model_mc");     
       
       model->fitTo(*data,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
+      model_mc->fitTo(*data_mc,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
       
-      signal_res = ws->var("n_signal");
-      back_res = ws->var("n_combinatorial");      
+      signal_res = ws_mc->var("n_signal");
+      back_res = ws->var("back_fom"); //MUDAR ISTO, JUST PEAK     
+  
       log_like = (RooRealVar* ) model->createNLL(*data);
 
       std::cout <<"SIGNAL: "<< signal_res->getVal() << " " << signal_res->getAsymErrorLo() << " +" << signal_res->getAsymErrorHi() << std::endl;
@@ -210,11 +234,11 @@ int main(int argc, char** argv)
     std::cout << "FOM: " << FOM[i] << " +/- " << FOM_err[1] << std::endl;
   }
 
-  if(variable=="lxy" || variable=="vtxprob" || variable=="cosalpha2d")
+  if(variable=="vtxprob" || variable=="cosalpha2d")
     DrawGraph(size, cuts.data(), FOM, FOM_err, "FOM for "+variable+">x", "x (1)", "FOM (1)", "FOM/FOM_"+variable+".png");
 
-  else
-    DrawGraph(size, cuts.data(), FOM, FOM_err, "FOM for "+variable+">x", "x (GeV)", "FOM (1)", "FOM/FOM_"+variable+".png");
+  else if(variable=="lxy")
+    DrawGraph(size, cuts.data(), FOM, FOM_err, "FOM for L_{xy}/#sigma_{xy}>x", "x (GeV)", "FOM (1)", "FOM/FOM_"+variable+".png");
 
   std::string caption = "Signal and Background Yields for different cuts in " + variable;
 
@@ -231,7 +255,7 @@ int main(int argc, char** argv)
   number[6]=FOM_err;
   number[7]=likelihood;
 
-  if(variable=="lxy") variable="lxy/errxy";
+  if(variable=="lxy") variable="Lxy/errxy";
 
   latex_table("FOM/table_"+variable, 8, size+1, title, number, caption , 1);
 }//end of signal_yield_new
@@ -429,7 +453,7 @@ void plot_pt_dist(RooWorkspace& w, int channel, TString directory)
   c2.SaveAs(directory + ".png");
 }
 
-void build_pdf(RooWorkspace& w, int channel)
+void build_pdf(RooWorkspace& w, int channel, double lim_min, double lim_max)
 {
   double mass_peak;
 
@@ -486,6 +510,10 @@ void build_pdf(RooWorkspace& w, int channel)
   RooRealVar m_exp("m_exp","m_exp",-0.3,-4.,+4.);
   RooExponential pdf_m_combinatorial_exp("pdf_m_combinatorial_exp","pdf_m_combinatorial_exp",mass,m_exp);
   
+  mass.setRange("peak",lim_min,lim_max);
+  RooAbsReal* back_fom = pdf_m_combinatorial_exp.createIntegral(mass, "peak");
+
+  
   RooRealVar m_par1("m_par1","m_par2",1.,0,+10.);
   RooRealVar m_par2("m_par2","m_par3",1.,0,+10.);
   RooRealVar m_par3("m_par3","m_par3",1.,0,+10.);
@@ -536,6 +564,7 @@ void build_pdf(RooWorkspace& w, int channel)
     }
 
   w.import(*model);
+  w.import(*back_fom);
 }
 
 void read_data(RooWorkspace& w, TString filename,int channel)
@@ -703,6 +732,7 @@ void DrawGraph(int n, double* v1, double* v2, double* err, std::string title, st
   graph->SetMarkerColor(kBlack);
   graph->SetMarkerSize(0.5);
   graph->Draw("AP");
+
 
   c.SaveAs(file.c_str());
 }

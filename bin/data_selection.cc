@@ -110,9 +110,8 @@ int main(int argc, char** argv)
       return 0;
     }
 
-  TString input_file_mc="/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_new_"
-    +channel_to_ntuple_name(channel)+"_bmuonfilter_no_cuts.root";
-  TString input_file_mc_2="myloop_new_"+channel_to_ntuple_name(channel)+"_bmuonfilter_with_cuts.root";
+  TString input_file_mc="/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_new_"+channel_to_ntuple_name(channel)+"_bmuonfilter_with_cuts.root";
+//  TString input_file_mc_2="myloop_new_"+channel_to_ntuple_name(channel)+"_bmuonfilter_with_cuts.root";
 
 
   TString data_selection_output_file="";
@@ -121,7 +120,7 @@ int main(int argc, char** argv)
   data_selection_output_file_mc= "selected_data_" + channel_to_ntuple_name(channel) + "_mc.root";
   
   if(select)  data_selection(input_file,data_selection_output_file,channel, 0);
-  if(mc==1) data_selection(input_file_mc_2, data_selection_output_file_mc, channel, mc);
+  if(mc==1) data_selection(input_file_mc, data_selection_output_file_mc, channel, mc);
 
   if(show_dist)
     { 
@@ -230,8 +229,22 @@ int main(int argc, char** argv)
 	  //  std::cout<<"NOME DO DATA: "<< histos_data[i]->GetName()<< std::endl;
 	  // std::cout<<"NOME DO MC: "<< histos_mc[i]->GetName()<< std::endl;
 	  leg->Draw("same");
+
+    TLatex* tex = new TLatex(0.68,0.8,"2.71 fb^{-1} (13 TeV)");
+    tex->SetNDC(kTRUE);
+    tex->SetLineWidth(2);
+    tex->SetTextSize(0.04);
+    tex->Draw();
+    tex = new TLatex(0.68,0.85,"CMS Preliminary");
+    tex->SetNDC(kTRUE);
+    tex->SetTextFont(42);
+    tex->SetTextSize(0.04);
+    tex->SetLineWidth(2);
+    tex->Draw();
+
+
 	  
-	  c.SaveAs((names[i]+"_mc_validation_no_cuts.png").c_str());
+	  c.SaveAs((names[i]+"_mc_validation.png").c_str());
 	}
       
     }
@@ -661,7 +674,6 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   tex12->SetTextFont(42);
   tex12->SetTextSize(0.04);
   tex12->Draw();   
-
   TLatex* tex13 = new TLatex(0.15, 0.8, Form("#chi/DOF = %.3lf",chis));
   tex13->SetNDC(kTRUE);
   tex13->SetTextFont(42);
@@ -1192,9 +1204,9 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   lxy_dist_total->Draw();
   lxy_dist_side->Draw("same");
   lxy_dist_peak->Draw("same");
-  lxy_dist_peak->SetXTitle("l_{xy} [cm]");
-  lxy_dist_side->SetXTitle("l_{xy} [cm]");
-  lxy_dist_total->SetXTitle("l_{xy} [cm]");
+  lxy_dist_peak->SetXTitle("L_{xy} [cm]");
+  lxy_dist_side->SetXTitle("L_{xy} [cm]");
+  lxy_dist_total->SetXTitle("L_{xy} [cm]");
 
   TLegend *leg7 = new TLegend (0.7, 0.5, 0.85, 0.65);
   leg7->AddEntry("lxy_dist_total", "Total", "l");
@@ -1257,9 +1269,9 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   errlxy_dist_side->Draw("same");
   errlxy_dist_peak->Draw("same");
   //errlxy_dist_total->GetYaxis()->SetRangeUser(0.5,lerrxy_dist_total->GetMaximum()+2000);
-  errlxy_dist_peak->SetXTitle("#sigma l_{xy} [cm]");
-  errlxy_dist_side->SetXTitle("#sigma l_{xy} [cm]");
-  errlxy_dist_total->SetXTitle("#sigma l_{xy} [cm]");
+  errlxy_dist_peak->SetXTitle("#sigma L_{xy} [cm]");
+  errlxy_dist_side->SetXTitle("#sigma L_{xy} [cm]");
+  errlxy_dist_total->SetXTitle("#sigma L_{xy} [cm]");
 
   TLegend *leg8 = new TLegend (0.7, 0.5, 0.85, 0.65);
   leg8->AddEntry("errlxy_dist_total", "Total", "l");
@@ -1322,9 +1334,9 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   lerrxy_dist_side->Draw("same");
   lerrxy_dist_peak->Draw("same");
   lerrxy_dist_total->GetYaxis()->SetRangeUser(100,lerrxy_dist_total->GetMaximum()+2000);
-  lerrxy_dist_peak->SetXTitle("l_{xy}/#sigma l_{xy} ");
-  lerrxy_dist_side->SetXTitle("l_{xy}/#sigma l_{xy} ");
-  lerrxy_dist_total->SetXTitle("l_{xy}/#sigma l_{xy} ");
+  lerrxy_dist_peak->SetXTitle("L_{xy}/#sigma L_{xy} ");
+  lerrxy_dist_side->SetXTitle("L_{xy}/#sigma L_{xy} ");
+  lerrxy_dist_total->SetXTitle("L_{xy}/#sigma L_{xy} ");
 
   TLegend *leg9 = new TLegend (0.7, 0.5, 0.85, 0.65);
   leg9->AddEntry("lerrxy_dist_total", "Total", "l");
