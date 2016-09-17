@@ -672,7 +672,7 @@ int main(int argc, char** argv)
 	      TGraphAsymmErrors* graph2_syst = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array[i], pt_bin_edges_Lo, pt_bin_edges_Hi, 
 								     errSyst_array[i], errSyst_array[i]);
 	      graph2_syst->SetTitle("Raw signal yield in Pt bins");
-	      graph2_syst->SetFillColor(2);
+	      graph2_syst->SetFillColor(i+2);
 	      graph2_syst->SetFillStyle(3001);
 	      graph2_syst->Draw("a2 same");
 	    }
@@ -701,6 +701,24 @@ int main(int argc, char** argv)
       //Legend(channel, 0,0,0);
       if(yield_sub_samples=="pt/y") yield_sub_samples="pt_y";
       leg->Draw("same");
+
+      TH1D* empty2;
+      if(yield_sub_samples=="pt")
+	{
+	  empty2 = new TH1D("Raw Signal Yield in p_{T} Bins", "Raw Signal Yield in p_{T} Bins; p_{T} [GeV]; Signal Yield", nptbins, 0, 100);
+	  empty2->SetMinimum(1);
+	  empty2->SetMaximum(4e4);
+	  empty2->Draw("hist same");
+	}	  
+      else if(yield_sub_samples=="pt/y")
+	{
+	  empty2 = new TH1D("Raw Signal Yield in p_{T} and y Bins", "Raw Signal Yield in p_{T} Bins; p_{T} [GeV]; Signal Yield", nptbins, 0, 100);
+	  empty2->SetMinimum(1);
+	  empty2->SetMaximum(4e10);
+	  empty2->Draw("hist same");
+	}
+
+
       cz.Update();
       cz.SetLogy();
       cz.SaveAs("signal_yield/signal_yield_" + yield_sub_samples + "_bins_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + ".png");
