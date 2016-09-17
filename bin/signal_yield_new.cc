@@ -541,7 +541,7 @@ int main(int argc, char** argv)
 	      pt_bin_edges_Lo[i] = pt_bin_means[i] - pt_bin_edges[i];
 	      pt_bin_edges_Hi[i] = pt_bin_edges[i+1] - pt_bin_means[i];
 
-	      std::cout << pt_bin_edges_Lo[i] << pt_bin_edges_Hi[i] << std::endl;
+	      std::cout << pt_bin_edges_Lo[i] << "  " << pt_bin_edges_Hi[i] << std::endl;
 	      
 	      signal_res = bin_mass_fit(*ws,channel,pt_bin_edges[i],pt_bin_edges[i+1], y_bin_edges[c], y_bin_edges[c+1], mcstudy);
 	  
@@ -552,7 +552,7 @@ int main(int argc, char** argv)
 		  errHi_array[c][i] = (signal_res->getAsymErrorHi())/(pt_bin_size[i]);
 		  errSyst_array[c][i] = (bin_systematics(*ws, channel, pt_bin_edges[i], pt_bin_edges[i+1], y_bin_edges[c], y_bin_edges[c+1],
 							 signal_res->getVal(), data_selection_input_file, syst))/(pt_bin_size[i]);
-				}
+		}
 	      else if(yield_sub_samples=="pt/y")
 		{	      
 		  yield_array[c][i] = (signal_res->getVal())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]))*pow(10,nybins-c);
@@ -572,7 +572,8 @@ int main(int argc, char** argv)
 	  
 	  for(int i=0; i<nptbins; i++)
 	    std::cout << "BIN pt: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " 
-		      <<  yield_array[c][i] << " +" << errHi_array[c][i] << " -"<< errLo_array[c][i] << std::endl;
+		      <<  yield_array[c][i] << " +" << errHi_array[c][i] << " -"<< errLo_array[c][i] 
+		      << " Syst Error: " << errSyst_array[c][i] << std::endl;
 	  
 	  std::cout << std::endl;
 	}
@@ -628,6 +629,17 @@ int main(int argc, char** argv)
        
       TLegend *leg = new TLegend (0.65, 0.65, 0.85, 0.85);
 
+      //systematics erros
+      if(syst)
+	{
+	  TGraphAsymmErrors* graph_syst = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array[0], pt_bin_edges_Lo, pt_bin_edges_Hi, 
+								errSyst_array[0], errSyst_array[0]);
+	  graph_syst->SetTitle("Raw signal yield in Pt bins");
+	  graph_syst->SetFillColor(2);
+	  graph_syst->SetFillStyle(3001);
+	  graph_syst->Draw("a2 same");
+	}
+
       TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array[0], pt_bin_edges_Lo, pt_bin_edges_Hi, 
 						       errLo_array[0], errHi_array[0]);
       graph->SetTitle("Raw signal yield in Pt bins");
@@ -635,15 +647,6 @@ int main(int argc, char** argv)
       graph->SetMarkerSize(0.5);
       graph->SetMarkerStyle(20);
       graph->Draw("p same");
-
-      //systematics erros
-      TGraphAsymmErrors* graph_syst = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array[0], pt_bin_edges_Lo, pt_bin_edges_Hi, 
-							    errSyst_array[0], errSyst_array[0]);
-      graph_syst->SetTitle("Raw signal yield in Pt bins");
-      graph_syst->SetMarkerColor(2);
-      graph_syst->SetMarkerSize(0.5);
-      graph_syst->SetMarkerStyle(20);
-      graph_syst->Draw("a2 same");
 
 
       TLatex * tex = new TLatex(0.68,0.85,"2.71 fb^{-1} (13 TeV)");
@@ -663,6 +666,17 @@ int main(int argc, char** argv)
            
       for(int i=1; i<nybins; i++)
 	{
+	  //systematics erros
+	  if(syst)
+	    {
+	      TGraphAsymmErrors* graph2_syst = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array[i], pt_bin_edges_Lo, pt_bin_edges_Hi, 
+								     errSyst_array[i], errSyst_array[i]);
+	      graph2_syst->SetTitle("Raw signal yield in Pt bins");
+	      graph2_syst->SetFillColor(2);
+	      graph2_syst->SetFillStyle(3001);
+	      graph2_syst->Draw("a2 same");
+	    }
+
 	  TGraphAsymmErrors* graph2 = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array[i], pt_bin_edges_Lo, pt_bin_edges_Hi, errLo_array[i], errHi_array[i]);
 	  graph2->SetTitle("Raw signal yield in Pt bins");
 	  graph2->SetMarkerColor(i+2);
@@ -685,7 +699,7 @@ int main(int argc, char** argv)
 		graph2->GetYaxis()->SetMaximum(3000000.);*/
 	}
       //Legend(channel, 0,0,0);
-
+      if(yield_sub_samples=="pt/y") yield_sub_samples="pt_y";
       leg->Draw("same");
       cz.Update();
       cz.SetLogy();
