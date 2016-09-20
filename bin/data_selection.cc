@@ -26,6 +26,8 @@
 #include "TMath.h"
 using namespace RooFit;
 
+#define BASE_DIR "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/"
+
 #define SHOW_DIST 0
 //-----------------------------------------------------------------
 // Definition of channel #
@@ -42,14 +44,15 @@ void plot_mass_dist(RooWorkspace& w, int channel, TString directory);
 void read_data(RooWorkspace& w, TString filename,int channel);
 void read_data_cut(RooWorkspace& w, RooDataSet* data);
 void set_up_workspace_variables(RooWorkspace& w, int channel);
-void data_selection(TString fin1,TString data_selection_output_file,int channel);
+void data_selection(TString fin1, int run_on_mc ,TString data_selection_output_file,int channel);
 TString channel_to_ntuple_name(int channel);
 
-//input example: data_selection --channel 1 --input /some/place/
+//input example: data_selection --channel 1  --mc --input /some/place/
 int main(int argc, char** argv)
 {
   int channel = 0;
-  std::string input_file = "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_data.root";
+  TString input_file = TString::Format(BASE_DIR) + "myloop_data.root";
+  int run_on_mc =0;
 
   for(int i=1 ; i<argc ; ++i)
     {
@@ -60,6 +63,12 @@ int main(int argc, char** argv)
         {
           convert << argv[++i];
           convert >> channel;
+        }
+
+      if(argument == "--mc")
+        {
+          convert << argv[++i];
+          convert >> run_on_mc;
         }
 
       if(argument == "--input")
@@ -76,9 +85,16 @@ int main(int argc, char** argv)
     }
 
   TString data_selection_output_file="";
-  data_selection_output_file= "selected_data_" + channel_to_ntuple_name(channel) + ".root";
+  if(run_on_mc)
+    {
+      data_selection_output_file= TString::Format(BASE_DIR) + "selected_mc_" + channel_to_ntuple_name(channel) + "_bmuonfilter_with_cuts.root";
+    }
+  else
+    {
+      data_selection_output_file= TString::Format(BASE_DIR) + "selected_data_" + channel_to_ntuple_name(channel) + ".root";
+    }
   
-  data_selection(input_file,data_selection_output_file,channel);
+  data_selection(input_file, run_on_mc ,data_selection_output_file,channel);
     
   if(SHOW_DIST)
     { 
@@ -181,40 +197,16 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
   w.import(pt);
 }
 
-void data_selection(TString fin1, TString data_selection_output_file,int channel){
+void data_selection(TString fin1, int run_on_mc, TString data_selection_output_file,int channel){
 
     TFile *fout = new TFile(data_selection_output_file,"recreate");
 
-    TNtupleD *_nt1 = new TNtupleD("ntkp","ntkp","mass:pt:eta");
-    TNtupleD *_nt2 = new TNtupleD("ntkstar","ntkstar","mass:pt:eta");
-    TNtupleD *_nt3 = new TNtupleD("ntks","ntks","mass:pt:eta");
-    TNtupleD *_nt4 = new TNtupleD("ntphi","ntphi","mass:pt:eta");
-    TNtupleD *_nt5 = new TNtupleD("ntmix","ntmix","mass:pt:eta");
-    TNtupleD *_nt6 = new TNtupleD("ntlambda","ntlambda","mass:pt:eta");
-
-    /*
-  switch (channel) {
-  case 1:
-  default:
-    _nt1 = new TNtupleD("ntkp","ntkp","mass:pt:eta");
-    break;
-  case 2:
-    _nt2 = new TNtupleD("ntkstar","ntkstar","mass:pt:eta");
-    break;
-  case 3:
-    _nt3 = new TNtupleD("ntks","ntks","mass:pt:eta");
-    break;
-  case 4:
-    _nt4 = new TNtupleD("ntphi","ntphi","mass:pt:eta");
-    break;
-  case 5:
-    _nt5 = new TNtupleD("ntmix","ntmix","mass:pt:eta");
-    break;
-  case 6:
-    _nt6 = new TNtupleD("ntlambda","ntlambda","mass:pt:eta");
-    break;
-  }
-    */
+    TNtupleD *_nt1 = new TNtupleD("ntkp","ntkp","mass:pt:eta:mu1pt:mu1eta:mu2pt:mu2eta");
+    TNtupleD *_nt2 = new TNtupleD("ntkstar","ntkstar","mass:pt:eta:mu1pt:mu1eta:mu2pt:mu2eta");
+    TNtupleD *_nt3 = new TNtupleD("ntks","ntks","mass:pt:eta:mu1pt:mu1eta:mu2pt:mu2eta");
+    TNtupleD *_nt4 = new TNtupleD("ntphi","ntphi","mass:pt:eta:mu1pt:mu1eta:mu2pt:mu2eta");
+    TNtupleD *_nt5 = new TNtupleD("ntmix","ntmix","mass:pt:eta:mu1pt:mu1eta:mu2pt:mu2eta");
+    TNtupleD *_nt6 = new TNtupleD("ntlambda","ntlambda","mass:pt:eta:mu1pt:mu1eta:mu2pt:mu2eta");
 
     ReducedBranches br;
     TChain* tin;
@@ -235,17 +227,31 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
       tin->GetEntry(evt);
         
       if (channel==1) { // cuts for B+ -> J/psi K+
-	if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+	if(run_on_mc)
+	  {
+	     if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1) continue;
+	  }
+	else
+	  {
+	    if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1 && br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+	  }
 	if (br.vtxprob<=0.1) continue;
 	if (br.tk1pt<=1.6) continue;
 	if (br.lxy/br.errxy<=3.0) continue;
 	if (br.cosalpha2d<=0.99) continue;
             
-	_nt1->Fill(br.mass,br.pt,br.eta);
+	_nt1->Fill(br.mass,br.pt,br.eta,br.mu1pt,br.mu1eta,br.mu2pt,br.mu2eta);
 	    
       }else
         if (channel==2) { // cuts for B0 -> J/psi K*
-	  if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+	  if(run_on_mc)
+	    {
+	      if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1) continue;
+	    }
+	  else
+	  {
+	    if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1 && br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+	  }
 	  if (br.vtxprob<=0.1) continue;
 	  if (br.lxy/br.errxy<=3.0) continue;
 	  if (br.cosalpha2d<=0.99) continue;
@@ -283,7 +289,7 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 	      }
                                  
 	      if (isBestKstarMass){
-		_nt2->Fill(br_queue[i].mass,br_queue[i].pt,br_queue[i].eta);
+		_nt2->Fill(br_queue[i].mass,br_queue[i].pt,br_queue[i].eta,br_queue[i].mu1pt,br_queue[i].mu1eta,br_queue[i].mu2pt,br_queue[i].mu2eta);
 
 	      }
 
@@ -294,18 +300,32 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 	  }
 	}else
 	  if (channel==3) { // cuts for B0 -> J/psi Ks
-	    if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+	    if(run_on_mc)
+	      {
+		if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1) continue;
+	      }
+	    else
+	  {
+	    if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1 && br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+	  }
             if (br.vtxprob<=0.1) continue;
             if (br.lxy/br.errxy<=3.0) continue;
             if (br.tktkblxy/br.tktkberrxy<=3.0) continue;
             if (br.cosalpha2d<=0.99) continue;
             if (fabs(br.tktkmass-KSHORT_MASS)>=0.015) continue;
                 
-            _nt3->Fill(br.mass,br.pt,br.eta);
+            _nt3->Fill(br.mass,br.pt,br.eta,br.mu1pt,br.mu1eta,br.mu2pt,br.mu2eta);
 
 	  }else
 	    if (channel==4) { // cuts for Bs -> J/psi phi
-	      if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+	      if(run_on_mc)
+		{
+		  if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1) continue;
+		}
+	      else
+		{
+		  if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1 && br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+		}
 	      if (br.vtxprob<=0.1) continue;
 	      if (br.lxy/br.errxy<=3.0) continue;
 	      if (br.cosalpha2d<=0.99) continue;
@@ -318,7 +338,7 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 	      v4_tk2.SetPtEtaPhiM(br.tk2pt,br.tk2eta,br.tk2phi,KAON_MASS);
 	      if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=0.05) continue;
                 
-	      _nt4->Fill(br.mass,br.pt,br.eta);
+	      _nt4->Fill(br.mass,br.pt,br.eta,br.mu1pt,br.mu1eta,br.mu2pt,br.mu2eta);
 
 	    }else
 	      if (channel==5) { // cuts for psi(2S)/X(3872) -> J/psi pipi
@@ -326,11 +346,18 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 		if (fabs(br.tk1eta)>=1.6) continue;
 		if (fabs(br.tk2eta)>=1.6) continue;
             
-		_nt5->Fill(br.mass,br.pt,br.eta);
+		_nt5->Fill(br.mass,br.pt,br.eta,br.mu1pt,br.mu1eta,br.mu2pt,br.mu2eta);
 
 	      }else
 		if (channel==6) {//cuts for lambda
-		  if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+		  if(run_on_mc)
+		    {
+		      if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1) continue;
+		    }
+		  else
+		    {
+		      if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1 && br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+		    }
 		  if (br.vtxprob<=0.1) continue;
 		  if (br.lxy/br.errxy<=3.0) continue;
 		  if (br.tktkblxy/br.tktkberrxy<=3.0) continue;
@@ -341,7 +368,7 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 		  v4_tk2.SetPtEtaPhiM(br.tk2pt,br.tk2eta,br.tk2phi,PION_MASS);
 		  if (fabs((v4_tk1+v4_tk2).Mag()-KSHORT_MASS)<=0.015) continue;
             
-		  _nt6->Fill(br.mass,br.pt,br.eta);
+		  _nt6->Fill(br.mass,br.pt,br.eta,br.mu1pt,br.mu1eta,br.mu2pt,br.mu2eta);
 
 		}
     }//end of the for for the events

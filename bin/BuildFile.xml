@@ -11,6 +11,7 @@
   <bin name="myloop_gen"   file="myloop_gen.cc"></bin>
   <bin name="data_selection"   file="data_selection.cc"></bin>
   <bin name="myloop_new"   file="myloop_new.cc"></bin>
+  <bin name="reduce_mc_tree"   file="reduce_mc_tree.cc"></bin>
 </environment>
 
 <Flags CXXFLAGS="-g"/>
