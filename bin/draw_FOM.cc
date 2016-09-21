@@ -203,7 +203,7 @@ int main(int argc, char** argv)
       model_mc->fitTo(*data_mc,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
       
       signal_res = ws_mc->var("n_signal");
-      back_res = ws->var("back_fom"); //MUDAR ISTO, JUST PEAK     
+      back_res = ws->var("back_fom");      
   
       log_like = (RooRealVar* ) model->createNLL(*data);
       std::cout<<"CENAS CENAS"<<back_res << std::endl;

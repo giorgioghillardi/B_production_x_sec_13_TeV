@@ -110,7 +110,7 @@ int main(int argc, char** argv)
       return 0;
     }
 
-  TString input_file_mc="/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_new_"+channel_to_ntuple_name(channel)+"_bmuonfilter_with_cuts.root";
+  TString input_file_mc="/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_new_" + channel_to_ntuple_name(channel)+ "_bmuonfilter_with_cuts.root";
 //  TString input_file_mc_2="myloop_new_"+channel_to_ntuple_name(channel)+"_bmuonfilter_with_cuts.root";
 
 
@@ -128,7 +128,7 @@ int main(int argc, char** argv)
       TString pt_dist_directory="";
       TString mass_dist_directory="";
  
-      gSystem->Exec("mkdir -p full_dataset_mass_pt_dist/");
+      gSystem->Exec("mkdir -p full_dataset_mass_pt_dist_mc/");
 
       //set up mass and pt variables inside ws  
       set_up_workspace_variables(*ws,channel);
@@ -197,15 +197,13 @@ int main(int argc, char** argv)
 	  
 	  if(channel==2)
 	    {
-	      histos_data[i]->Scale(1/histos_data[i]->Integral());
 	      histos_data[i]->Draw();
-	      histos_mc[i]->Scale(1/histos_mc[i]->Integral());
+	      histos_mc[i]->Scale(histos_data[i]->Integral()/histos_mc[i]->Integral());
 	      histos_mc[i]->Draw("same");
 	    }
 	  else if(channel==4)
 	    {
-	      histos_mc[i]->Scale(1/histos_mc[i]->Integral());
-	      histos_data[i]->Scale(1/histos_data[i]->Integral());
+	      histos_mc[i]->Scale(histos_data[i]->Integral()/histos_mc[i]->Integral());
 	      histos_data[i]->Draw();
 	      histos_mc[i]->Draw("same");
 	    }
@@ -244,7 +242,7 @@ int main(int argc, char** argv)
 
 
 	  
-	  c.SaveAs((names[i]+"_mc_validation.png").c_str());
+	  c.SaveAs((names[i]+"_mc_validation_ntphi.png").c_str());
 	}
       
     }
@@ -442,7 +440,8 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
     tin->GetEntry(evt);
         
     if (channel==1) { // cuts for B+ -> J/psi K+
-      if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+     	if (mc==1) {if(br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1) continue;}
+    	else {if(br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;}
       if (br.vtxprob<=0.1) continue;//original cut 0.1
       if (br.tk1pt<=1.6) continue;//original cut 1.6
       if (br.lxy/br.errxy<=3.0) continue;//original cut 3.0
@@ -452,7 +451,8 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 	    
     }else
       if (channel==2) { // cuts for B0 -> J/psi K*
-	if (mc!=1 && br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+	if (mc==1) {if(br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1) continue;}
+	else {if(br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;}
 	if (br.vtxprob<=0.2) continue;//original cut 0.1
 	if (br.lxy/br.errxy<=4.5) continue;//original cut 3.0
 	if (br.cosalpha2d<=0.996) continue;//original cut 0.99
@@ -503,7 +503,8 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 	}
       }else
 	if (channel==3) { // cuts for B0 -> J/psi Ks
-	  if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+     	if (mc==1) {if(br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1) continue;}
+	else {if(br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;}	  
 	  if (br.vtxprob<=0.1) continue;//original cut 0.1
 	  if (br.lxy/br.errxy<=3.0) continue;//original cut 3.0
 	  if (br.tktkblxy/br.tktkberrxy<=3.0) continue;//original cut 3.0
@@ -514,7 +515,8 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 
 	}else
 	  if (channel==4) { // cuts for Bs -> J/psi phi
-	    if (mc!=1 && br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+     	if (mc==1) {if(br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1) continue;}
+	else {if(br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;}
 	    if (br.vtxprob<=0.2) continue;//original cut 0.1
 	    if (br.lxy/br.errxy<=4.5) continue;//original cut 3.0
 	    if (br.cosalpha2d<=0.996) continue;//original cut 0.99
@@ -539,7 +541,8 @@ void data_selection(TString fin1, TString data_selection_output_file,int channel
 
 	    }else
 	      if (channel==6) {//cuts for lambda
-		if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+     	if (mc==1) {if(br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1) continue;}
+	else {if(br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;}
 		if (br.vtxprob<=0.1) continue;//original cut 0.1
 		if (br.lxy/br.errxy<=3.0) continue;//original cut 3.0
 		if (br.tktkblxy/br.tktkberrxy<=3.0) continue;//original cut 3.0
@@ -681,7 +684,7 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   //tex13->Draw();   
 
   
-  if(mc==0)  d.SaveAs("fit_side.png");
+  if(mc==0)  d.SaveAs("fit_side_phi.png");
 
   std::cout << std::endl << "chisquare: " << massframe->chiSquare() << std::endl;
   //  std::cout << "LogLikelihood: " << nll->getVal() << std::endl;
@@ -764,7 +767,7 @@ std::vector<TH1D*> sideband_sub(RooWorkspace& w, double left, double right, int 
   leg->Draw("same");
 
   c.SetLogy();
-  if(mc==0)  c.SaveAs("pt_sideband_sub.png");
+  if(mc==0)  c.SaveAs("pt_sideband_sub_ntphi.png");
 
 
   TH1D* mu1pt_dist_side = (TH1D*) reduceddata_side->createHistogram("mu1pt_dist_side",mu1pt);

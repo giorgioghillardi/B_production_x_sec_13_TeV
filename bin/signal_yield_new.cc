@@ -66,7 +66,7 @@ RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_
 double bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, 
 			 std::string choice, std::string choice2);
 double pt_bin_mean(RooWorkspace& w, double pt_min, double pt_max);
-RooRealVar* pre_filter_efficiency(int channel, double pt_min, double pt_max);
+RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max);
 double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_max, double y_min, double y_max, 
 		       double signal_res, TString data_selection_input_file, int syst);
 
@@ -77,6 +77,8 @@ void read_data_cut(RooWorkspace& w, RooAbsData* data);
 void set_up_workspace_variables(RooWorkspace& w, int channel);
 void set_up_workspace_variables(RooWorkspace& w, int channel, double mass_min, double mass_max);
 
+RooRealVar* reco_efficiency(RooWorkspace& w,int channel, double pt_min, double pt_max);
+
 TString channel_to_ntuple_name(int channel);
 TString channel_to_xaxis_title(int channel);
 int channel_to_nbins(int channel);
@@ -84,12 +86,13 @@ int channel_to_nbins(int channel);
 void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::string> col_name, std::vector<std::string> labels, 
 		 std::vector<std::vector<double> > numbers, std::string caption);
 
-//input example: signal_yield_new --channel 1 --bins pt/y --eff 1 --mc 1 --syst 1
+//input example: signal_yield_new --channel 1 --bins pt/y --preeff 1 --recoeff 1 --mc 1 --syst 1
 int main(int argc, char** argv)
 {
   int channel = 0;
   std::string yield_sub_samples = "0";
-  int calculate_efficiency = 0;
+  int calculate_pre_filter_eff = 0;
+  int calculate_reco_eff = 0;
   int mcstudy = 0;
   int syst = 0;
   for(int i=1 ; i<argc ; ++i)
@@ -107,11 +110,17 @@ int main(int argc, char** argv)
 	  convert << argv[++i];
 	  convert >> yield_sub_samples;
 	}
-      if(argument == "--eff")
+      if(argument == "--preeff")
 	{
 	  convert << argv[++i];
-	  convert >> calculate_efficiency;
+	  convert >> calculate_pre_filter_eff;
 	}
+      if(argument == "--recoeff")
+	{
+	  convert << argv[++i];
+	  convert >> calculate_reco_eff;
+	}
+
       if(argument == "--mc")
 	{
 	  convert << argv[++i];
@@ -176,7 +185,7 @@ int main(int argc, char** argv)
   RooAbsPdf* model;
   RooFitResult* fit_res;
   RooRealVar* signal_res;
-  
+  RooWorkspace* ws_mc;  
 
   TString pt_dist_directory="";
   TString y_dist_directory="";
@@ -416,7 +425,7 @@ int main(int argc, char** argv)
 	  numbers.push_back(aux);
 	  aux.clear();
 
-	  latex_table("full_dataset_systematics/systematics_table", 4, (int)(1+signal_syst.size()), 
+	  latex_table("full_dataset_systematics/systematics_table_ntphi", 4, (int)(1+signal_syst.size()), 
 		      col_name, labels, numbers, "Systematic Errors");
 	}
     }
@@ -521,12 +530,23 @@ int main(int argc, char** argv)
       double pt_bin_centres_eff[nptbins];
       double pt_bin_edges_eff_Lo[nptbins];
       double pt_bin_edges_eff_Hi[nptbins];
-      double eff_array[nptbins];
-      double effLo_array[nptbins];
-      double effHi_array[nptbins];
-
+      
       RooRealVar* pre_filter_eff;
       
+      double pre_eff_array[nptbins];
+      double pre_effLo_array[nptbins];
+      double pre_effHi_array[nptbins];
+
+      RooRealVar* reco_eff;
+      
+      double reco_eff_array[nptbins];
+      double reco_effLo_array[nptbins];
+      double reco_effHi_array[nptbins];
+      
+      double x_sec_array[nybins][nptbins];
+      double x_sec_errLo_array[nybins][nptbins];
+      double x_sec_errHi_array[nybins][nptbins];
+
       for(int c=0; c<nybins; c++)
 	{ 
 	  std::cout << "processing subsample: " << y_bin_edges[c] << " < |y| < " << y_bin_edges[c+1] << std::endl;
@@ -578,33 +598,91 @@ int main(int argc, char** argv)
 	  std::cout << std::endl;
 	}
 
-      if(calculate_efficiency)
+      if(calculate_pre_filter_eff)
 	{
-	  for(int i=0; i<nptbins; i++)
-	    {
-	      std::cout << "calculating pre-filter efficiency: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
-	 
-	      pt_bin_centres_eff[i] = pt_bin_edges[i] + (pt_bin_edges[i+1]-pt_bin_edges[i])/2;
-	      pt_bin_edges_eff_Lo[i] = pt_bin_centres_eff[i] - pt_bin_edges[i];
-	      pt_bin_edges_eff_Hi[i] = pt_bin_edges[i+1] - pt_bin_centres_eff[i];
-	 
-	      pre_filter_eff = pre_filter_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1]);
-	 
-	      eff_array[i] = pre_filter_eff->getVal();
-	      effLo_array[i] = -pre_filter_eff->getAsymErrorLo();
-	      effHi_array[i] = pre_filter_eff->getAsymErrorHi();
-	    }
-	  //plot of the pre-filter efficiency as a function of pT
-	  TCanvas ce;
-	  TGraphAsymmErrors* graph_eff = new TGraphAsymmErrors(nptbins, pt_bin_centres_eff, eff_array, pt_bin_edges_eff_Lo, pt_bin_edges_eff_Hi,effLo_array,effHi_array);
-	  graph_eff->SetTitle("pre filter efficiency");
-	  graph_eff->SetMarkerColor(4);
-	  graph_eff->SetMarkerStyle(21);
-	  graph_eff->Draw("AP");
-    
-	  ce.SaveAs("pre_filter_efficiency_err.png");
+   for(int i=0; i<nptbins; i++)
+      {
+        std::cout << "calculating pre-filter efficiency: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
+        
+        pt_bin_centres_eff[i] = pt_bin_edges[i] + (pt_bin_edges[i+1]-pt_bin_edges[i])/2;
+        pt_bin_edges_eff_Lo[i] = pt_bin_centres_eff[i] - pt_bin_edges[i];
+        pt_bin_edges_eff_Hi[i] = pt_bin_edges[i+1] - pt_bin_centres_eff[i];
+        
+        //pre-filter efficiency
+        pre_filter_eff = prefilter_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1]);
+        
+        pre_eff_array[i] = pre_filter_eff->getVal();
+        pre_effLo_array[i] = -pre_filter_eff->getAsymErrorLo();
+        pre_effHi_array[i] = pre_filter_eff->getAsymErrorHi();
+      }
+    //plot of the pre-filter efficiency as a function of pT
+    TCanvas ce;
+    TGraphAsymmErrors* graph_pre_eff = new TGraphAsymmErrors(nptbins, pt_bin_centres_eff, pre_eff_array, pt_bin_edges_eff_Lo, pt_bin_edges_eff_Hi, pre_effLo_array, pre_effHi_array);
+    graph_pre_eff->SetTitle("efficiency");
+    graph_pre_eff->SetMarkerColor(4);
+    graph_pre_eff->SetMarkerStyle(21);
+    graph_pre_eff->Draw("AP");
+    TString eff1_name = "";
+    eff1_name = "pre_filter_efficiency_" + channel_to_ntuple_name(channel) + ".png";
+    ce.SaveAs(eff1_name);
 	}
       
+
+//to calculate the reco efficiency
+      if(calculate_reco_eff)
+  {
+    for(int i=0; i<nptbins; i++)
+      {
+        std::cout << "calculating reconstruction efficiency: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
+        ws_mc = new RooWorkspace("ws_mc","Bmass_mc");
+
+        //read the data
+        set_up_workspace_variables(*ws_mc,channel);
+        //read_data(*ws_mc, mc_input_file,channel, pt_bin_edges[i], pt_bin_edges[i+1]);
+
+        pt_bin_centres_eff[i] = pt_bin_edges[i] + (pt_bin_edges[i+1]-pt_bin_edges[i])/2;
+        pt_bin_edges_eff_Lo[i] = pt_bin_centres_eff[i] - pt_bin_edges[i];
+        pt_bin_edges_eff_Hi[i] = pt_bin_edges[i+1] - pt_bin_centres_eff[i];
+        
+        //reconstruction efficiency
+        reco_eff = reco_efficiency(*ws_mc,channel, pt_bin_edges[i], pt_bin_edges[i+1]);
+        
+        reco_eff_array[i] = reco_eff->getVal();
+        reco_effLo_array[i] = -reco_eff->getAsymErrorLo();
+        reco_effHi_array[i] = reco_eff->getAsymErrorHi();
+      
+        delete ws_mc;
+      }
+
+     //plot of the reconstruction efficiency as a function of pT
+    TCanvas cp;
+    TGraphAsymmErrors* graph_reco_eff = new TGraphAsymmErrors(nptbins, pt_bin_centres_eff, reco_eff_array, pt_bin_edges_eff_Lo, pt_bin_edges_eff_Hi, reco_effLo_array, reco_effHi_array);
+    graph_reco_eff->SetTitle("efficiency");
+    graph_reco_eff->SetMarkerColor(4);
+    graph_reco_eff->SetMarkerStyle(21);
+    graph_reco_eff->Draw("AP");
+    TString eff2_name = "";
+    eff2_name = "reco_efficiency_" + channel_to_ntuple_name(channel) + ".png";
+    cp.SaveAs(eff2_name);
+}
+for(int j=0; j<nybins; j++)
+{
+for(int i=0; i<nptbins; i++)
+  {
+    if(calculate_reco_eff && calculate_pre_filter_eff)
+      {
+        x_sec_array[j][i] = (yield_array[j][i] / (2  * reco_eff_array[i] * pre_eff_array[i] * (2.71) * (1.014e-3) * (5.93e-2)) )* (1e-9);
+        x_sec_errLo_array[j][i] = (errLo_array[j][i] / (2 * reco_eff_array[i] * pre_eff_array[i] * (2.71) * (1.014e-3) * (5.93e-2)) ) *(1e-9);
+        x_sec_errHi_array[j][i] = (errHi_array[j][i] / (2 * reco_eff_array[i] * pre_eff_array[i] * (2.71) * (1.014e-3) * (5.93e-2)) ) *(1e-9);
+      }
+    else
+      {
+        x_sec_array[j][i] = yield_array[j][i];
+        x_sec_errLo_array[j][i] = errLo_array[j][i];
+        x_sec_errHi_array[j][i] = errHi_array[j][i];
+      }
+  }
+ }     
       //plot of the signal_yield as a function of pt, in the future should be the x-sec corrected by efficiency and other factors
       TCanvas cz;
       TPad *pad = new TPad("pad", "pad", 0.05, 0.05, 0.99, 0.99);
@@ -612,7 +690,15 @@ int main(int argc, char** argv)
       pad->Draw();
 
       TH1D* empty;
-      if(yield_sub_samples=="pt")
+
+if(calculate_pre_filter_eff && calculate_reco_eff)
+{
+    empty = new TH1D("Cross Section in p_{T} Bins", "Cross Section in p_{T} Bins; p_{T} [GeV]; d#sigma /dp_{T}", nptbins, 0, 100);
+	  empty->SetMinimum(1e-4);
+	  empty->SetMaximum(20);
+    empty->Draw("hist");
+}
+    else if(yield_sub_samples=="pt")
 	{
 	  empty = new TH1D("Raw Signal Yield in p_{T} Bins", "Raw Signal Yield in p_{T} Bins; p_{T} [GeV]; Signal Yield", nptbins, 0, 100);
 	  empty->SetMinimum(1);
@@ -626,7 +712,7 @@ int main(int argc, char** argv)
 	  empty->SetMaximum(4e10);
 	  empty->Draw("hist");
 	}
-       
+
       TLegend *leg = new TLegend (0.65, 0.65, 0.85, 0.85);
 
       //systematics erros
@@ -640,8 +726,8 @@ int main(int argc, char** argv)
 	  graph_syst->Draw("a2 same");
 	}
 
-      TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array[0], pt_bin_edges_Lo, pt_bin_edges_Hi, 
-						       errLo_array[0], errHi_array[0]);
+      TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_means, x_sec_array[0], pt_bin_edges_Lo, pt_bin_edges_Hi, 
+						       x_sec_errLo_array[0], x_sec_errHi_array[0]);
       graph->SetTitle("Raw signal yield in Pt bins");
       graph->SetMarkerColor(2);
       graph->SetMarkerSize(0.5);
@@ -677,7 +763,7 @@ int main(int argc, char** argv)
 	      graph2_syst->Draw("a2 same");
 	    }
 
-	  TGraphAsymmErrors* graph2 = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array[i], pt_bin_edges_Lo, pt_bin_edges_Hi, errLo_array[i], errHi_array[i]);
+	  TGraphAsymmErrors* graph2 = new TGraphAsymmErrors(nptbins, pt_bin_means, x_sec_array[i], pt_bin_edges_Lo, pt_bin_edges_Hi, x_sec_errLo_array[i], x_sec_errHi_array[i]);
 	  graph2->SetTitle("Raw signal yield in Pt bins");
 	  graph2->SetMarkerColor(i+2);
 	  graph2->SetMarkerSize(0.5);
@@ -721,67 +807,14 @@ int main(int argc, char** argv)
 
       cz.Update();
       cz.SetLogy();
-      cz.SaveAs("signal_yield/signal_yield_" + yield_sub_samples + "_bins_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + ".png");
+      if(calculate_pre_filter_eff && calculate_reco_eff)
+	cz.SaveAs("signal_yield/x_sec_" + yield_sub_samples + "_bins_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + ".png");
+      else
+	cz.SaveAs("signal_yield/signal_yield_" + yield_sub_samples + "_bins_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + ".png");
       
     }//end of else
 }//end of signal_yield_new
 
-RooRealVar* pre_filter_efficiency(int channel, double pt_min, double pt_max)
-{
-  ReducedGenBranches gen;
-  TString mc_gen_input_file = TString(BASE_DIR) + "myloop_gen_bfilter.root";
-  TFile *fin = new TFile(mc_gen_input_file);
-  
-  TString ntuple = channel_to_ntuple_name(channel) + "_gen";
-  TTree *tin = (TTree*)fin->Get(ntuple);
-  gen.setbranchadd(tin);
-
-  //use histograms to count the events, and TEfficiency for efficiency, because it takes care of the errors and propagation
-  TH1D* hist_tot = new TH1D("hist_tot","hist_tot",1,pt_min,pt_max);
-  TH1D* hist_passed = new TH1D("hist_passed","hist_passed",1,pt_min,pt_max);
-
-  for (int evt=0;evt<tin->GetEntries();evt++)
-    {
-      tin->GetEntry(evt);
-      
-      if (fabs(gen.eta) > 2.4) continue; //B mesons inside the detector region eta < 2.4
-      //if (gen.pt<pt_min || gen.pt>=pt_max) continue; // within the -gen- pt binning
-           
-      hist_tot->Fill(gen.pt);
-      
-      bool muon1Filter = fabs(gen.mu1eta)<2.4 && gen.mu1pt>2.8;
-      bool muon2Filter = fabs(gen.mu2eta)<2.4 && gen.mu2pt>2.8;
-
-      if (muon1Filter && muon2Filter) hist_passed->Fill(gen.pt);//count only the events with the muon selection above
-    }
-  /*
-    TCanvas ch1;
-    hist_tot->Draw();
-    ch1.SaveAs(TString::Format("hist_tot_from_%d_to_%d.png",(int)pt_min,(int)pt_max));  
-    TCanvas ch2;
-    hist_passed->Draw();
-    ch2.SaveAs(TString::Format("hist_passed_from_%d_to_%d.png",(int)pt_min,(int)pt_max));
-  */
-
-  //calculates the efficiency by dividing the histograms
-  TEfficiency* efficiency = new TEfficiency(*hist_passed, *hist_tot);
-  
-  double eff;
-  double eff_lo;
-  double eff_hi;
-
-  eff = efficiency->GetEfficiency(1);
-  eff_lo = efficiency->GetEfficiencyErrorLow(1);
-  eff_hi = efficiency->GetEfficiencyErrorUp(1);
-  
-  RooRealVar* eff1 = new RooRealVar("eff1","eff1",eff);
-  eff1->setAsymError(-eff_lo,eff_hi);
-
-  fin->Close();
-  delete fin;
-
-  return eff1;
-}
 
 RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, int mcstudy)
 {
@@ -2007,7 +2040,130 @@ void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::st
   system(("gnome-open " + filename + ".pdf").c_str());
 }
 
+//the input file must be produced with myloop_gen.cc to have the gen info. otherwise the signal needs to be extracted using a fit.
+RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max)
+{
+  TString mc_gen_input_file = TString::Format(BASE_DIR) + "myloop_gen_" + channel_to_ntuple_name(channel) + "_bfilter.root";
+  TFile *fin = new TFile(mc_gen_input_file);
+  
+  TString ntuple_name = channel_to_ntuple_name(channel) + "_gen";
+  TTree *tin = (TTree*)fin->Get(ntuple_name);
 
+  ReducedGenBranches gen;
+  gen.setbranchadd(tin);
+
+  //use histograms to count the events, and TEfficiency for efficiency, because it takes care of the errors and propagation
+  TH1D* hist_tot = new TH1D("hist_tot","hist_tot",1,pt_min,pt_max);
+  TH1D* hist_passed = new TH1D("hist_passed","hist_passed",1,pt_min,pt_max);
+
+  for (int evt=0;evt<tin->GetEntries();evt++)
+    {
+      tin->GetEntry(evt);
+      
+      if (fabs(gen.eta) > 2.4) continue; //B mesons inside the detector region eta < 2.4
+      //if (gen.pt<pt_min || gen.pt>=pt_max) continue; // within the -gen- pt binning
+           
+      hist_tot->Fill(gen.pt);
+      
+      bool muon1Filter = fabs(gen.mu1eta)<2.4 && gen.mu1pt>2.8;
+      bool muon2Filter = fabs(gen.mu2eta)<2.4 && gen.mu2pt>2.8;
+ 
+      if (muon1Filter && muon2Filter) hist_passed->Fill(gen.pt);//count only the events with the muon selection above
+    }
+//calculates the efficiency by dividing the histograms
+  TEfficiency* efficiency = new TEfficiency(*hist_passed, *hist_tot);
+  
+  double eff;
+  double eff_lo;
+  double eff_hi;
+
+  eff = efficiency->GetEfficiency(1);
+  eff_lo = efficiency->GetEfficiencyErrorLow(1);
+  eff_hi = efficiency->GetEfficiencyErrorUp(1);
+  
+  RooRealVar* eff1 = new RooRealVar("eff1","eff1",eff);
+  eff1->setAsymError(-eff_lo,eff_hi);
+
+  fin->Close();
+  delete fin;
+
+  return eff1; 
+}
+
+RooRealVar* reco_efficiency(RooWorkspace& w,int channel, double pt_min, double pt_max)
+{
+  //read monte carlo without cuts
+  TString mc_input_no_cuts = TString::Format(BASE_DIR) + "reduced_" + channel_to_ntuple_name(channel) + "_bmuonfilter_no_cuts.root";
+  TFile *fin_no_cuts = new TFile(mc_input_no_cuts);
+  TTree *tin_no_cuts = (TTree*)fin_no_cuts->Get(channel_to_ntuple_name(channel));
+  ReducedBranches mc_1;
+  mc_1.setbranchadd(tin_no_cuts);
+
+  //read monte carlo with cuts
+  // TString mc_input_with_cuts = TString::Format(BASE_DIR) + "reduced_" + channel_to_ntuple_name(channel) + "_bmuonfilter_with_cuts.root";
+  TString mc_input_with_cuts = TString::Format(BASE_DIR) + "selected_mc_" + channel_to_ntuple_name(channel) + "_bmuonfilter_with_cuts.root";
+  TFile *fin_with_cuts = new TFile(mc_input_with_cuts);
+  TTree *tin_with_cuts = (TTree*)fin_with_cuts->Get(channel_to_ntuple_name(channel));
+  ReducedBranches mc_2;
+  mc_2.setbranchadd(tin_with_cuts);
+
+  //use histograms to count the events, and TEfficiency for efficiency, because it takes care of the errors and propagation
+  TH1D* hist_tot = new TH1D("hist_tot","hist_tot",1,pt_min,pt_max);
+  TH1D* hist_passed = new TH1D("hist_passed","hist_passed",1,pt_min,pt_max);
+Printf("counting no_cuts \n");
+
+  for (int evt=0;evt<tin_no_cuts->GetEntries();evt++)
+    {
+      tin_no_cuts->GetEntry(evt);
+      
+      if (fabs(mc_1.eta) > 2.4) continue; //B mesons inside the detector region eta < 2.4
+      if (fabs(mc_1.mass) < 5 || mc_1.mass > 5.5) continue;
+      //if (gen.pt<pt_min || gen.pt>=pt_max) continue; // within the -gen- pt binning
+           
+      bool muon1Filter = fabs(mc_1.mu1eta)<2.4 && mc_1.mu1pt>2.8;
+      bool muon2Filter = fabs(mc_1.mu2eta)<2.4 && mc_1.mu2pt>2.8;
+ 
+      if (muon1Filter && muon2Filter) hist_tot->Fill(mc_1.pt);//count only the events with the muon selection above
+      
+      //hist_tot->Fill(mc_1.pt);
+    }
+  
+    Printf("counting with_cuts \n");
+
+  for (int evt=0;evt<tin_with_cuts->GetEntries();evt++)
+    {
+      tin_with_cuts->GetEntry(evt);
+      
+      if (fabs(mc_2.eta) > 2.4) continue; //B mesons inside the detector region eta < 2.4
+      if (fabs(mc_2.mass) < 5 || mc_2.mass > 5.5) continue;
+      
+      bool muon1Filter = fabs(mc_2.mu1eta)<2.4 && mc_2.mu1pt>2.8;
+      bool muon2Filter = fabs(mc_2.mu2eta)<2.4 && mc_2.mu2pt>2.8;
+ 
+      if (muon1Filter && muon2Filter) hist_passed->Fill(mc_2.pt);//count only the events with the muon selection above
+    }
+ //calculates the efficiency by dividing the histograms
+  TEfficiency* efficiency = new TEfficiency(*hist_passed, *hist_tot);
+  
+  double eff;
+  double eff_lo;
+  double eff_hi;
+
+  eff = efficiency->GetEfficiency(1);
+  eff_lo = efficiency->GetEfficiencyErrorLow(1);
+  eff_hi = efficiency->GetEfficiencyErrorUp(1);
+  
+  RooRealVar* eff2 = new RooRealVar("eff2","eff2",eff);
+  eff2->setAsymError(-eff_lo,eff_hi);
+
+  fin_no_cuts->Close();
+  delete fin_no_cuts;
+
+  fin_with_cuts->Close();
+  delete fin_with_cuts;
+
+  return eff2;
+}
 /*
   switch (channel) {
   case 1:

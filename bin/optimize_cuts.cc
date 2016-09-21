@@ -332,11 +332,12 @@ void data_selection(TString fin1, TString data_selection_output_file, int channe
   auto numEntries = tin->GetEntries();
 
   for (int evt=0;evt<numEntries;evt++) {
-    if(evt == 100000) break;
+
     tin->GetEntry(evt);
         
     if (channel==1) { // cuts for B+ -> J/psi K+
-      if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+      if(mc==1) {if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1) continue;}
+      else {if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;}
       
       if(variable=="vtxprob")
 	{ if (br.vtxprob<=cuts) continue; }//original cut 0.1
@@ -362,7 +363,8 @@ void data_selection(TString fin1, TString data_selection_output_file, int channe
 	    
     }else
       if (channel==2) { // cuts for B0 -> J/psi K*
-	if (mc==1||br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+	      if(mc==1) {if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1) continue;}
+      else {if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;}
 	
 	if(variable=="vtxprob")
 	  { if (br.vtxprob<=cuts) continue; }//original cut 0.1
@@ -430,7 +432,9 @@ void data_selection(TString fin1, TString data_selection_output_file, int channe
 	}
       }else
 	if (channel==3) { // cuts for B0 -> J/psi Ks
-	  if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+	  if(mc==1) {if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1) continue;}
+    else {if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;}
+
 	  if (br.vtxprob<=0.1) continue;//original cut 0.1
 	  if (br.lxy/br.errxy<=3.0) continue;//original cut 3.0
 	  if (br.tktkblxy/br.tktkberrxy<=3.0) continue;//original cut 3.0
@@ -441,7 +445,9 @@ void data_selection(TString fin1, TString data_selection_output_file, int channe
 
 	}else
 	  if (channel==4) { // cuts for Bs -> J/psi phi
-	    if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+	          if(mc==1) {if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1) continue;}
+      else {if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;}
+
 
 	    if(variable=="vtxprob")
 	      { if (br.vtxprob<=cuts) continue; } //original cut 0.1
@@ -494,7 +500,9 @@ void data_selection(TString fin1, TString data_selection_output_file, int channe
 
 	    }else
 	      if (channel==6) {//cuts for lambda
-		if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+	    if(mc==1) {if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1) continue;}
+      else {if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;}
+
 		if (br.vtxprob<=0.1) continue;//original cut 0.1
 		if (br.lxy/br.errxy<=3.0) continue;//original cut 3.0
 		if (br.tktkblxy/br.tktkberrxy<=3.0) continue;//original cut 3.0
