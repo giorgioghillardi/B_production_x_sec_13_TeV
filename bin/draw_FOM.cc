@@ -149,7 +149,7 @@ int main(int argc, char** argv)
       TString data_selection_input_file="";
       TString data_selection_input_file_mc="";
       data_selection_input_file= "selected_data_" + channel_to_ntuple_name(channel) + "_" + variable + "_" + s_cut + ".root";
-      TString data_selection_input_file_mc= "selected_data_" + channel_to_ntuple_name(channel) + "_" + variable + "_" + s_cut + "mc.root";
+      data_selection_input_file_mc= "selected_data_" + channel_to_ntuple_name(channel) + "_" + variable + "_" + s_cut + "_mc.root";
 
       std::cout << data_selection_input_file << std::endl;
 
@@ -191,21 +191,22 @@ int main(int argc, char** argv)
      std::cout<<"YO BRO, U JUST STRAIGHT UP FUCKED UP" << std::endl;
      } 
 
-      build_pdf(*ws_mc,channel, 5, 6);//O 5 e o 6 sao aleatorios     
+      build_pdf(*ws_mc,channel, 5.1, 5.4);//os numeros sao aleatorios     
       
       data = ws->data("data");
-      data_mc = ws_mc->data("data_mc");
+      data_mc = ws_mc->data("data");
       model = ws->pdf("model");     
-      model_mc = ws_mc->pdf("model_mc");     
+      model_mc = ws_mc->pdf("model");     
       
       model->fitTo(*data,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
+      std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << data_mc << std::endl;
       model_mc->fitTo(*data_mc,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
       
       signal_res = ws_mc->var("n_signal");
       back_res = ws->var("back_fom"); //MUDAR ISTO, JUST PEAK     
   
       log_like = (RooRealVar* ) model->createNLL(*data);
-
+      std::cout<<"CENAS CENAS"<<back_res << std::endl;
       std::cout <<"SIGNAL: "<< signal_res->getVal() << " " << signal_res->getAsymErrorLo() << " +" << signal_res->getAsymErrorHi() << std::endl;
       std::cout <<"BACKGROUND: "<< back_res->getVal() << " " << back_res->getAsymErrorLo() << " +" << back_res->getAsymErrorHi() << std::endl;
       std::cout <<"LOG LIKELIHOOD: "<< log_like->getVal() << std::endl;     
@@ -222,11 +223,11 @@ int main(int argc, char** argv)
       FOM_err[i]=sqrt( ( (1-signal_res->getVal())/((signal_res->getVal()+back_res->getVal())*(signal_res->getVal()+back_res->getVal()))/(sqrt(signal_res->getVal()+back_res->getVal()))*signal_err[i])*((1-signal_res->getVal())/((signal_res->getVal()+back_res->getVal())*(signal_res->getVal()+back_res->getVal()))/(sqrt(signal_res->getVal()+back_res->getVal()))*signal_err[i]) + ((signal_res->getVal())/(pow(signal_res->getVal()+back_res->getVal(),1.5))*back_err[i])*((signal_res->getVal())/(pow(signal_res->getVal()+back_res->getVal(),1.5))*back_err[i]));
       
 
-      /*      mass_fit_directory = "full_dataset_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION);
-	      pt_dist_directory = "full_dataset_mass_pt_histo/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION);
+      TString  mass_fit_directory = "mc_fit_" +variable + "_" + s_cut + "_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION);
+	     // pt_dist_directory = "full_dataset_mass_pt_histo/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION);
       
-	      plot_mass_fit(*ws,channel,mass_fit_directory);
-	      plot_pt_dist(*ws,channel,pt_dist_directory);*/
+	      plot_mass_fit(*ws_mc,channel,mass_fit_directory);
+	     // plot_pt_dist(*ws,channel,pt_dist_directory);*/
     
     }
 
@@ -235,10 +236,10 @@ int main(int argc, char** argv)
   }
 
   if(variable=="vtxprob" || variable=="cosalpha2d")
-    DrawGraph(size, cuts.data(), FOM, FOM_err, "FOM for "+variable+">x", "x (1)", "FOM (1)", "FOM/FOM_"+variable+".png");
+    DrawGraph(size, cuts.data(), FOM, FOM_err, "FOM for "+variable+">x", "x (1)", "FOM (1)", "FOM_"+variable+".png");
 
   else if(variable=="lxy")
-    DrawGraph(size, cuts.data(), FOM, FOM_err, "FOM for L_{xy}/#sigma_{xy}>x", "x (GeV)", "FOM (1)", "FOM/FOM_"+variable+".png");
+    DrawGraph(size, cuts.data(), FOM, FOM_err, "FOM for L_{xy}/#sigma_{xy}>x", "x (GeV)", "FOM (1)", "FOM_"+variable+".png");
 
   std::string caption = "Signal and Background Yields for different cuts in " + variable;
 
@@ -511,8 +512,10 @@ void build_pdf(RooWorkspace& w, int channel, double lim_min, double lim_max)
   RooExponential pdf_m_combinatorial_exp("pdf_m_combinatorial_exp","pdf_m_combinatorial_exp",mass,m_exp);
   
   mass.setRange("peak",lim_min,lim_max);
-  RooAbsReal* back_fom = pdf_m_combinatorial_exp.createIntegral(mass, "peak");
-
+  RooAbsReal* back_fom_2 = pdf_m_combinatorial_exp.createIntegral(mass, "peak");
+  RooRealVar back_fom("back_fom", "back_fom", back_fom_2->getVal());
+ 
+  //back_fom->SetName("back_fom");
   
   RooRealVar m_par1("m_par1","m_par2",1.,0,+10.);
   RooRealVar m_par2("m_par2","m_par3",1.,0,+10.);
@@ -564,7 +567,7 @@ void build_pdf(RooWorkspace& w, int channel, double lim_min, double lim_max)
     }
 
   w.import(*model);
-  w.import(*back_fom);
+  w.import(back_fom);
 }
 
 void read_data(RooWorkspace& w, TString filename,int channel)

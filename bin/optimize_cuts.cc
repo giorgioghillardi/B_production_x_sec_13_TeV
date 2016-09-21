@@ -47,7 +47,7 @@ void read_data_cut(RooWorkspace& w, RooDataSet* data);
 void set_up_workspace_variables(RooWorkspace& w, int channel);
 TString channel_to_ntuple_name(int channel);
 
-void data_selection(TString fin1, TString data_selection_output_file, int channel, std::string variable, double cuts);
+void data_selection(TString fin1, TString data_selection_output_file, int channel, std::string variable, double cuts, int mc);
 
 std::vector<double> generate_cuts(int channel, std::string variable, double begin, double end, int size);
 
@@ -154,8 +154,8 @@ int main(int argc, char** argv)
         data_selection_output_file = outDir + "/" + data_selection_output_file;
         data_selection_output_file_mc = outDir + "/" + data_selection_output_file_mc;
       }
-      data_selection(input_file, data_selection_output_file, channel, variable, cuts.at(i));
-      data_selection(input_file_mc, data_selection_output_file_mc, channel, variable, cuts.at(i));
+      data_selection(input_file, data_selection_output_file, channel, variable, cuts.at(i),0);
+      data_selection(input_file_mc, data_selection_output_file_mc, channel, variable, cuts.at(i),1);
       std::cout << "Done data_selection(..)" << std::endl;
 
       if(show_dist)
@@ -176,7 +176,7 @@ int main(int argc, char** argv)
 	  read_data(*ws_mc, data_selection_output_file_mc,channel);
 	  
 	  RooAbsData* data = ws->data("data");
-	  RooAbsData* data_mc = ws_mc->data("data_mc");
+	  RooAbsData* data_mc = ws_mc->data("data");
 	  
 /*	  pt_dist_directory = "full_dataset_mass_pt_dist_"+variable+"_"+s_cut+"/" + channel_to_ntuple_name(channel) + "_pt";
 	  plot_pt_dist(*ws,channel,pt_dist_directory);
@@ -279,7 +279,7 @@ void set_up_workspace_variables(RooWorkspace& w, int channel)
   w.import(pt);
 }
 
-void data_selection(TString fin1, TString data_selection_output_file, int channel, std::string variable, double cuts)
+void data_selection(TString fin1, TString data_selection_output_file, int channel, std::string variable, double cuts, int mc)
 {
 
   TFile *fout = new TFile(data_selection_output_file,"recreate");
@@ -329,7 +329,10 @@ void data_selection(TString fin1, TString data_selection_output_file, int channe
   tin->Add(fin1);
   br.setbranchadd(tin);
 
-  for (int evt=0;evt<tin->GetEntries();evt++) {
+  auto numEntries = tin->GetEntries();
+
+  for (int evt=0;evt<numEntries;evt++) {
+    if(evt == 100000) break;
     tin->GetEntry(evt);
         
     if (channel==1) { // cuts for B+ -> J/psi K+
@@ -359,7 +362,7 @@ void data_selection(TString fin1, TString data_selection_output_file, int channe
 	    
     }else
       if (channel==2) { // cuts for B0 -> J/psi K*
-	if (br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
+	if (mc==1||br.hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;
 	
 	if(variable=="vtxprob")
 	  { if (br.vtxprob<=cuts) continue; }//original cut 0.1
@@ -506,6 +509,14 @@ void data_selection(TString fin1, TString data_selection_output_file, int channe
 
 	      }
   }//end of the for for the events
+
+  _nt1->Write();
+  _nt2->Write();
+  _nt3->Write();
+  _nt4->Write();
+  _nt5->Write();
+  _nt6->Write();
+
   fout->Write();
   fout->Close();
 }
