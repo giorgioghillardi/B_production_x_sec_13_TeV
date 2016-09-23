@@ -149,6 +149,7 @@ int main(int argc, char** argv)
   dir_list.push_back("full_dataset_mass_pt_histo");
   dir_list.push_back(static_cast<const char*>("pt_bin_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION)));
   dir_list.push_back("signal_yield");
+  dir_list.push_back("efficiencies");
   dir_list.push_back("bin_mcstudy");
   dir_list.push_back("full_dataset_mcstudy");
   dir_list.push_back("full_dataset_systematics");
@@ -615,7 +616,7 @@ int main(int argc, char** argv)
 	  graph_pre_eff->SetMarkerStyle(21);
 	  graph_pre_eff->Draw("AP");
 	  TString eff1_name = "";
-	  eff1_name = "pre_filter_efficiency_" + channel_to_ntuple_name(channel) + "_" + TString::Format("y_from_%.1f_to_%.1f",y_bin_edges[c],y_bin_edges[c+1]) + ".png";
+	  eff1_name = "efficiencies/pre_filter_efficiency_" + channel_to_ntuple_name(channel) + "_" + TString::Format("y_from_%.1f_to_%.1f",y_bin_edges[c],y_bin_edges[c+1]) + ".png";
 	  ce.SaveAs(eff1_name);
 	    }
 	}     
@@ -649,7 +650,7 @@ int main(int argc, char** argv)
 	  graph_reco_eff->SetMarkerStyle(21);
 	  graph_reco_eff->Draw("AP");
 	  TString eff2_name = "";
-	  eff2_name = "reco_efficiency_" + channel_to_ntuple_name(channel) + "_" + TString::Format("y_from_%.1f_to_%.1f",y_bin_edges[c],y_bin_edges[c+1]) + ".png";
+	  eff2_name = "efficiencies/reco_efficiency_" + channel_to_ntuple_name(channel) + "_" + TString::Format("y_from_%.1f_to_%.1f",y_bin_edges[c],y_bin_edges[c+1]) + ".png";
 	  cp.SaveAs(eff2_name);
 	    }
 	}
