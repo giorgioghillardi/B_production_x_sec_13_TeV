@@ -694,14 +694,14 @@ int main(int argc, char** argv)
       TPad *pad = new TPad("pad", "pad", 0.05, 0.05, 0.99, 0.99);
       //      pad->cd();
       pad->Draw();
-      
+      /*
       TH1D* empty;
-      
+       
       if(calculate_pre_filter_eff && calculate_reco_eff)
 	{
-	  empty = new TH1D("Cross Section in p_{T} Bins", "Cross Section in p_{T} Bins; p_{T} [GeV]; d#sigma /dp_{T}", nptbins, 0, 160);
-	  empty->SetMinimum(1e-5);
-	  empty->SetMaximum(1e3);
+	  empty = new TH1D("Cross Section in p_{T} Bins", "Cross Section in p_{T} Bins; p_{T} [GeV]; d#sigma /dp_{T}", nptbins, 0, 100);
+	  empty->SetMinimum(1e-4);
+	  empty->SetMaximum(10);
 	  empty->Draw("hist");
 	}
       else if(yield_sub_samples=="pt")
@@ -718,26 +718,32 @@ int main(int argc, char** argv)
 	  empty->SetMaximum(4e10);
 	  empty->Draw("hist");
 	}
-
+      */
       TLegend *leg = new TLegend (0.65, 0.65, 0.85, 0.85);
 
       //systematics erros
       if(syst)
 	{
-	  TGraphAsymmErrors* graph_syst = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array[0], pt_bin_edges_Lo, pt_bin_edges_Hi, 
+	  TGraphAsymmErrors* graph_syst = new TGraphAsymmErrors(nptbins, pt_bin_means, x_sec_array[0], pt_bin_edges_Lo, pt_bin_edges_Hi, 
 								errSyst_array[0], errSyst_array[0]);
-	  graph_syst->SetTitle("Raw signal yield in Pt bins");
+	  graph_syst->SetTitle("Cross Section in Pt bins");
 	  graph_syst->SetFillColor(2);
 	  graph_syst->SetFillStyle(3001);
-	  graph_syst->Draw("a2 same");
+	  graph_syst->GetXaxis()->SetTitle("p_{T} [GeV]");
+	  graph_syst->GetYaxis()->SetTitle("Signal Yield");
+	  graph_syst->GetYaxis()->SetRangeUser(1e-4, 1);
+          graph_syst->Draw("a2 same");
 	}
 
       TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_means, x_sec_array[0], pt_bin_edges_Lo, pt_bin_edges_Hi, 
 						       x_sec_errLo_array[0], x_sec_errHi_array[0]);
-      graph->SetTitle("Raw signal yield in Pt bins");
+      graph->SetTitle("Cross Section in Pt bins");
       graph->SetMarkerColor(2);
       graph->SetMarkerSize(0.5);
       graph->SetMarkerStyle(20);
+      graph->GetXaxis()->SetTitle("p_{T} [GeV]");
+      graph->GetYaxis()->SetTitle("Signal Yield");
+      graph->GetYaxis()->SetRangeUser(1e-4, 1);
       graph->Draw("p same");
 
 
@@ -753,7 +759,7 @@ int main(int argc, char** argv)
       tex->SetLineWidth(2);
       tex->Draw();
       
-      if(yield_sub_samples=="pt/y")      leg->AddEntry(graph, "(#times 10^{3}) 0<|y|<0.5", "lp");
+      if(yield_sub_samples=="pt/y"){      leg->AddEntry(graph, "(#times 10^{3}) 0<|y|<0.5", "lp");
       //      if(yield_sub_samples=="pt")      leg->AddEntry(graph, "|y|>0", "lp");
            
       for(int i=1; i<nybins; i++)
@@ -790,11 +796,12 @@ int main(int argc, char** argv)
 	  /*    graph2->GetYaxis()->SetMinimum(0.);
 		graph2->GetYaxis()->SetMaximum(3000000.);*/
 	}
+      }
       //Legend(channel, 0,0,0);
       if(yield_sub_samples=="pt/y") yield_sub_samples="pt_y";
       leg->Draw("same");
 
-      TH1D* empty2;
+      /*      TH1D* empty2;
       if(yield_sub_samples=="pt")
 	{
 	  empty2 = new TH1D("Raw Signal Yield in p_{T} Bins", "Raw Signal Yield in p_{T} Bins; p_{T} [GeV]; Signal Yield", nptbins, 0, 100);
@@ -809,7 +816,7 @@ int main(int argc, char** argv)
 	  empty2->SetMaximum(4e10);
 	  empty2->Draw("hist same");
 	}
-
+      */
 
       cz.Update();
       cz.SetLogy();
@@ -1044,52 +1051,69 @@ double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_m
       mass_max_str[0] = "5.75";
       mass_max_str[1] = "6.2";
     }
+
   std::vector<double> signal_syst;
-  signal_syst.reserve(9);
+  std::vector<double> back_syst;
+  std::vector<double> range_syst;
+  signal_syst.reserve(4);
+  back_syst.reserve(4);
+  range_syst.reserve(3);
   signal_syst.push_back(signal_res);
-  
-  std::cout << std::endl << std::endl << std::endl << "  signal_syst[0]: " << signal_syst[0] << std::endl << std::endl << std::endl;
+  back_syst.push_back(signal_res);
+  range_syst.push_back(signal_res);
+
+  std::cout << std::endl << std::endl << std::endl << " signal_syst[0]: " << signal_syst[0] << std::endl << std::endl << std::endl;
 
   //Background Systematics
   for(int i=0; i<3; i++)
     {
-      signal_syst.push_back(bin_mass_fit(ws, channel, pt_min, pt_max, y_min, y_max, background[i], "background"));
-
-      std::cout << std::endl << std::endl << std::endl << "  signal_syst[" << i+1 << "]: " << signal_syst[i+1]  << std::endl << std::endl << std::endl;
+      back_syst.push_back(bin_mass_fit(ws, channel, pt_min, pt_max, y_min, y_max, background[i], "background"));
+      std::cout << std::endl << std::endl << std::endl << " back_syst[" << i+1 << "]: " << back_syst[i+1] << std::endl << std::endl << std::endl;
     }
 
   //Signal Systematics
   for(int i=0; i<3; i++)
     {
       signal_syst.push_back(bin_mass_fit(ws, channel, pt_min, pt_max, y_min, y_max, signal[i], "signal"));
-
-      std::cout << std::endl << std::endl << std::endl << "  signal_syst[" << i+4 << "]: " << signal_syst[i+1] << std::endl << std::endl << std::endl;
+      std::cout << std::endl << std::endl << std::endl << " signal_syst[" << i+1 << "]: " << signal_syst[i+1] << std::endl << std::endl << std::endl;
     }
-  
+
   //Mass Range Systematics
   for(int i=0; i<2; i++)
     {
       RooWorkspace* ws1 = new RooWorkspace("ws1","Bmass");
 
-      //set up mass, pt and y variables inside ws1  
+      //set up mass, pt and y variables inside ws1 
       set_up_workspace_variables(*ws1,channel,mass_min[i],mass_max[1-i]);
       //read data from the selected data file, and import it as a dataset into the workspace.
       read_data(*ws1, data_selection_input_file,channel);
+      range_syst.push_back(bin_mass_fit(*ws1, channel, pt_min, pt_max, y_min, y_max, mass_min[i], mass_max[1-i]));
 
-      signal_syst.push_back(bin_mass_fit(*ws1, channel, pt_min, pt_max, y_min, y_max, mass_min[i], mass_max[1-i]));
-
-      std::cout << std::endl << std::endl << std::endl << "  signal_syst[" << i+7 << "]: " << signal_syst[i+1] << std::endl << std::endl << std::endl;
+      std::cout << std::endl << std::endl << std::endl << " range_syst[" << i+1 << "]: " << range_syst[i+1] << std::endl << std::endl << std::endl;
     }
-  
+
   for(unsigned int i=0; i<signal_syst.size(); i++)
     std::cout << "signal_syst[" << i << "]: " << signal_syst[i] << std::endl;
-  
-  std::vector<double> deviation;
+
+  for(unsigned int i=0; i<back_syst.size(); i++)
+    std::cout << "back_syst[" << i << "]: " << back_syst[i] << std::endl;
+  for(unsigned int i=0; i<range_syst.size(); i++)
+    std::cout << "range_syst[" << i << "]: " << range_syst[i] << std::endl;
+
+  std::vector<double> deviation_signal;
+  std::vector<double> deviation_back;
+  std::vector<double> deviation_range;
 
   for(unsigned int i=0; i<signal_syst.size(); i++)
-    deviation.push_back(abs(signal_syst[i] - signal_syst[0]));	  
+    deviation_signal.push_back(abs(signal_syst[i] - signal_syst[0]));   
 
-  return *(max_element(deviation.begin(), deviation.end()));
+  for(unsigned int i=0; i<back_syst.size(); i++)
+    deviation_back.push_back(abs(back_syst[i] - back_syst[0]));   
+ 
+  for(unsigned int i=0; i<range_syst.size(); i++)
+    deviation_range.push_back(abs(range_syst[i] - range_syst[0]));    
+
+  return (sqrt((*(max_element(deviation_signal.begin(), deviation_signal.end())))*(*(max_element(deviation_signal.begin(), deviation_signal.end())))+(*(max_element(deviation_back.begin(), deviation_back.end())))*(*(max_element(deviation_back.begin(), deviation_back.end())))+(*(max_element(deviation_range.begin(), deviation_range.end())))*(*(max_element(deviation_range.begin(), deviation_range.end())))));
 }
 
 double pt_bin_mean(RooWorkspace& w, double pt_min, double pt_max)
