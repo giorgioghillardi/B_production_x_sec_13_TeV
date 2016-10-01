@@ -38,17 +38,18 @@
 #include <RooThresholdCategory.h>
 #include <Roo1DTable.h>
 #include "TMath.h"
+#include <TLegend.h>
 #include "UserCode/B_production_x_sec_13_TeV/interface/myloop.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/plotDressing.h"
-#include <TLegend.h>
+#include "UserCode/B_production_x_sec_13_TeV/interface/channel.h"
+
 using namespace RooFit;
 
 // General fitting options
 #define NUMBER_OF_CPU       1
-
 #define VERSION             "v7"
 #define BASE_DIR            "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/"
-#define LUMINOSITY 2.71
+#define LUMINOSITY          2.71
 
 //-----------------------------------------------------------------
 // Definition of channel #
@@ -60,16 +61,16 @@ using namespace RooFit;
 // channel = 6: Lambda_b -> Jpsi + Lambda
 
 void create_dir(std::vector<std::string> list);
+
 void plot_pt_dist(RooWorkspace& w, int channel, TString directory);
 void plot_mass_fit(RooWorkspace& w, int channel, TString directory,int pt_high, int pt_low);
 void plot_mass_fit(RooWorkspace& w, int channel, TString directory);
-RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, int mcstudy);
-double bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, 
-			 std::string choice, std::string choice2);
-double pt_bin_mean(RooWorkspace& w, double pt_min, double pt_max);
 
-double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_max, double y_min, double y_max, 
-		       double signal_res, TString data_selection_input_file, int syst);
+RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, int mcstudy);
+double bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, std::string choice, std::string choice2);
+
+double pt_bin_mean(RooWorkspace& w, double pt_min, double pt_max);
+double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_max, double y_min, double y_max, double signal_res, TString data_selection_input_file, int syst);
 
 void build_pdf(RooWorkspace& w, int channel);
 void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string choice2);
@@ -80,14 +81,9 @@ void set_up_workspace_variables(RooWorkspace& w, int channel, double mass_min, d
 
 RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max, double y_min, double y_max);
 RooRealVar* reco_efficiency(int channel, double pt_min, double pt_max, double y_min, double y_max);
-
 double branching_fraction(int channel);
-TString channel_to_ntuple_name(int channel);
-TString channel_to_xaxis_title(int channel);
-int channel_to_nbins(int channel);
 
-void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::string> col_name, std::vector<std::string> labels, 
-		 std::vector<std::vector<double> > numbers, std::string caption);
+void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::string> col_name, std::vector<std::string> labels, std::vector<std::vector<double> > numbers, std::string caption);
 
 //input example: signal_yield_new --channel 1 --bins pt/y --preeff 1 --recoeff 1 --mc 1 --syst 1
 int main(int argc, char** argv)
@@ -98,6 +94,7 @@ int main(int argc, char** argv)
   int calculate_reco_eff = 0;
   int mcstudy = 0;
   int syst = 0;
+
   for(int i=1 ; i<argc ; ++i)
     {
       std::string argument = argv[i];
@@ -123,7 +120,6 @@ int main(int argc, char** argv)
 	  convert << argv[++i];
 	  convert >> calculate_reco_eff;
 	}
-
       if(argument == "--mc")
 	{
 	  convert << argv[++i];
@@ -136,10 +132,9 @@ int main(int argc, char** argv)
 	}
     }
 
-
   if(channel==0)
     {
-      std::cout << "No channel was provided as input. Please use --channel. Example: signal_yield_new --channel 1" << std::endl;
+      std::cout << "Warning: No channel was provided as input. Please use --channel. Example: signal_yield_new --channel 1" << std::endl;
       return 0;
     }
   
@@ -150,14 +145,14 @@ int main(int argc, char** argv)
   dir_list.push_back(static_cast<const char*>("pt_bin_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION)));
   dir_list.push_back("signal_yield");
   dir_list.push_back("efficiencies");
-  dir_list.push_back("bin_mcstudy");
+  dir_list.push_back("mcstudy_bin");
   dir_list.push_back("full_dataset_mcstudy");
   dir_list.push_back("full_dataset_systematics");
   
   create_dir(dir_list);
 
   //pt bins
-  double ntkp_pt_bin_edges[]={9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90, 100, 120, 150};
+  double ntkp_pt_bin_edges[]={9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 80, 90, 100, 120};
   double ntkstar_pt_bin_edges[]={9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90};
   double ntks_pt_bin_edges[]={0};
   double ntphi_pt_bin_edges[]={9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90};
@@ -166,7 +161,7 @@ int main(int argc, char** argv)
   double total_pt_bin_edges[]={0, 400};
   double* pt_bin_edges=total_pt_bin_edges;
   
-  int nptbins=0;
+  int nptbins=1;
 
   //y bins
   double ntkp_y_bin_edges[]={0.0, 0.5, 1.0, 1.5, 2.25};
@@ -178,16 +173,13 @@ int main(int argc, char** argv)
   double total_y_bin_edges[]={0.0, 4.0};
   double* y_bin_edges=total_y_bin_edges;
   
-  int nybins=0;
+  int nybins=1;
 
   
   TString data_selection_input_file = TString::Format(BASE_DIR) + "selected_data_" + channel_to_ntuple_name(channel) + ".root";
-  //TString data_selection_input_file_mc = "selected_data_" + channel_to_ntuple_name(channel) + "_mc.root";
-  //TString input_no_cuts = "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/myloop_new_ntkstar_bmuonfilter_no_cuts.root";  
   RooWorkspace* ws = new RooWorkspace("ws","Bmass");
   RooAbsData* data;
   RooAbsPdf* model;
-  RooFitResult* fit_res;
   RooRealVar* signal_res; 
 
   TString pt_dist_directory="";
@@ -206,21 +198,12 @@ int main(int argc, char** argv)
       //build the pdf for the channel selected above, it uses the dataset which is saved in ws. need to change the dataset to change the pdf.
       RooRealVar* mass = ws->var("mass");
  
-      build_pdf(*ws,channel);     
- 
+      build_pdf(*ws,channel); 
       data = ws->data("data");
- 
       model = ws->pdf("model");     
- 
       model->fitTo(*data,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
- 
       signal_res = ws->var("n_signal");
        
-      /* RooRealVar* mean = ws->var("m_mean");
-	 RooRealVar* sigma1 = ws->var("m_sigma1");
-	 RooRealVar* sigma2 = ws->var("m_sigma2");
-	 RooRealVar* lambda = ws->var("m_exp");*/
-  
       std::cout <<"SIGNAL: "<< signal_res->getVal() << " " << signal_res->getAsymErrorLo() << " +" << signal_res->getAsymErrorHi() << std::endl;
       
       mass_fit_directory = "full_dataset_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION);
@@ -229,7 +212,6 @@ int main(int argc, char** argv)
       plot_mass_fit(*ws,channel,mass_fit_directory);
       plot_pt_dist(*ws,channel,pt_dist_directory);
     
-
       if(mcstudy)
 	{
 	  RooMCStudy* mctoy = new RooMCStudy (*model, *model, *mass, "", "mhv"); 
@@ -432,13 +414,10 @@ int main(int argc, char** argv)
 		      col_name, labels, numbers, "Systematic Errors");
 	}
     }
-  else
+  else// to calculate the cross section in bins of pt or pt and y.
     {
       if(yield_sub_samples=="pt")
-	{
-	  y_bin_edges = total_y_bin_edges;
-	  nybins=1;
-
+	{    
 	  switch (channel) {
 	  default:
 	  case 1:
@@ -516,11 +495,8 @@ int main(int argc, char** argv)
 	  }
 	}
 
-      std::cout << "nybins: " << nybins << std::endl;
-      std::cout << "y_bin_edges[0]: " << y_bin_edges[0] << std::endl;
-      std::cout << "y_bin_edges[1]: " << y_bin_edges[1] << std::endl;
-
       double pt_bin_size[nptbins];
+      double y_bin_size[nybins];
       double pt_bin_means[nptbins];
       double pt_bin_edges_Lo[nptbins];
       double pt_bin_edges_Hi[nptbins];
@@ -553,19 +529,25 @@ int main(int argc, char** argv)
       for(int c=0; c<nybins; c++)
 	{ 
 	  std::cout << "processing subsample: " << y_bin_edges[c] << " < |y| < " << y_bin_edges[c+1] << std::endl;
+
+	  //calculate the size of the y bins
+	  y_bin_size[c] = y_bin_edges[c+1]-y_bin_edges[c];
+
 	  for(int i=0; i<nptbins; i++)
 	    {
 	      std::cout << "processing subsample: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
 	      
+	      //calculate the size of the pt bins
 	      pt_bin_size[i] = pt_bin_edges[i+1]-pt_bin_edges[i];
-	      std::cout << pt_bin_size[i] << std::endl;
 	      
+	      //calculate the mean of the pt bin, to plot the cross section at this point
 	      pt_bin_means[i] = pt_bin_mean(*ws,pt_bin_edges[i],pt_bin_edges[i+1]);
+	      
+	      //calculate the new edges of the bin, since the centre is the mean. This is just for plotting.
 	      pt_bin_edges_Lo[i] = pt_bin_means[i] - pt_bin_edges[i];
 	      pt_bin_edges_Hi[i] = pt_bin_edges[i+1] - pt_bin_means[i];
-
-	      std::cout << pt_bin_edges_Lo[i] << "  " << pt_bin_edges_Hi[i] << std::endl;
 	      
+	      //calculate the signal yield for a bin of pt and y.
 	      signal_res = bin_mass_fit(*ws,channel,pt_bin_edges[i],pt_bin_edges[i+1], y_bin_edges[c], y_bin_edges[c+1], mcstudy);
 	  
 	      if(yield_sub_samples=="pt") 
@@ -573,17 +555,14 @@ int main(int argc, char** argv)
 		  yield_array[c][i] = (signal_res->getVal())/(pt_bin_size[i]);
 		  errLo_array[c][i] = -(signal_res->getAsymErrorLo())/(pt_bin_size[i]);
 		  errHi_array[c][i] = (signal_res->getAsymErrorHi())/(pt_bin_size[i]);
-		  errSyst_array[c][i] = (bin_systematics(*ws, channel, pt_bin_edges[i], pt_bin_edges[i+1], y_bin_edges[c], y_bin_edges[c+1],
-							 signal_res->getVal(), data_selection_input_file, syst))/(pt_bin_size[i]);
+		  errSyst_array[c][i] = (bin_systematics(*ws, channel, pt_bin_edges[i],pt_bin_edges[i+1],y_bin_edges[c],y_bin_edges[c+1],signal_res->getVal(),data_selection_input_file,syst))/(pt_bin_size[i]);
 		}
 	      else if(yield_sub_samples=="pt/y")
 		{	      
-		  yield_array[c][i] = (signal_res->getVal())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]))*pow(10,nybins-c);
-		  errLo_array[c][i] = -(signal_res->getAsymErrorLo())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]))*pow(10,nybins-c);
-		  errHi_array[c][i] = (signal_res->getAsymErrorHi())/(pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]))*pow(10,nybins-c);
-		  errSyst_array[c][i] = (bin_systematics(*ws, channel, pt_bin_edges[i], pt_bin_edges[i+1], y_bin_edges[c], y_bin_edges[c+1],
-							 signal_res->getVal(), data_selection_input_file, syst))/
-		    (pt_bin_size[i]*(y_bin_edges[c+1]-y_bin_edges[c]))*pow(10,nybins-c);
+		  yield_array[c][i] = (signal_res->getVal())/(pt_bin_size[i]*y_bin_size[c]);
+		  errLo_array[c][i] = -(signal_res->getAsymErrorLo())/(pt_bin_size[i]*y_bin_size[c]);
+		  errHi_array[c][i] = (signal_res->getAsymErrorHi())/(pt_bin_size[i]*y_bin_size[c]);
+		  errSyst_array[c][i] = bin_systematics(*ws, channel, pt_bin_edges[i], pt_bin_edges[i+1], y_bin_edges[c], y_bin_edges[c+1],signal_res->getVal(), data_selection_input_file, syst)/(pt_bin_size[i]*y_bin_size[c]);
 		}
 	    }
 	}
@@ -595,32 +574,32 @@ int main(int argc, char** argv)
 	      std::cout << "processing subsample: " << y_bin_edges[c] << " < |y| < " << y_bin_edges[c+1] << std::endl;
 	      for(int i=0; i<nptbins; i++)
 		{
-		  std::cout << "calculating pre-filter efficiency: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
+		  std::cout <<"calculating pre-filter efficiency: "<< (int)pt_bin_edges[i] <<" < pt < "<< (int)pt_bin_edges[i+1] << std::endl;
 		  
 		  pt_bin_centres_eff[i] = pt_bin_edges[i] + (pt_bin_edges[i+1]-pt_bin_edges[i])/2;
 		  pt_bin_edges_eff_Lo[i] = pt_bin_centres_eff[i] - pt_bin_edges[i];
 		  pt_bin_edges_eff_Hi[i] = pt_bin_edges[i+1] - pt_bin_centres_eff[i];
 		  
 		  //pre-filter efficiency
-		  pre_filter_eff = prefilter_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1],y_bin_edges[c],y_bin_edges[c+1]);
+		  //pre_filter_eff = prefilter_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1],y_bin_edges[c],y_bin_edges[c+1]);
+		  pre_filter_eff = prefilter_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1],y_bin_edges[0],y_bin_edges[nybins]);
 		 
 		  pre_eff_array[c][i] = pre_filter_eff->getVal();
 		  pre_effLo_array[c][i] = -pre_filter_eff->getAsymErrorLo();
 		  pre_effHi_array[c][i] = pre_filter_eff->getAsymErrorHi();
 		}
 	      //plot of the pre-filter efficiency as a function of pT for each y bin
-	  TCanvas ce;
-	  TGraphAsymmErrors* graph_pre_eff = new TGraphAsymmErrors(nptbins, pt_bin_centres_eff, pre_eff_array[c], pt_bin_edges_eff_Lo, pt_bin_edges_eff_Hi, pre_effLo_array[c], pre_effHi_array[c]);
-	  graph_pre_eff->SetTitle("pre-filter efficiency");
-	  graph_pre_eff->SetMarkerColor(4);
-	  graph_pre_eff->SetMarkerStyle(21);
-	  graph_pre_eff->Draw("AP");
-	  TString eff1_name = "";
-	  eff1_name = "efficiencies/pre_filter_efficiency_" + channel_to_ntuple_name(channel) + "_" + TString::Format("y_from_%.1f_to_%.1f",y_bin_edges[c],y_bin_edges[c+1]) + ".png";
-	  ce.SaveAs(eff1_name);
+	      TCanvas ce;
+	      TGraphAsymmErrors* graph_pre_eff = new TGraphAsymmErrors(nptbins, pt_bin_centres_eff, pre_eff_array[c], pt_bin_edges_eff_Lo, pt_bin_edges_eff_Hi, pre_effLo_array[c], pre_effHi_array[c]);
+	      graph_pre_eff->SetTitle("pre-filter efficiency");
+	      graph_pre_eff->SetMarkerColor(4);
+	      graph_pre_eff->SetMarkerStyle(21);
+	      graph_pre_eff->Draw("AP");
+	      TString eff1_name = "";
+	      eff1_name = "efficiencies/pre_filter_efficiency_" + channel_to_ntuple_name(channel) + "_" + TString::Format("y_from_%.1f_to_%.1f",y_bin_edges[c],y_bin_edges[c+1]) + ".png";
+	      ce.SaveAs(eff1_name);
 	    }
-	}     
-
+	}
       //to calculate reconstruction efficiency
       if(calculate_reco_eff)
 	{
@@ -643,191 +622,127 @@ int main(int argc, char** argv)
 		  reco_effHi_array[c][i] = reco_eff->getAsymErrorHi();
 		}
 	      //plot of the reco efficiency as a function of pT for each y bin
-	  TCanvas cp;
-	  TGraphAsymmErrors* graph_reco_eff = new TGraphAsymmErrors(nptbins, pt_bin_centres_eff, reco_eff_array[c], pt_bin_edges_eff_Lo, pt_bin_edges_eff_Hi, reco_effLo_array[c], reco_effHi_array[c]);
-	  graph_reco_eff->SetTitle("reconstruction efficiency");
-	  graph_reco_eff->SetMarkerColor(4);
-	  graph_reco_eff->SetMarkerStyle(21);
-	  graph_reco_eff->Draw("AP");
-	  TString eff2_name = "";
-	  eff2_name = "efficiencies/reco_efficiency_" + channel_to_ntuple_name(channel) + "_" + TString::Format("y_from_%.1f_to_%.1f",y_bin_edges[c],y_bin_edges[c+1]) + ".png";
-	  cp.SaveAs(eff2_name);
+	      TCanvas cp;
+	      TGraphAsymmErrors* graph_reco_eff = new TGraphAsymmErrors(nptbins, pt_bin_centres_eff, reco_eff_array[c], pt_bin_edges_eff_Lo, pt_bin_edges_eff_Hi, reco_effLo_array[c], reco_effHi_array[c]);
+	      graph_reco_eff->SetTitle("reconstruction efficiency");
+	      graph_reco_eff->SetMarkerColor(4);
+	      graph_reco_eff->SetMarkerStyle(21);
+	      graph_reco_eff->Draw("AP");
+	      TString eff2_name = "";
+	      eff2_name = "efficiencies/reco_efficiency_" + channel_to_ntuple_name(channel) + "_" + TString::Format("y_from_%.1f_to_%.1f",y_bin_edges[c],y_bin_edges[c+1]) + ".png";
+	      cp.SaveAs(eff2_name);
 	    }
 	}
       
+      //to calculate cross section
       for(int j=0; j<nybins; j++)
 	{
 	  for(int i=0; i<nptbins; i++)
 	    {
 	      if(calculate_reco_eff && calculate_pre_filter_eff)
 		{
-		  x_sec_array[j][i] = (yield_array[j][i] / (2  * reco_eff_array[j][i] * pre_eff_array[j][i] * LUMINOSITY * branching_fraction(channel))) * (1e-9);
-		  x_sec_errLo_array[j][i] = (errLo_array[j][i] / (2 * reco_eff_array[j][i] * pre_eff_array[j][i] * LUMINOSITY * branching_fraction(channel))) * (1e-9);
-		  x_sec_errHi_array[j][i] = (errHi_array[j][i] / (2 * reco_eff_array[j][i] * pre_eff_array[j][i] * LUMINOSITY * branching_fraction(channel))) * (1e-9);
+		  x_sec_array[j][i] = (yield_array[j][i] / (2  * reco_eff_array[j][i] * pre_eff_array[j][i] * LUMINOSITY * branching_fraction(channel))) * (1e-9) * pow(10,j);
+		  //need to calculate efficiency first, and propagate its error, this is not the correct error for cross section.or propagate. could propagate the error here, but it is nice to have overall eff for plotting.
+		  x_sec_errLo_array[j][i] = (errLo_array[j][i] / (2 * reco_eff_array[j][i] * pre_eff_array[j][i] * LUMINOSITY * branching_fraction(channel))) * (1e-9) * pow(10,j);
+		  x_sec_errHi_array[j][i] = (errHi_array[j][i] / (2 * reco_eff_array[j][i] * pre_eff_array[j][i] * LUMINOSITY * branching_fraction(channel))) * (1e-9) * pow(10,j);
 		}
 	      else
 		{
-		  x_sec_array[j][i] = yield_array[j][i];
-		  x_sec_errLo_array[j][i] = errLo_array[j][i];
-		  x_sec_errHi_array[j][i] = errHi_array[j][i];
+		  x_sec_array[j][i] = yield_array[j][i] * pow(10,j);
+		  x_sec_errLo_array[j][i] = errLo_array[j][i] * pow(10,j);
+		  x_sec_errHi_array[j][i] = errHi_array[j][i] * pow(10,j);
+		  errSyst_array[j][i] *= pow(10,j);
 		}
 	    }
 	}
 
-      //To show the values of signal_yield and the errors at the end, like a table
+      //To show the values of cross_section and the errors at the end, like a table
       for(int c=0; c<nybins; c++)
 	{
 	  std::cout << "BIN y: " << y_bin_edges[c] << " to " << y_bin_edges[c+1] << " : " << std::endl;
 	  
 	  for(int i=0; i<nptbins; i++)
-	    std::cout << "BIN pt: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " 
-		      <<  yield_array[c][i] << " +" << errHi_array[c][i] << " -"<< errLo_array[c][i] 
-		      << " Syst Error: " << errSyst_array[c][i] << std::endl;
-	  
+	    {
+	      std::cout << "BIN pt: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " <<  x_sec_array[c][i] << " +" << x_sec_errHi_array[c][i] << " -"<< x_sec_errLo_array[c][i] << "+-" << errSyst_array[c][i] << std::endl;
+	    }
+
 	  std::cout << std::endl;
 	}
+      
       //print the branching fraction
       std::cout << "branching fraction: " << branching_fraction(channel) << std::endl;
 
-      //plot of the signal_yield as a function of pt, in the future should be the x-sec corrected by efficiency and other factors
+      //plot of the cross section
       TCanvas cz;
       TPad *pad = new TPad("pad", "pad", 0.05, 0.05, 0.99, 0.99);
-      //      pad->cd();
-      pad->Draw();
-      /*
-      TH1D* empty;
-       
-      if(calculate_pre_filter_eff && calculate_reco_eff)
-	{
-	  empty = new TH1D("Cross Section in p_{T} Bins", "Cross Section in p_{T} Bins; p_{T} [GeV]; d#sigma /dp_{T}", nptbins, 0, 100);
-	  empty->SetMinimum(1e-4);
-	  empty->SetMaximum(10);
-	  empty->Draw("hist");
-	}
-      else if(yield_sub_samples=="pt")
-	{
-	  empty = new TH1D("Raw Signal Yield in p_{T} Bins", "Raw Signal Yield in p_{T} Bins; p_{T} [GeV]; Signal Yield", nptbins, 0, 100);
-	  empty->SetMinimum(1);
-	  empty->SetMaximum(4e4);
-	  empty->Draw("hist");
-	}	  
-      else if(yield_sub_samples=="pt/y")
-	{
-	  empty = new TH1D("Raw Signal Yield in p_{T} and y Bins", "Raw Signal Yield in p_{T} Bins; p_{T} [GeV]; Signal Yield", nptbins, 0, 100);
-	  empty->SetMinimum(1);
-	  empty->SetMaximum(4e10);
-	  empty->Draw("hist");
-	}
-      */
+      pad->Draw();      
       TLegend *leg = new TLegend (0.65, 0.65, 0.85, 0.85);
-
-      //systematics erros
-      if(syst)
-	{
-	  TGraphAsymmErrors* graph_syst = new TGraphAsymmErrors(nptbins, pt_bin_means, x_sec_array[0], pt_bin_edges_Lo, pt_bin_edges_Hi, 
-								errSyst_array[0], errSyst_array[0]);
-	  graph_syst->SetTitle("Cross Section in Pt bins");
-	  graph_syst->SetFillColor(2);
-	  graph_syst->SetFillStyle(3001);
-	  graph_syst->GetXaxis()->SetTitle("p_{T} [GeV]");
-	  graph_syst->GetYaxis()->SetTitle("Signal Yield");
-	  graph_syst->GetYaxis()->SetRangeUser(1e-4, 1);
-          graph_syst->Draw("a2 same");
-	}
-
-      TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_means, x_sec_array[0], pt_bin_edges_Lo, pt_bin_edges_Hi, 
-						       x_sec_errLo_array[0], x_sec_errHi_array[0]);
-      graph->SetTitle("Cross Section in Pt bins");
-      graph->SetMarkerColor(2);
-      graph->SetMarkerSize(0.5);
-      graph->SetMarkerStyle(20);
-      graph->GetXaxis()->SetTitle("p_{T} [GeV]");
-      graph->GetYaxis()->SetTitle("Signal Yield");
-      graph->GetYaxis()->SetRangeUser(1e-4, 1);
-      graph->Draw("p same");
-
-
-      TLatex * tex = new TLatex(0.68,0.85,"2.71 fb^{-1} (13 TeV)");
+      
+      TLatex * tex = new TLatex(0.69,0.91,TString::Format("%.2f fb^{-1} (13 TeV)",LUMINOSITY));
       tex->SetNDC(kTRUE);
       tex->SetLineWidth(2);
       tex->SetTextSize(0.04);
       tex->Draw();
-      tex = new TLatex(0.12,0.85,"CMS Preliminary");
+      tex = new TLatex(0.11,0.91,"CMS Preliminary");
       tex->SetNDC(kTRUE);
       tex->SetTextFont(42);
       tex->SetTextSize(0.04);
       tex->SetLineWidth(2);
       tex->Draw();
       
-      if(yield_sub_samples=="pt/y"){      leg->AddEntry(graph, "(#times 10^{3}) 0<|y|<0.5", "lp");
-      //      if(yield_sub_samples=="pt")      leg->AddEntry(graph, "|y|>0", "lp");
-           
-      for(int i=1; i<nybins; i++)
+      for(int i=0; i<nybins; i++)
 	{
-	  //systematics erros
+	  TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_means, x_sec_array[i], pt_bin_edges_Lo, pt_bin_edges_Hi, x_sec_errLo_array[i], x_sec_errHi_array[i]);
+	  graph->SetTitle("Differential cross section");
+	  graph->SetMarkerColor(i+2);
+	  graph->SetMarkerSize(0.5);
+	  graph->SetMarkerStyle(20+i);
+	  
+	  //draw this for the first rapidity bin, or in case there is only one rapidity bin.
+	  if(i==0) 
+	    {
+	      graph->GetXaxis()->SetTitle("p_{T}(B) [GeV]");
+	      graph->GetYaxis()->SetTitle("d#sigma/dp_{T} [#mub/GeV]");
+	      //to set the range of the plot, it takes the min and max value of cross section.
+	      graph->GetYaxis()->SetRangeUser(0.1*x_sec_array[0][nptbins-1],5*x_sec_array[nybins-1][0]);
+	      graph->Draw("ap same");
+	      //print the rapidity bin
+	      leg->AddEntry(graph, TString::Format("%.1f < |y| < %.1f",y_bin_edges[i],y_bin_edges[i+1]), "lp");
+	    }
+	  else //for the rest of the rapidity bins.
+	    {     
+	      graph->Draw("p same");
+	      leg->AddEntry(graph, TString::Format("(#times 10^{%d}) %.1f < |y| < %.1f",i,y_bin_edges[i],y_bin_edges[i+1]), "lp");
+	    }
+
+	  //systematic errors
 	  if(syst)
-	    {
-	      TGraphAsymmErrors* graph2_syst = new TGraphAsymmErrors(nptbins, pt_bin_means, yield_array[i], pt_bin_edges_Lo, pt_bin_edges_Hi, 
-								     errSyst_array[i], errSyst_array[i]);
-	      graph2_syst->SetTitle("Raw signal yield in Pt bins");
-	      graph2_syst->SetFillColor(i+2);
-	      graph2_syst->SetFillStyle(3001);
-	      graph2_syst->Draw("a2 same");
-	    }
-
-	  TGraphAsymmErrors* graph2 = new TGraphAsymmErrors(nptbins, pt_bin_means, x_sec_array[i], pt_bin_edges_Lo, pt_bin_edges_Hi, x_sec_errLo_array[i], x_sec_errHi_array[i]);
-	  graph2->SetTitle("Raw signal yield in Pt bins");
-	  graph2->SetMarkerColor(i+2);
-	  graph2->SetMarkerSize(0.5);
-	  graph2->SetMarkerStyle(20);
-	  //graph2->Draw("a2 same");
-	  graph2->Draw("p same");
-	  if(i==1)
-	    leg->AddEntry(graph2,"(#times 10^{2}) 0.5<|y|<1", "lp");
-
-	  if(i==2)
-	    leg->AddEntry(graph2,"(#times 10) 1<|y|<1.5", "lp");
-
-	  if(i==3)
-	    {
-	      leg->AddEntry(graph2," 1.5<|y|<2.25", "lp");
-	      //	      empty->SetMaximum(graph2->GetMaximum());
-	    }
-	  /*    graph2->GetYaxis()->SetMinimum(0.);
-		graph2->GetYaxis()->SetMaximum(3000000.);*/
-	}
-      }
-      //Legend(channel, 0,0,0);
+	  {
+	  TGraphAsymmErrors* graph_syst = new TGraphAsymmErrors(nptbins, pt_bin_means, x_sec_array[i], pt_bin_edges_Lo, pt_bin_edges_Hi, errSyst_array[i], errSyst_array[i]);
+	  graph_syst->SetFillColor(i+2);
+	  graph_syst->SetFillStyle(3001);
+	  graph_syst->Draw("2 same");
+	  }
+	}//end of the ybins for
+      
       if(yield_sub_samples=="pt/y") yield_sub_samples="pt_y";
+      
       leg->Draw("same");
-
-      /*      TH1D* empty2;
-      if(yield_sub_samples=="pt")
-	{
-	  empty2 = new TH1D("Raw Signal Yield in p_{T} Bins", "Raw Signal Yield in p_{T} Bins; p_{T} [GeV]; Signal Yield", nptbins, 0, 100);
-	  empty2->SetMinimum(1);
-	  empty2->SetMaximum(4e4);
-	  empty2->Draw("hist same");
-	}	  
-      else if(yield_sub_samples=="pt/y")
-	{
-	  empty2 = new TH1D("Raw Signal Yield in p_{T} and y Bins", "Raw Signal Yield in p_{T} Bins; p_{T} [GeV]; Signal Yield", nptbins, 0, 100);
-	  empty2->SetMinimum(1);
-	  empty2->SetMaximum(4e10);
-	  empty2->Draw("hist same");
-	}
-      */
-
       cz.Update();
       cz.SetLogy();
-      if(calculate_pre_filter_eff && calculate_reco_eff)
-	cz.SaveAs("signal_yield/x_sec_" + yield_sub_samples + "_bins_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + ".png");
-      else
-	cz.SaveAs("signal_yield/signal_yield_" + yield_sub_samples + "_bins_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + ".png");
       
+      if(calculate_pre_filter_eff && calculate_reco_eff)
+	{
+	cz.SaveAs("signal_yield/x_sec_" + yield_sub_samples + "_bins_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + ".png");
+	cz.SaveAs("signal_yield/x_sec_" + yield_sub_samples + "_bins_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + ".C");
+	}
+      else
+	{
+	  cz.SaveAs("signal_yield/signal_yield_" + yield_sub_samples + "_bins_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + ".png");
+	  cz.SaveAs("signal_yield/signal_yield_" + yield_sub_samples + "_bins_" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + ".C");
+	}
     }//end of else
 }//end of signal_yield_new
-
 
 RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, int mcstudy)
 {
@@ -866,14 +781,10 @@ RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_
   model_cut->fitTo(*data_cut,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
 
   TString dir = "";
-  dir = "pt_bin_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "mass_fit_" + TString::Format("pt_from_%d_to_%d_y_from_%lf_to_%lf",(int)pt_min,(int)pt_max,y_min,y_max);
+  dir = "pt_bin_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "_mass_fit_" + TString::Format("pt_from_%d_to_%d_y_from_%lf_to_%lf",(int)pt_min,(int)pt_max,y_min,y_max);
   
   plot_mass_fit(ws_cut,channel,dir, (int) pt_max, (int) pt_min);
-
-  //how to put the legend indicating each pt bin ??
-  //change the plot_mass_fit to output a TCanvas, and write the legend on top after, and then have a function just to save the plots.
-  //Legend(channel,(int)pt_bin_lo,(int)pt_bin_hi,1);
-  
+ 
   signal_res = ws_cut.var("n_signal");
   
   if(mcstudy)
@@ -893,22 +804,20 @@ RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_
 		  
       TCanvas c;
       f_param_signal->Draw();
-      c.SaveAs("bin_mcstudy/param_signal.png");
+      c.SaveAs("mcstudy_bin/param_signal.png");
 
       TCanvas c2;
       f_error_signal->Draw();
-      c2.SaveAs("bin_mcstudy/error_signal.png");
+      c2.SaveAs("mcstudy_bin/error_signal.png");
 	  
       TCanvas c3;
       f_pull_signal->Draw();
-      c3.SaveAs("bin_mcstudy/pull_signal.png");
+      c3.SaveAs("mcstudy_bin/pull_signal.png");
 
       TCanvas c4;
       f_nll->Draw();
-      c4.SaveAs("bin_mcstudy/nll_signal.png");
+      c4.SaveAs("mcstudy_bin/nll_signal.png");
     }
-
-
   return signal_res;
 }
 
@@ -954,13 +863,6 @@ double bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, 
   
   plot_mass_fit(ws_cut,channel,dir, (int) pt_max, (int) pt_min);
 
-  //how to put the legend indicating each pt bin ??
-  //change the plot_mass_fit to output a TCanvas, and write the legend on top after, and then have a function just to save the plots.
-  //Legend(channel,(int)pt_bin_lo,(int)pt_bin_hi,1);
-  
-  /*  signal_res = ws_cut.var("n_signal");
-  
-      return signal_res;*/
   return (ws_cut.var("n_signal")->getVal());
 }
 
@@ -1005,18 +907,10 @@ double bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, 
   
   plot_mass_fit(ws_cut,channel,dir, (int) pt_max, (int) pt_min);
 
-  //how to put the legend indicating each pt bin ??
-  //change the plot_mass_fit to output a TCanvas, and write the legend on top after, and then have a function just to save the plots.
-  //Legend(channel,(int)pt_bin_lo,(int)pt_bin_hi,1);
-  
-  /*  signal_res = ws_cut.var("n_signal");
-  
-      return signal_res;*/
   return (ws_cut.var("n_signal")->getVal());
 }
 
-double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_max, double y_min, double y_max, 
-		       double signal_res, TString data_selection_input_file, int syst)
+double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_max, double y_min, double y_max,double signal_res, TString data_selection_input_file, int syst)
 {
   if(syst==0) return 0.;
   std::vector<std::string> background = {"2exp", "bern", "power"};
@@ -1087,6 +981,7 @@ double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_m
       set_up_workspace_variables(*ws1,channel,mass_min[i],mass_max[1-i]);
       //read data from the selected data file, and import it as a dataset into the workspace.
       read_data(*ws1, data_selection_input_file,channel);
+      
       range_syst.push_back(bin_mass_fit(*ws1, channel, pt_min, pt_max, y_min, y_max, mass_min[i], mass_max[1-i]));
 
       std::cout << std::endl << std::endl << std::endl << " range_syst[" << i+1 << "]: " << range_syst[i+1] << std::endl << std::endl << std::endl;
@@ -1318,7 +1213,6 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high,
   p2->cd();
   pull_plot->Draw();
   
-  c1->SaveAs(directory + ".root");
   c1->SaveAs(directory + ".png"); }
 
 void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
@@ -1503,7 +1397,6 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory)
   p2->cd();
   pull_plot->Draw();
 
-  c1->SaveAs(directory + ".root");
   c1->SaveAs(directory + ".png"); 
 }
 
@@ -1517,7 +1410,7 @@ void plot_pt_dist(RooWorkspace& w, int channel, TString directory)
   TH1D* pt_dist = (TH1D*)data->createHistogram("pt_dist",pt);
   pt_dist->Draw();
   c2.SetLogy();
-  //c2.SaveAs(directory + ".root");
+  
   c2.SaveAs(directory + ".png");
 }
 
@@ -1909,93 +1802,6 @@ void set_up_workspace_variables(RooWorkspace& w, int channel, double mass_min, d
   w.import(y);
 }
 
-
-TString channel_to_ntuple_name(int channel)
-{
-  //returns a TString with the ntuple name corresponding to the channel. It can be used to find the data on each channel saved in a file. or to write the name of a directory
-
-  TString ntuple_name = "";
-
-  switch(channel){
-  default:
-  case 1:
-    ntuple_name="ntkp";
-    break;
-  case 2:
-    ntuple_name="ntkstar";
-    break;
-  case 3:
-    ntuple_name="ntks";
-    break;
-  case 4:
-    ntuple_name="ntphi";
-    break;
-  case 5:
-    ntuple_name="ntmix";
-    break;
-  case 6:
-    ntuple_name="ntlambda";
-    break;
-  }
-  return ntuple_name;
-}
-
-TString channel_to_xaxis_title(int channel)
-{
-  TString xaxis_title = "";
-
-  switch (channel) {
-  default:
-  case 1:
-    xaxis_title = "M_{J/#psi K^{#pm}} [GeV]";
-    break;
-  case 2:
-    xaxis_title = "M_{J/#psi K^{#pm}#pi^{#mp}} [GeV]";
-    break;
-  case 3:
-    xaxis_title = "M_{J/#psi K^{0}_{S}} [GeV]";
-    break;
-  case 4:
-    xaxis_title = "M_{J/#psi K^{#pm}K^{#mp}} [GeV]";
-    break;
-  case 5:
-    xaxis_title = "M_{J/#psi #pi^{#pm}#pi^{#mp}} [GeV]";
-    break;
-  case 6:
-    xaxis_title = "M_{J/#psi #Lambda} [GeV]";
-    break;
-  }
-  return xaxis_title;
-}
-
-int channel_to_nbins(int channel)
-{
-  int nbins;
-
-  switch (channel) {
-  default:
-  case 1:
-    nbins = 50;
-    break;
-  case 2:
-    nbins = 50;
-    break;
-  case 3:
-    nbins = 50;
-    break;
-  case 4:
-    nbins = 50;
-    break;
-  case 5:
-    nbins = 80;
-    break;
-  case 6:
-    nbins = 50;
-    break;
-  }
-  return nbins;
-}
-
 void create_dir(std::vector<std::string> list)
 {
   //to create the directories needed to save the output files, like .png and .root
@@ -2122,87 +1928,95 @@ RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max, doub
 
 RooRealVar* reco_efficiency(int channel, double pt_min, double pt_max, double y_min, double y_max)
 {
-  //read monte carlo without cuts
+  //------------read monte carlo without cuts-----------------------------
   TString mc_input_no_cuts = TString::Format(BASE_DIR) + "reduced_" + channel_to_ntuple_name(channel) + "_bmuonfilter_no_cuts.root";
   TFile *fin_no_cuts = new TFile(mc_input_no_cuts);
   TTree *tin_no_cuts = (TTree*)fin_no_cuts->Get(channel_to_ntuple_name(channel));
 
-  //TNtupleD* mc_1 = (TNtupleD*)fin_no_cuts->Get(channel_to_ntuple_name(channel));
+  double pt, eta, mass, y, mu1pt, mu1eta, mu2pt, mu2eta;
 
-  ReducedBranches mc_1;
-  mc_1.setbranchadd(tin_no_cuts);
-
-  //read monte carlo with cuts
-  // TString mc_input_with_cuts = TString::Format(BASE_DIR) + "reduced_" + channel_to_ntuple_name(channel) + "_bmuonfilter_with_cuts.root";
-  TString mc_input_with_cuts = TString::Format(BASE_DIR) + "selected_mc_" + channel_to_ntuple_name(channel) + "_bmuonfilter_with_cuts.root";
-  TFile *fin_with_cuts = new TFile(mc_input_with_cuts);
-  TTree *tin_with_cuts = (TTree*)fin_with_cuts->Get(channel_to_ntuple_name(channel));
+  tin_no_cuts->SetBranchAddress("pt",&pt);
+  tin_no_cuts->SetBranchAddress("eta",&eta);
+  tin_no_cuts->SetBranchAddress("mass",&mass);
+  tin_no_cuts->SetBranchAddress("y",&y);
+  tin_no_cuts->SetBranchAddress("mu1pt",&mu1pt);
+  tin_no_cuts->SetBranchAddress("mu1eta",&mu1eta);
+  tin_no_cuts->SetBranchAddress("mu2pt",&mu2pt);
+  tin_no_cuts->SetBranchAddress("mu2eta",&mu2eta);
   
-  //TNtupleD* mc_2 = (TNtupleD*)fin_with_cuts->Get(channel_to_ntuple_name(channel));
-
-  ReducedBranches mc_2;
-  mc_2.setbranchadd(tin_with_cuts);
-
   //use histograms to count the events, and TEfficiency for efficiency, because it takes care of the errors and propagation
   TH1D* hist_tot = new TH1D("hist_tot","hist_tot",1,pt_min,pt_max);
-  TH1D* hist_passed = new TH1D("hist_passed","hist_passed",1,pt_min,pt_max);
-
-  Printf("counting no_cuts \n");
-
+  
   for (int evt=0;evt<tin_no_cuts->GetEntries();evt++)
     {
       tin_no_cuts->GetEntry(evt);
       
-      if (fabs(mc_1.y)<y_min || fabs(mc_1.y)>y_max) continue; // within the y binning
+      if (fabs(y)<y_min || fabs(y)>y_max) continue; // within the y binning
       
-      if (fabs(mc_1.eta) > 2.4) continue; //B mesons inside the detector region eta < 2.4
-      if (fabs(mc_1.mass) < 5 || mc_1.mass > 5.5) continue;
+      if (fabs(eta) > 2.4) continue; //B mesons inside the detector region eta < 2.4
+      if (fabs(mass) < 5 || mass > 5.5) continue;
                  
-      bool muon1Filter = fabs(mc_1.mu1eta)<2.4 && mc_1.mu1pt>2.8;
-      bool muon2Filter = fabs(mc_1.mu2eta)<2.4 && mc_1.mu2pt>2.8;
+      bool muon1Filter = fabs(mu1eta)<2.4 && mu1pt>2.8;
+      bool muon2Filter = fabs(mu2eta)<2.4 && mu2pt>2.8;
  
-      if (muon1Filter && muon2Filter) hist_tot->Fill(mc_1.pt);//count only the events with the muon selection above
+      if (muon1Filter && muon2Filter) hist_tot->Fill(pt);//count only the events with the muon selection above
       
       //hist_tot->Fill(mc_1.pt);
     }
-  
-    Printf("counting with_cuts \n");
+   
+    //--------------------------------read monte carlo with cuts------------------------
+    TString mc_input_with_cuts = TString::Format(BASE_DIR) + "selected_mc_" + channel_to_ntuple_name(channel) + "_bmuonfilter_with_cuts.root";
+    TFile *fin_with_cuts = new TFile(mc_input_with_cuts);
+    TTree *tin_with_cuts = (TTree*)fin_with_cuts->Get(channel_to_ntuple_name(channel));
+    
+    //re-use the variables from above    
+    tin_with_cuts->SetBranchAddress("pt",&pt);
+    tin_with_cuts->SetBranchAddress("eta",&eta);
+    tin_with_cuts->SetBranchAddress("mass",&mass);
+    tin_with_cuts->SetBranchAddress("y",&y);
+    tin_with_cuts->SetBranchAddress("mu1pt",&mu1pt);
+    tin_with_cuts->SetBranchAddress("mu1eta",&mu1eta);
+    tin_with_cuts->SetBranchAddress("mu2pt",&mu2pt);
+    tin_with_cuts->SetBranchAddress("mu2eta",&mu2eta);
+    
+    TH1D* hist_passed = new TH1D("hist_passed","hist_passed",1,pt_min,pt_max);
 
-  for (int evt=0;evt<tin_with_cuts->GetEntries();evt++)
-    {
-      tin_with_cuts->GetEntry(evt);
-      
-      if (fabs(mc_2.y)<y_min || fabs(mc_2.y)>y_max) continue; // within the y binning
-
-      if (fabs(mc_2.eta) > 2.4) continue; //B mesons inside the detector region eta < 2.4
-      if (fabs(mc_2.mass) < 5 || mc_2.mass > 5.5) continue;
-      
-      bool muon1Filter = fabs(mc_2.mu1eta)<2.4 && mc_2.mu1pt>2.8;
-      bool muon2Filter = fabs(mc_2.mu2eta)<2.4 && mc_2.mu2pt>2.8;
- 
-      if (muon1Filter && muon2Filter) hist_passed->Fill(mc_2.pt);//count only the events with the muon selection above
-    }
- //calculates the efficiency by dividing the histograms
-  TEfficiency* efficiency = new TEfficiency(*hist_passed, *hist_tot);
-  
-  double eff;
-  double eff_lo;
-  double eff_hi;
-
-  eff = efficiency->GetEfficiency(1);
-  eff_lo = efficiency->GetEfficiencyErrorLow(1);
-  eff_hi = efficiency->GetEfficiencyErrorUp(1);
-  
-  RooRealVar* eff2 = new RooRealVar("eff2","eff2",eff);
-  eff2->setAsymError(-eff_lo,eff_hi);
-
-  fin_no_cuts->Close();
-  delete fin_no_cuts;
-
-  fin_with_cuts->Close();
-  delete fin_with_cuts;
-
-  return eff2;
+    for (int evt=0;evt<tin_with_cuts->GetEntries();evt++)
+      {
+	tin_with_cuts->GetEntry(evt);
+	
+	if (fabs(y)<y_min || fabs(y)>y_max) continue; // within the y binning
+	
+	if (fabs(eta) > 2.4) continue; //B mesons inside the detector region eta < 2.4
+	if (fabs(mass) < 5 || mass > 5.5) continue;
+	
+	bool muon1Filter = fabs(mu1eta)<2.4 && mu1pt>2.8;
+	bool muon2Filter = fabs(mu2eta)<2.4 && mu2pt>2.8;
+	
+	if (muon1Filter && muon2Filter) hist_passed->Fill(pt);//count only the events with the muon selection above
+      }
+    
+    //calculates the efficiency by dividing the histograms
+    TEfficiency* efficiency = new TEfficiency(*hist_passed, *hist_tot);
+    
+    double eff;
+    double eff_lo;
+    double eff_hi;
+    
+    eff = efficiency->GetEfficiency(1);
+    eff_lo = efficiency->GetEfficiencyErrorLow(1);
+    eff_hi = efficiency->GetEfficiencyErrorUp(1);
+    
+    RooRealVar* eff2 = new RooRealVar("eff2","eff2",eff);
+    eff2->setAsymError(-eff_lo,eff_hi);
+    
+    fin_no_cuts->Close();
+    delete fin_no_cuts;
+    
+    fin_with_cuts->Close();
+    delete fin_with_cuts;
+    
+    return eff2;
 }
 
 double branching_fraction(int channel)
