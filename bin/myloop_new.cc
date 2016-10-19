@@ -8,15 +8,13 @@
 #include "UserCode/B_production_x_sec_13_TeV/interface/format.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/myloop.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/channel.h"
-//#include "json_50nsMuonPhysV2_processed.h"
 
-//myloop --channel 2 --mc 1 --cuts 1 --dir /some/place
+//myloop --channel 1 --mc 1 --cuts 1 --dir /some/place
 int main(int argc, char** argv)
 {
-  int channel = 0;
+  int channel = 1;
   int run_on_mc= 0;
   int cuts = 1;
-  int bfilter = 1;
   std::string dir ="";
 
   for(int i=1 ; i<argc ; ++i)
@@ -42,12 +40,6 @@ int main(int argc, char** argv)
           convert >> cuts;
         }
 
-      if(argument == "--bfilter")
-	{
-          convert << argv[++i];
-          convert >> bfilter;
-        }
-      
       if(argument == "--dir")
         {
           convert << argv[++i];
@@ -62,6 +54,7 @@ int main(int argc, char** argv)
       return 0;
     }
   */
+
     TChain *root = new TChain("demo/root");
     TChain *HltTree = new TChain("hltanalysis/HltTree");
 
@@ -71,50 +64,23 @@ int main(int argc, char** argv)
 	  {
 	  default:
 	  case 1:
-	    if(bfilter)
-	      {
-		//for Bfilter processed with Bfinder_mc.py	    
-		root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_mc_Bu_Bfilter_v1/BuToJpsiKV2_BFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_mc_Bu_Bfilter_v1/160812_095709/0000/Bfinder_mc_*.root");
-		HltTree->Add("/gstore/t3cms/store/user/martinsg/Bfinder_mc_Bu_Bfilter_v1/BuToJpsiKV2_BFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_mc_Bu_Bfilter_v1/160812_095709/0000/Bfinder_mc_*.root");
-	      }
-	    else
-	      {
-		//for BMuonFilter processed with Bfinder_mc	    
-		root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_test_v2/BuToJpsiKV2_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_test_v2/160811_210322/0000/Bfinder_mc_*.root");
-		HltTree->Add("/gstore/t3cms/store/user/martinsg/Bfinder_test_v2/BuToJpsiKV2_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_test_v2/160811_210322/0000/Bfinder_mc_*.root");
-	      }
+	    //for BMuonFilter processed with Bfinder_mc	    
+	    root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_test_v2/BuToJpsiKV2_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_test_v2/160811_210322/0000/Bfinder_mc_*.root");
+	    HltTree->Add("/gstore/t3cms/store/user/martinsg/Bfinder_test_v2/BuToJpsiKV2_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_test_v2/160811_210322/0000/Bfinder_mc_*.root");
 	    break;
 
 	  case 2:
-	    if(bfilter)
-	      {
-		//for Bfilter processed with Bfinder_mc.py
-		root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_mc_Bd_Bfilter_v1/BdToJpsiKstarV2_BFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_mc_Bd_Bfilter_v1/160812_115744/0000/Bfinder_mc_*.root");
-		HltTree->Add("/gstore/t3cms/store/user/martinsg/Bfinder_mc_Bd_Bfilter_v1/BdToJpsiKstarV2_BFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_mc_Bd_Bfilter_v1/160812_115744/0000/Bfinder_mc_*.root");
-	      }
-	    else
-	      {
-		//for BMuonFilter processed with Bfinder_mc
-		root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_mc_Bd_muonfilter_v1/BdToJpsiKstarV2_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_mc_Bd_muonfilter_v1/160812_135133/0000/Bfinder_mc_*.root");
-		HltTree->Add("/gstore/t3cms/store/user/martinsg/Bfinder_mc_Bd_muonfilter_v1/BdToJpsiKstarV2_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_mc_Bd_muonfilter_v1/160812_135133/0000/Bfinder_mc_*.root");
-	      }
+	    //for BMuonFilter processed with Bfinder_mc
+	    root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_mc_Bd_muonfilter_v1/BdToJpsiKstarV2_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_mc_Bd_muonfilter_v1/160812_135133/0000/Bfinder_mc_*.root");
+	    HltTree->Add("/gstore/t3cms/store/user/martinsg/Bfinder_mc_Bd_muonfilter_v1/BdToJpsiKstarV2_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_mc_Bd_muonfilter_v1/160812_135133/0000/Bfinder_mc_*.root");
 	    break;
 	  case 3:
 	    break;
 
 	  case 4:
-	    if(bfilter)
-	      {
-	    //for Bfilter processed with Bfinder_mc.py
-	    root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_mc_Bs_Bfilter_v3/BsToJpsiPhi_BFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_mc_Bs_Bfilter_v3/160812_235643/0000/Bfinder_mc_*.root");
-	    HltTree->Add("/gstore/t3cms/store/user/martinsg/Bfinder_mc_Bs_Bfilter_v3/BsToJpsiPhi_BFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_mc_Bs_Bfilter_v3/160812_235643/0000/Bfinder_mc_*.root");
-	      }
-	    else
-	      {
-		//for BMuonFilter processed with Bfinder_mc.py
-		root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_mc_Bs_muonfilter_v1/BsToJpsiPhi_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_mc_Bs_muonfilter_v1/160812_151233/0000/Bfinder_mc_*.root");
-		HltTree->Add("/gstore/t3cms/store/user/martinsg/Bfinder_mc_Bs_muonfilter_v1/BsToJpsiPhi_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_mc_Bs_muonfilter_v1/160812_151233/0000/Bfinder_mc_*.root");
-	      }
+	    //for BMuonFilter processed with Bfinder_mc.py
+	    root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_mc_Bs_muonfilter_v1/BsToJpsiPhi_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_mc_Bs_muonfilter_v1/160812_151233/0000/Bfinder_mc_*.root");
+	    HltTree->Add("/gstore/t3cms/store/user/martinsg/Bfinder_mc_Bs_muonfilter_v1/BsToJpsiPhi_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_mc_Bs_muonfilter_v1/160812_151233/0000/Bfinder_mc_*.root");
 	    break;
 
 	  case 5:
@@ -155,14 +121,14 @@ int main(int argc, char** argv)
     // setting memory addresses to the branches
     // create new output trees
 
-    //GenInfoBranches *GenInfo = new GenInfoBranches;    
+    GenInfoBranches *GenInfo = new GenInfoBranches;    
     EvtInfoBranches *EvtInfo = new EvtInfoBranches;
     VtxInfoBranches *VtxInfo = new VtxInfoBranches;
     MuonInfoBranches *MuonInfo = new MuonInfoBranches;
     TrackInfoBranches *TrackInfo = new TrackInfoBranches;
     BInfoBranches *BInfo = new BInfoBranches;
     
-    //GenInfo->setbranchadd(root);
+    GenInfo->setbranchadd(root);
     EvtInfo->setbranchadd(root);
     VtxInfo->setbranchadd(root);
     MuonInfo->setbranchadd(root);
@@ -187,12 +153,7 @@ int main(int argc, char** argv)
     else
       filter = "no_cuts";
     
-    if(bfilter)
-      bf = "bfilter";
-    else
-      bf = "bmuonfilter";
-    
-    directory = "myloop_new_" + channel_to_ntuple_name(channel) + "_" + bf + "_" + filter + ".root";
+    directory = "myloop_new_" + channel_to_ntuple_name(channel) + "_" + filter + ".root";
 
     if(dir != "")
       directory = dir + directory;
@@ -230,22 +191,6 @@ int main(int argc, char** argv)
         root->GetEntry(evt);
         HltTree->GetEntry(evt);
 
-	/* 
-        //-----------------------------------------------------------------
-        // Do json file filtering
-        bool be_skip = true;
-        for (int i=0; i<N_LUMI_PROCESSED; i++) {
-            if (EvtInfo->RunNo==lumi_processed[i][0] &&
-                EvtInfo->LumiNo>=lumi_processed[i][1] &&
-                EvtInfo->LumiNo<=lumi_processed[i][2]) {
-                be_skip = false;
-                break;
-            }
-        }
-        if (be_skip) continue; 
-        */
-        //-----------------------------------------------------------------
-
         // verify the Run # and Event #
 
         if (EvtInfo->EvtNo!=(int)HltTree_Event || EvtInfo->RunNo!=HltTree_Run) 
@@ -253,12 +198,121 @@ int main(int argc, char** argv)
             printf("Error: mismatch of event # and run #.\n");
             return 0;
 	  }
+
+	int gen_b_count = 0;
+	TLorentzVector gen_v4_b[8];
+	TVector3 gen_vtx_b[8], gen_vtx_uj[8];
+	
+	if(run_on_mc)
+	  {
+	    // Look for indices of the whole decay tree
+	    
+	    int idx_b    = -1;
+	    int idx_jpsi = -1;
+	    int idx_tktk = -1;
+	    int idx_tk1  = -1;
+	    int idx_tk2  = -1;
+	    int idx_mu1  = -1;
+	    int idx_mu2  = -1;
+	    
+	    for (int idx = 0; idx < GenInfo->size; idx++)
+	      {
+		switch(channel)
+		  {
+		  default:
+		  case 1:
+		    idx_b    = idx;
+		    idx_jpsi = GenInfo->da1[idx_b];
+		    idx_tk1  = GenInfo->da2[idx_b];
+		    idx_mu1  = GenInfo->da1[idx_jpsi];
+		    idx_mu2  = GenInfo->da2[idx_jpsi];
+		    
+		    if (abs(GenInfo->pdgId[idx_b])!=521) continue; // not B+
+		    if (GenInfo->pdgId[idx_jpsi]!=443) continue; // not J/psi
+		    if (abs(GenInfo->pdgId[idx_tk1])!=321) continue; // not K+-
+		    if (abs(GenInfo->pdgId[idx_mu1])!=13) continue; // not mu+-
+		    if (abs(GenInfo->pdgId[idx_mu2])!=13) continue; // not mu+-
+		    break;
+		    
+		  case 2:
+		    idx_b    = idx;
+		    idx_jpsi = GenInfo->da1[idx_b];
+		    idx_tktk = GenInfo->da2[idx_b];
+		    idx_tk1  = GenInfo->da1[idx_tktk];
+		    idx_tk2  = GenInfo->da2[idx_tktk];
+		    idx_mu1  = GenInfo->da1[idx_jpsi];
+		    idx_mu2  = GenInfo->da2[idx_jpsi];
+
+		    if (abs(GenInfo->pdgId[idx_b])!=511) continue; // not B0
+		    if (GenInfo->pdgId[idx_jpsi]!=443) continue; // not J/psi
+		    if (abs(GenInfo->pdgId[idx_tktk])!=313) continue; // not K*0
+		    if ((GenInfo->pdgId[idx_tk1]!=321 || GenInfo->pdgId[idx_tk2]!=-211) &&
+			(GenInfo->pdgId[idx_tk1]!=-321 || GenInfo->pdgId[idx_tk2]!=211)) continue; //not k+pi- and k-pi+
+		    if (abs(GenInfo->pdgId[idx_mu1])!=13) continue; // not mu+-
+		    if (abs(GenInfo->pdgId[idx_mu2])!=13) continue; // not mu+-
+		    break;
+
+		  case 3:
+		    Printf("Please add the decay chain info in myloop_new.cc");
+		    return 0;
+		    break;
+		    
+		  case 4:
+		    idx_b    = idx;
+		    idx_jpsi = GenInfo->da1[idx_b];
+		    idx_tktk = GenInfo->da2[idx_b];
+		    idx_tk1  = GenInfo->da1[idx_tktk];
+		    idx_tk2  = GenInfo->da2[idx_tktk];
+		    idx_mu1  = GenInfo->da1[idx_jpsi];
+		    idx_mu2  = GenInfo->da2[idx_jpsi];
+
+		    if (abs(GenInfo->pdgId[idx_b])!=531) continue; // not Bs
+		    if (GenInfo->pdgId[idx_jpsi]!=443) continue; // not J/psi
+		    if (abs(GenInfo->pdgId[idx_tktk])!=333) continue; // not phi
+		    if ((GenInfo->pdgId[idx_tk1]!=321 || GenInfo->pdgId[idx_tk2]!=-321) && 
+			(GenInfo->pdgId[idx_tk1]!=-321 || GenInfo->pdgId[idx_tk2]!=321)) continue; //not k+k- and k-k+
+		    if (abs(GenInfo->pdgId[idx_mu1])!=13) continue; // not mu+-
+		    if (abs(GenInfo->pdgId[idx_mu2])!=13) continue; // not mu+
+		    break;
+
+		  case 5:
+		    Printf("Please add the decay chain info in myloop_new.cc");
+		    return 0;
+		    break;
+
+		  case 6:
+		    Printf("Please add the decay chain info in myloop_new.cc");
+		    return 0;
+		    break;
+		  }
+		
+		TLorentzVector v4_b_cand;
+		v4_b_cand.SetPtEtaPhiM(GenInfo->pt[idx_b],GenInfo->eta[idx_b],GenInfo->phi[idx_b],GenInfo->mass[idx_b]);
+		
+		bool muon1Filter = fabs(GenInfo->eta[idx_mu1])<2.4 && GenInfo->pt[idx_mu1]>2.8;
+		bool muon2Filter = fabs(GenInfo->eta[idx_mu2])<2.4 && GenInfo->pt[idx_mu2]>2.8;
+		
+		if (muon1Filter && muon2Filter)
+		  {
+		    if (gen_b_count>=8)
+		      {
+			printf("ERROR: too many B candidates in GenInfo.\n");
+			return 0;
+		      }
+		    gen_v4_b[gen_b_count] = v4_b_cand; 
+		    
+		    gen_vtx_b[gen_b_count].SetXYZ(GenInfo->vx[idx_b],GenInfo->vy[idx_b],GenInfo->vz[idx_b]);
+		    gen_vtx_uj[gen_b_count].SetXYZ(GenInfo->vx[idx_jpsi],GenInfo->vy[idx_jpsi],GenInfo->vz[idx_jpsi]);
+		    gen_b_count++;
+		  }
+	      }
+	  }//end of if(run_on_mc)
 	
 	// Start of BInfo loop
 	for (int bidx = 0; bidx < BInfo->size; bidx++)
 	  {   
 	    int b_type = BInfo->type[bidx];
-	    
+	
 	    if(run_on_mc)
 	      {		
 		switch(channel)
@@ -284,12 +338,12 @@ int main(int argc, char** argv)
 		    break;
 		  }
 	      }//end of if(run_on_mc)
-	   
+	
 	    // Find the target branching/ntuple to fill
 	    ReducedBranches *br = NULL;
 	    TTree *nt = NULL;
 	    
-            switch (b_type)
+	    switch (b_type)
 	      {
 	      case 1:
 		br = &brkp; nt = ntkp; break; // K+
@@ -312,32 +366,32 @@ int main(int argc, char** argv)
 		return 0;
 	      }
 	    
-            // cleanup
-            memset(br,0x00,sizeof(ReducedBranches));
+	    // cleanup
+	    memset(br,0x00,sizeof(ReducedBranches));
             
-            br->run = EvtInfo->RunNo;
-            br->event = EvtInfo->EvtNo;
-            br->type = b_type;
+	    br->run = EvtInfo->RunNo;
+	    br->event = EvtInfo->EvtNo;
+	    br->type = b_type;
             
-            //-----------------------------------------------------------------
-            // save HLT paths
-            br->nhltbook = N_HLT_BOOKINGS;
-            for (int i=0;i<N_HLT_BOOKINGS;i++)
-                br->hltbook[i] = HLT_book[i];
+	    //-----------------------------------------------------------------
+	    // save HLT paths
+	    br->nhltbook = N_HLT_BOOKINGS;
+	    for (int i=0;i<N_HLT_BOOKINGS;i++)
+	      br->hltbook[i] = HLT_book[i];
             
-            int ujidx = BInfo->rfuj_index[bidx];
-            int tk1idx = BInfo->rftk1_index[bidx];
-            int tk2idx = BInfo->rftk2_index[bidx];
-            int mu1idx = BInfo->uj_rfmu1_index[ujidx];
-            int mu2idx = BInfo->uj_rfmu2_index[ujidx];
+	    int ujidx = BInfo->rfuj_index[bidx];
+	    int tk1idx = BInfo->rftk1_index[bidx];
+	    int tk2idx = BInfo->rftk2_index[bidx];
+	    int mu1idx = BInfo->uj_rfmu1_index[ujidx];
+	    int mu2idx = BInfo->uj_rfmu2_index[ujidx];
             
-	    //the user chooses to preforme the cuts o not. this is useful to calculate efficiencies. this affects both data and MC.
+	    //the user chooses to preforme the cuts or not. this is useful to calculate efficiencies. this affects both data and MC.
 	    if(cuts)
 	      {
 		//-----------------------------------------------------------------
 		// Basic muon selections
-		/*		if (MuonInfo->pt[mu1idx]<=4.) continue;
-				if (MuonInfo->pt[mu2idx]<=4.) continue;*/
+		if (MuonInfo->pt[mu1idx]<=4.) continue;
+		if (MuonInfo->pt[mu2idx]<=4.) continue;
 		if (fabs(MuonInfo->eta[mu1idx])>=2.4) continue;
 		if (fabs(MuonInfo->eta[mu2idx])>=2.4) continue;
 		if (!MuonInfo->SoftMuID[mu1idx]) continue;
@@ -393,159 +447,193 @@ int main(int argc, char** argv)
             //
             // KFC@20150713: keep the selecton code but PV is replaced with BS in the end.
             
-            TVector3 bvtx(BInfo->vtxX[bidx],BInfo->vtxY[bidx],BInfo->vtxZ[bidx]);
-            TVector3 bvtx_err(BInfo->vtxXE[bidx],BInfo->vtxYE[bidx],BInfo->vtxZE[bidx]);
-            TVector3 bmom(BInfo->px[bidx],BInfo->py[bidx],BInfo->pz[bidx]);
-            int vidx = -1;
-            double max_cosang = -1.;
+	    TVector3 bvtx(BInfo->vtxX[bidx],BInfo->vtxY[bidx],BInfo->vtxZ[bidx]);
+	    TVector3 bvtx_err(BInfo->vtxXE[bidx],BInfo->vtxYE[bidx],BInfo->vtxZE[bidx]);
+	    TVector3 bmom(BInfo->px[bidx],BInfo->py[bidx],BInfo->pz[bidx]);
+	    int vidx = -1;
+	    double max_cosang = -1.;
             
 	    for (int idx = 0; idx < VtxInfo->Size; idx++)
 	      {
-                TVector3 vtx(VtxInfo->x[idx],VtxInfo->y[idx],VtxInfo->z[idx]);
-                
-                double cosang = bmom.Dot(bvtx-vtx)/(bmom.Mag()*(bvtx-vtx).Mag());
-                if (cosang>max_cosang)
+		TVector3 vtx(VtxInfo->x[idx],VtxInfo->y[idx],VtxInfo->z[idx]);    
+		double cosang = bmom.Dot(bvtx-vtx)/(bmom.Mag()*(bvtx-vtx).Mag());
+		
+		if (cosang>max_cosang)
 		  {
 		    vidx = idx;
 		    max_cosang = cosang;
 		  }
 	      }
 	    
-            if (vidx==-1)
+	    if (vidx==-1)
 	      {
 		printf("Error: no PV found. Run: %d, Event: %d.\n",EvtInfo->RunNo,EvtInfo->EvtNo);
 		continue;
 	      }
             
-            TVector3 BS(EvtInfo->PVx,EvtInfo->PVy,EvtInfo->PVz);
-            TVector3 BS_err(EvtInfo->PVxE,EvtInfo->PVyE,EvtInfo->PVzE);
-            TVector3 PV(VtxInfo->x[vidx],VtxInfo->y[vidx],VtxInfo->z[vidx]);
-            TVector3 PV_err(VtxInfo->xE[vidx],VtxInfo->yE[vidx],VtxInfo->zE[vidx]);
+	    TVector3 BS(EvtInfo->PVx,EvtInfo->PVy,EvtInfo->PVz);
+	    TVector3 BS_err(EvtInfo->PVxE,EvtInfo->PVyE,EvtInfo->PVzE);
+	    TVector3 PV(VtxInfo->x[vidx],VtxInfo->y[vidx],VtxInfo->z[vidx]);
+	    TVector3 PV_err(VtxInfo->xE[vidx],VtxInfo->yE[vidx],VtxInfo->zE[vidx]);
             
-            // KFC@20150713: Don't do PV finding for now. Always use the beamspot according to the agreement
-            PV = BS; PV_err = BS_err;
+	    // KFC@20150713: Don't do PV finding for now. Always use the beamspot according to the agreement
+	    PV = BS; PV_err = BS_err;
             
-            TLorentzVector v4_uj;
-            v4_uj.SetPtEtaPhiM(BInfo->uj_pt[ujidx],BInfo->uj_eta[ujidx],BInfo->uj_phi[ujidx],BInfo->uj_mass[ujidx]);
-            TLorentzVector v4_b;
-            v4_b.SetPtEtaPhiM(BInfo->pt[bidx],BInfo->eta[bidx],BInfo->phi[bidx],BInfo->mass[bidx]);
+	    TLorentzVector v4_uj;
+	    v4_uj.SetPtEtaPhiM(BInfo->uj_pt[ujidx],BInfo->uj_eta[ujidx],BInfo->uj_phi[ujidx],BInfo->uj_mass[ujidx]);
+	    TLorentzVector v4_b;
+	    v4_b.SetPtEtaPhiM(BInfo->pt[bidx],BInfo->eta[bidx],BInfo->phi[bidx],BInfo->mass[bidx]);
             
-            TLorentzVector v4_tktk;
-            TVector3 tktkvtx, tktkvtx_err;
-            
-            if (b_type!=1 && b_type!=2) // other then K+, pi
-              {  
-		v4_tktk.SetPtEtaPhiM(BInfo->tktk_pt[bidx],BInfo->tktk_eta[bidx],BInfo->tktk_phi[bidx],BInfo->tktk_mass[bidx]);
-                tktkvtx.SetXYZ(BInfo->tktk_vtxX[bidx],BInfo->tktk_vtxY[bidx],BInfo->tktk_vtxZ[bidx]);
-                tktkvtx_err.SetXYZ(BInfo->tktk_vtxXE[bidx],BInfo->tktk_vtxYE[bidx],BInfo->tktk_vtxZE[bidx]);
-	      }
-	    
-            //-----------------------------------------------------------------
-            // Start to fill the B hadron information
-            
-            br->mass = BInfo->mass[bidx];
-            br->pt = BInfo->pt[bidx];
-            br->eta = BInfo->eta[bidx];
-            br->phi = BInfo->phi[bidx];
-            br->y = v4_b.Rapidity();
-            br->vx = BInfo->vtxX[bidx];
-            br->vy = BInfo->vtxY[bidx];
-            br->vz = BInfo->vtxZ[bidx];
-            br->PVx = PV.x();
-            br->PVy = PV.y();
-            br->PVz = PV.z();
-            br->lxy = (bvtx-PV).Perp();
-            br->lxyz = (bvtx-PV).Mag();
-            br->errxy = sqrt(bvtx_err.Perp2()+PV_err.Perp2());
-            br->errxyz = sqrt(bvtx_err.Mag2()+PV_err.Mag2());
-            br->vtxprob = TMath::Prob(BInfo->vtxchi2[bidx],BInfo->vtxdof[bidx]);
-            br->cosalpha2d = bmom.XYvector()*(bvtx-PV).XYvector()/(bmom.Perp()*(bvtx-PV).Perp());
-            br->cosalpha3d = bmom.Dot(bvtx-PV)/(bmom.Mag()*(bvtx-PV).Mag());
-            
-            //-----------------------------------------------------------------
-            // calculate the proper decay time
-            
-            TVector3 v_l = bvtx-PV, v_lerr2; // displace vector, error^2 vector for displacement
-            v_lerr2.SetX(bvtx_err.x()*bvtx_err.x()+PV_err.x()*PV_err.x());
-            v_lerr2.SetY(bvtx_err.y()*bvtx_err.y()+PV_err.y()*PV_err.y());
-            v_lerr2.SetZ(bvtx_err.z()*bvtx_err.z()+PV_err.z()*PV_err.z());
-            
-            // B hadron mass for normalization of proper decay time
-            double default_bmass = BP_MASS; // B+ channels (type 1 or 2)
-            if (b_type==3 || b_type==4 || b_type==5) default_bmass = B0_MASS; // B0 channels
-            if (b_type==6 || b_type==7) default_bmass = BS_MASS; // Bs channels
-            if (b_type==8 || b_type==9) default_bmass = LAMBDAB_MASS; // Lambdab channels
-            
-            TVector3 v_p = v4_b.Vect();
-            TVector3 v_p2(v_p.x()*v_p.x(),v_p.y()*v_p.y(),v_p.z()*v_p.z());
-
-            br->ctau3d = v_l.Dot(v_p)*default_bmass/v_p.Mag2();
-            br->ctau3derr = sqrt(v_lerr2.Dot(v_p2))*default_bmass/v_p.Mag2();
-            br->ctau2d = v_l.XYvector()*v_p.XYvector()*default_bmass/v_p.Perp2();
-            br->ctau2derr = sqrt(v_lerr2.XYvector()*v_p2.XYvector())*default_bmass/v_p.Perp2();
-
-            //-----------------------------------------------------------------
-            // fill J/psi, tracks, muons, etc.
-            
-            br->ujmass = BInfo->uj_mass[ujidx];
-            br->ujpt = BInfo->uj_pt[ujidx];
-            br->ujeta = BInfo->uj_eta[ujidx];
-            br->ujphi = BInfo->uj_phi[ujidx];
-            br->ujy = v4_uj.Rapidity();
-            br->ujvtxprob = TMath::Prob(BInfo->uj_vtxchi2[ujidx],BInfo->uj_vtxdof[ujidx]);
-            
-            if (b_type!=1 && b_type!=2) // other then K+, pi
-              {  
-		br->tktkmass = BInfo->tktk_mass[bidx];
-                br->tktkpt = BInfo->tktk_pt[bidx];
-                br->tktketa = BInfo->tktk_eta[bidx];
-                br->tktkphi = BInfo->tktk_phi[bidx];
-                br->tktky = v4_tktk.Rapidity();
-                br->tktkvtxprob = TMath::Prob(BInfo->tktk_vtxchi2[bidx],BInfo->tktk_vtxdof[bidx]);
-		
-                br->tktklxy = (tktkvtx-PV).Perp();
-                br->tktklxyz = (tktkvtx-PV).Mag();
-                br->tktkerrxy = sqrt(tktkvtx_err.Perp2()+PV_err.Perp2());
-                br->tktkerrxyz = sqrt(tktkvtx_err.Mag2()+PV_err.Mag2());
-                br->tktkblxy = (tktkvtx-bvtx).Perp();
-                br->tktkblxyz = (tktkvtx-bvtx).Mag();
-                br->tktkberrxy = sqrt(tktkvtx_err.Perp2()+bvtx_err.Perp2());
-                br->tktkberrxyz = sqrt(tktkvtx_err.Mag2()+bvtx_err.Mag2());
-	      }
-	    
-            br->mu1idx = mu1idx;
-            br->mu1pt  = MuonInfo->pt[mu1idx];
-            br->mu1eta = MuonInfo->eta[mu1idx];
-            br->mu1phi = MuonInfo->phi[mu1idx];
-            br->mu2idx = mu2idx;
-            br->mu2pt  = MuonInfo->pt[mu2idx];
-            br->mu2eta = MuonInfo->eta[mu2idx];
-            br->mu2phi = MuonInfo->phi[mu2idx];
-            
-            br->tk1idx = tk1idx;
-            br->tk1pt  = TrackInfo->pt[tk1idx];
-            br->tk1eta = TrackInfo->eta[tk1idx];
-            br->tk1phi = TrackInfo->phi[tk1idx];
-            br->tk1charge = TrackInfo->charge[tk1idx];
-            br->tk2idx = tk2idx;
-            br->tk2pt  = TrackInfo->pt[tk2idx];
-            br->tk2eta = TrackInfo->eta[tk2idx];
-            br->tk2phi = TrackInfo->phi[tk2idx];
-            br->tk2charge = TrackInfo->charge[tk2idx];
-            
-            br->nhltmatch = N_HLT_MATCHINGS;
-
-            for (int i=0; i<N_HLT_MATCHINGS; i++)
+	    if(run_on_mc)
 	      {
-                br->mu1hltpt[i]  = MuonInfo->MuTrgMatchTrgObjPt->at(mu1idx)[i];
-                br->mu1hlteta[i] = MuonInfo->MuTrgMatchTrgObjEta->at(mu1idx)[i];
-                br->mu1hltphi[i] = MuonInfo->MuTrgMatchTrgObjPhi->at(mu1idx)[i];
-                br->mu2hltpt[i]  = MuonInfo->MuTrgMatchTrgObjPt->at(mu2idx)[i];
-                br->mu2hlteta[i] = MuonInfo->MuTrgMatchTrgObjEta->at(mu2idx)[i];
-                br->mu2hltphi[i] = MuonInfo->MuTrgMatchTrgObjPhi->at(mu2idx)[i];
+		double min_dR = 100.;
+		int min_idx = -1;
+		
+		for (int idx=0; idx<gen_b_count; idx++)
+		  {
+		    double dR = v4_b.DeltaR(gen_v4_b[idx]);
+		    
+		    if (dR<min_dR)
+		      {
+			min_idx = idx;
+			min_dR = dR;
+		      }
+		  }
+		
+		if (min_idx>=0)
+		  {
+		    br->genmass = gen_v4_b[min_idx].Mag();
+		    br->genpt   = gen_v4_b[min_idx].Pt();
+		    br->geneta  = gen_v4_b[min_idx].Eta();
+		    br->genphi  = gen_v4_b[min_idx].Phi();
+		    br->geny    = gen_v4_b[min_idx].Rapidity();
+		    
+		    br->genvx   = gen_vtx_b[min_idx].x();
+		    br->genvy   = gen_vtx_b[min_idx].y();
+		    br->genvz   = gen_vtx_b[min_idx].z();
+
+		    br->genujvx = gen_vtx_uj[min_idx].x();
+		    br->genujvy = gen_vtx_uj[min_idx].y();
+		    br->genujvz = gen_vtx_uj[min_idx].z();
+		  }
+	      }
+	    
+	    TLorentzVector v4_tktk;
+	    TVector3 tktkvtx, tktkvtx_err;
+            
+	    if (b_type!=1 && b_type!=2) // other then K+, pi
+	      {  
+		v4_tktk.SetPtEtaPhiM(BInfo->tktk_pt[bidx],BInfo->tktk_eta[bidx],BInfo->tktk_phi[bidx],BInfo->tktk_mass[bidx]);
+		tktkvtx.SetXYZ(BInfo->tktk_vtxX[bidx],BInfo->tktk_vtxY[bidx],BInfo->tktk_vtxZ[bidx]);
+		tktkvtx_err.SetXYZ(BInfo->tktk_vtxXE[bidx],BInfo->tktk_vtxYE[bidx],BInfo->tktk_vtxZE[bidx]);
+	      }
+	    
+	    //-----------------------------------------------------------------
+	    // Start to fill the B hadron information
+            
+	    br->mass = BInfo->mass[bidx];
+	    br->pt = BInfo->pt[bidx];
+	    br->eta = BInfo->eta[bidx];
+	    br->phi = BInfo->phi[bidx];
+	    br->y = v4_b.Rapidity();
+	    br->vx = BInfo->vtxX[bidx];
+	    br->vy = BInfo->vtxY[bidx];
+	    br->vz = BInfo->vtxZ[bidx];
+	    br->PVx = PV.x();
+	    br->PVy = PV.y();
+	    br->PVz = PV.z();
+	    br->lxy = (bvtx-PV).Perp();
+	    br->lxyz = (bvtx-PV).Mag();
+	    br->errxy = sqrt(bvtx_err.Perp2()+PV_err.Perp2());
+	    br->errxyz = sqrt(bvtx_err.Mag2()+PV_err.Mag2());
+	    br->vtxprob = TMath::Prob(BInfo->vtxchi2[bidx],BInfo->vtxdof[bidx]);
+	    br->cosalpha2d = bmom.XYvector()*(bvtx-PV).XYvector()/(bmom.Perp()*(bvtx-PV).Perp());
+	    br->cosalpha3d = bmom.Dot(bvtx-PV)/(bmom.Mag()*(bvtx-PV).Mag());
+            
+	    //-----------------------------------------------------------------
+	    // calculate the proper decay time
+            
+	    TVector3 v_l = bvtx-PV, v_lerr2; // displace vector, error^2 vector for displacement
+	    v_lerr2.SetX(bvtx_err.x()*bvtx_err.x()+PV_err.x()*PV_err.x());
+	    v_lerr2.SetY(bvtx_err.y()*bvtx_err.y()+PV_err.y()*PV_err.y());
+	    v_lerr2.SetZ(bvtx_err.z()*bvtx_err.z()+PV_err.z()*PV_err.z());
+            
+	    // B hadron mass for normalization of proper decay time
+	    double default_bmass = BP_MASS; // B+ channels (type 1 or 2)
+	    if (b_type==3 || b_type==4 || b_type==5) default_bmass = B0_MASS; // B0 channels
+	    if (b_type==6 || b_type==7) default_bmass = BS_MASS; // Bs channels
+	    if (b_type==8 || b_type==9) default_bmass = LAMBDAB_MASS; // Lambdab channels
+            
+	    TVector3 v_p = v4_b.Vect();
+	    TVector3 v_p2(v_p.x()*v_p.x(),v_p.y()*v_p.y(),v_p.z()*v_p.z());
+
+	    br->ctau3d = v_l.Dot(v_p)*default_bmass/v_p.Mag2();
+	    br->ctau3derr = sqrt(v_lerr2.Dot(v_p2))*default_bmass/v_p.Mag2();
+	    br->ctau2d = v_l.XYvector()*v_p.XYvector()*default_bmass/v_p.Perp2();
+	    br->ctau2derr = sqrt(v_lerr2.XYvector()*v_p2.XYvector())*default_bmass/v_p.Perp2();
+
+	    //-----------------------------------------------------------------
+	    // fill J/psi, tracks, muons, etc.
+            
+	    br->ujmass = BInfo->uj_mass[ujidx];
+	    br->ujpt = BInfo->uj_pt[ujidx];
+	    br->ujeta = BInfo->uj_eta[ujidx];
+	    br->ujphi = BInfo->uj_phi[ujidx];
+	    br->ujy = v4_uj.Rapidity();
+	    br->ujvtxprob = TMath::Prob(BInfo->uj_vtxchi2[ujidx],BInfo->uj_vtxdof[ujidx]);
+            
+	    if (b_type!=1 && b_type!=2) // other then K+, pi
+	      {  
+		br->tktkmass = BInfo->tktk_mass[bidx];
+		br->tktkpt = BInfo->tktk_pt[bidx];
+		br->tktketa = BInfo->tktk_eta[bidx];
+		br->tktkphi = BInfo->tktk_phi[bidx];
+		br->tktky = v4_tktk.Rapidity();
+		br->tktkvtxprob = TMath::Prob(BInfo->tktk_vtxchi2[bidx],BInfo->tktk_vtxdof[bidx]);
+		
+		br->tktklxy = (tktkvtx-PV).Perp();
+		br->tktklxyz = (tktkvtx-PV).Mag();
+		br->tktkerrxy = sqrt(tktkvtx_err.Perp2()+PV_err.Perp2());
+		br->tktkerrxyz = sqrt(tktkvtx_err.Mag2()+PV_err.Mag2());
+		br->tktkblxy = (tktkvtx-bvtx).Perp();
+		br->tktkblxyz = (tktkvtx-bvtx).Mag();
+		br->tktkberrxy = sqrt(tktkvtx_err.Perp2()+bvtx_err.Perp2());
+		br->tktkberrxyz = sqrt(tktkvtx_err.Mag2()+bvtx_err.Mag2());
+	      }
+	    
+	    br->mu1idx = mu1idx;
+	    br->mu1pt  = MuonInfo->pt[mu1idx];
+	    br->mu1eta = MuonInfo->eta[mu1idx];
+	    br->mu1phi = MuonInfo->phi[mu1idx];
+	    br->mu2idx = mu2idx;
+	    br->mu2pt  = MuonInfo->pt[mu2idx];
+	    br->mu2eta = MuonInfo->eta[mu2idx];
+	    br->mu2phi = MuonInfo->phi[mu2idx];
+            
+	    br->tk1idx = tk1idx;
+	    br->tk1pt  = TrackInfo->pt[tk1idx];
+	    br->tk1eta = TrackInfo->eta[tk1idx];
+	    br->tk1phi = TrackInfo->phi[tk1idx];
+	    br->tk1charge = TrackInfo->charge[tk1idx];
+	    br->tk2idx = tk2idx;
+	    br->tk2pt  = TrackInfo->pt[tk2idx];
+	    br->tk2eta = TrackInfo->eta[tk2idx];
+	    br->tk2phi = TrackInfo->phi[tk2idx];
+	    br->tk2charge = TrackInfo->charge[tk2idx];
+            
+	    br->nhltmatch = N_HLT_MATCHINGS;
+
+	    for (int i=0; i<N_HLT_MATCHINGS; i++)
+	      {
+		br->mu1hltpt[i]  = MuonInfo->MuTrgMatchTrgObjPt->at(mu1idx)[i];
+		br->mu1hlteta[i] = MuonInfo->MuTrgMatchTrgObjEta->at(mu1idx)[i];
+		br->mu1hltphi[i] = MuonInfo->MuTrgMatchTrgObjPhi->at(mu1idx)[i];
+		br->mu2hltpt[i]  = MuonInfo->MuTrgMatchTrgObjPt->at(mu2idx)[i];
+		br->mu2hlteta[i] = MuonInfo->MuTrgMatchTrgObjEta->at(mu2idx)[i];
+		br->mu2hltphi[i] = MuonInfo->MuTrgMatchTrgObjPhi->at(mu2idx)[i];
 	      }
             
-            nt->Fill();
+	    nt->Fill();
             
 	  } // end of BInfo loop
       } // end of evt loop
@@ -553,7 +641,7 @@ int main(int argc, char** argv)
     fout->Write();
     fout->Close();
     
-    //delete GenInfo;
+    delete GenInfo;
     delete EvtInfo;
     delete VtxInfo;
     delete MuonInfo;
