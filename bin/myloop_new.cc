@@ -1,3 +1,4 @@
+#include <iostream>
 #include <TChain.h>
 #include <sstream>
 #include <TTree.h>
@@ -46,14 +47,6 @@ int main(int argc, char** argv)
           convert >> dir;
         }
     }
-
-  /*
-  if(dir == "")
-    {
-      std::cout << "No directory was specified. Saving in the current directory. To specify use --dir" << std::endl;
-      return 0;
-    }
-  */
 
     TChain *root = new TChain("demo/root");
     TChain *HltTree = new TChain("hltanalysis/HltTree");
@@ -192,143 +185,81 @@ int main(int argc, char** argv)
         HltTree->GetEntry(evt);
 
         // verify the Run # and Event #
-
         if (EvtInfo->EvtNo!=(int)HltTree_Event || EvtInfo->RunNo!=HltTree_Run) 
 	  {
             printf("Error: mismatch of event # and run #.\n");
             return 0;
 	  }
-
-	int gen_b_count = 0;
-	TLorentzVector gen_v4_b[8];
-	TVector3 gen_vtx_b[8], gen_vtx_uj[8];
 	
-	if(run_on_mc)
-	  {
-	    // Look for indices of the whole decay tree
-	    
-	    int idx_b    = -1;
-	    int idx_jpsi = -1;
-	    int idx_tktk = -1;
-	    int idx_tk1  = -1;
-	    int idx_tk2  = -1;
-	    int idx_mu1  = -1;
-	    int idx_mu2  = -1;
-	    
-	    for (int idx = 0; idx < GenInfo->size; idx++)
-	      {
-		switch(channel)
-		  {
-		  default:
-		  case 1:
-		    idx_b    = idx;
-		    idx_jpsi = GenInfo->da1[idx_b];
-		    idx_tk1  = GenInfo->da2[idx_b];
-		    idx_mu1  = GenInfo->da1[idx_jpsi];
-		    idx_mu2  = GenInfo->da2[idx_jpsi];
-		    
-		    if (abs(GenInfo->pdgId[idx_b])!=521) continue; // not B+
-		    if (GenInfo->pdgId[idx_jpsi]!=443) continue; // not J/psi
-		    if (abs(GenInfo->pdgId[idx_tk1])!=321) continue; // not K+-
-		    if (abs(GenInfo->pdgId[idx_mu1])!=13) continue; // not mu+-
-		    if (abs(GenInfo->pdgId[idx_mu2])!=13) continue; // not mu+-
-		    break;
-		    
-		  case 2:
-		    idx_b    = idx;
-		    idx_jpsi = GenInfo->da1[idx_b];
-		    idx_tktk = GenInfo->da2[idx_b];
-		    idx_tk1  = GenInfo->da1[idx_tktk];
-		    idx_tk2  = GenInfo->da2[idx_tktk];
-		    idx_mu1  = GenInfo->da1[idx_jpsi];
-		    idx_mu2  = GenInfo->da2[idx_jpsi];
-
-		    if (abs(GenInfo->pdgId[idx_b])!=511) continue; // not B0
-		    if (GenInfo->pdgId[idx_jpsi]!=443) continue; // not J/psi
-		    if (abs(GenInfo->pdgId[idx_tktk])!=313) continue; // not K*0
-		    if ((GenInfo->pdgId[idx_tk1]!=321 || GenInfo->pdgId[idx_tk2]!=-211) &&
-			(GenInfo->pdgId[idx_tk1]!=-321 || GenInfo->pdgId[idx_tk2]!=211)) continue; //not k+pi- and k-pi+
-		    if (abs(GenInfo->pdgId[idx_mu1])!=13) continue; // not mu+-
-		    if (abs(GenInfo->pdgId[idx_mu2])!=13) continue; // not mu+-
-		    break;
-
-		  case 3:
-		    Printf("Please add the decay chain info in myloop_new.cc");
-		    return 0;
-		    break;
-		    
-		  case 4:
-		    idx_b    = idx;
-		    idx_jpsi = GenInfo->da1[idx_b];
-		    idx_tktk = GenInfo->da2[idx_b];
-		    idx_tk1  = GenInfo->da1[idx_tktk];
-		    idx_tk2  = GenInfo->da2[idx_tktk];
-		    idx_mu1  = GenInfo->da1[idx_jpsi];
-		    idx_mu2  = GenInfo->da2[idx_jpsi];
-
-		    if (abs(GenInfo->pdgId[idx_b])!=531) continue; // not Bs
-		    if (GenInfo->pdgId[idx_jpsi]!=443) continue; // not J/psi
-		    if (abs(GenInfo->pdgId[idx_tktk])!=333) continue; // not phi
-		    if ((GenInfo->pdgId[idx_tk1]!=321 || GenInfo->pdgId[idx_tk2]!=-321) && 
-			(GenInfo->pdgId[idx_tk1]!=-321 || GenInfo->pdgId[idx_tk2]!=321)) continue; //not k+k- and k-k+
-		    if (abs(GenInfo->pdgId[idx_mu1])!=13) continue; // not mu+-
-		    if (abs(GenInfo->pdgId[idx_mu2])!=13) continue; // not mu+
-		    break;
-
-		  case 5:
-		    Printf("Please add the decay chain info in myloop_new.cc");
-		    return 0;
-		    break;
-
-		  case 6:
-		    Printf("Please add the decay chain info in myloop_new.cc");
-		    return 0;
-		    break;
-		  }
-		
-		TLorentzVector v4_b_cand;
-		v4_b_cand.SetPtEtaPhiM(GenInfo->pt[idx_b],GenInfo->eta[idx_b],GenInfo->phi[idx_b],GenInfo->mass[idx_b]);
-		
-		bool muon1Filter = fabs(GenInfo->eta[idx_mu1])<2.4 && GenInfo->pt[idx_mu1]>2.8;
-		bool muon2Filter = fabs(GenInfo->eta[idx_mu2])<2.4 && GenInfo->pt[idx_mu2]>2.8;
-		
-		if (muon1Filter && muon2Filter)
-		  {
-		    if (gen_b_count>=8)
-		      {
-			printf("ERROR: too many B candidates in GenInfo.\n");
-			return 0;
-		      }
-		    gen_v4_b[gen_b_count] = v4_b_cand; 
-		    
-		    gen_vtx_b[gen_b_count].SetXYZ(GenInfo->vx[idx_b],GenInfo->vy[idx_b],GenInfo->vz[idx_b]);
-		    gen_vtx_uj[gen_b_count].SetXYZ(GenInfo->vx[idx_jpsi],GenInfo->vy[idx_jpsi],GenInfo->vz[idx_jpsi]);
-		    gen_b_count++;
-		  }
-	      }
-	  }//end of if(run_on_mc)
+	int ujidx  = -1;
+	int tk1idx = -1;
+	int tk2idx = -1;
+	int mu1idx = -1;
+	int mu2idx = -1;
 	
 	// Start of BInfo loop
 	for (int bidx = 0; bidx < BInfo->size; bidx++)
 	  {   
 	    int b_type = BInfo->type[bidx];
-	
+	    
+	    //the indices to run over the Binfo. These are used to identify the signal when running on MC.
+	    ujidx = BInfo->rfuj_index[bidx];
+	    tk1idx = BInfo->rftk1_index[bidx];
+	    tk2idx = BInfo->rftk2_index[bidx];
+	    mu1idx = BInfo->uj_rfmu1_index[ujidx];
+	    mu2idx = BInfo->uj_rfmu2_index[ujidx];
+
+	    //if running on MC, we want to save only the signal. So we need to make sure that the muons and tracks come from the right decay chain.
 	    if(run_on_mc)
 	      {		
 		switch(channel)
 		  {
 		  default:
 		  case 1:
-		    if (b_type != 1) continue; // skip any non K+
+		    //to translate the channel to the type. type is defined in Bfinder to destinguish the Bees
+		    if (b_type != 1) continue; // skip any non K+		
+		    //to select the reconstructed Bees that we save. This way we only save signal.
+		    if (abs(GenInfo->pdgId[MuonInfo->geninfo_index[mu1idx]]) != 13) continue; //skip any mu that was not generated as a mu+-
+		    if (abs(GenInfo->pdgId[MuonInfo->geninfo_index[mu2idx]]) != 13) continue; //skip any mu that was not generated as a mu+-
+		    if (GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]] != GenInfo->mo1[MuonInfo->geninfo_index[mu2idx]]) continue; //skip if the two muons don't have the same index for the mother particle
+		    if (GenInfo->pdgId[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]] != 443) continue; //skip if the mother of the muons is not jpsi, this is redundant, in principle all come from jpsi
+		    if (abs(GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]) != 321) continue; //skip any tk that was not generated as a K+-
+		    if (GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]] != GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]]) continue; //skip if the index of the mother of the track is not the same as  mother of the jpsi
+		    if (abs(GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]]) != 521) continue; //skip anything that is not a B+-. probably redundant at this point in the decay chain. but it is reasonable to keep it.
 		    break;
+
 		  case 2:
-		    if (b_type != 4) continue; // skip any non Kstar
+		    if (b_type != 4) continue; // skip any non Kstar		   
+		    //to select the reconstructed Bees that we save. This way we only save signal.
+		    if (abs(GenInfo->pdgId[MuonInfo->geninfo_index[mu1idx]]) != 13) continue; //skip any mu that was not generated as a mu+-
+		    if (abs(GenInfo->pdgId[MuonInfo->geninfo_index[mu2idx]]) != 13) continue; //skip any mu that was not generated as a mu+-    
+		    if (GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]] != GenInfo->mo1[MuonInfo->geninfo_index[mu2idx]]) continue; //skip if the two muons don't have the same mother particle index
+		    if (GenInfo->pdgId[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]] != 443) continue; //skip if the mother of the muons is not jpsi, this is redundant, in principle all come from jpsi	    
+		    if ((GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]!=321 || GenInfo->pdgId[TrackInfo->geninfo_index[tk2idx]]!=-211) &&
+			(GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]!=-321 || GenInfo->pdgId[TrackInfo->geninfo_index[tk2idx]]!=211)) continue;//skip anything that is not k+pi- or k-pi+
+		    if (GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]] != GenInfo->mo1[TrackInfo->geninfo_index[tk2idx]]) continue; //skip if the two tracks don't have the same mother particle index
+		    if (abs(GenInfo->pdgId[GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]]]) != 313) continue; //skip if the mother of the tracks is not K*0
+		    if (GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]] != GenInfo->mo1[GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]]]) continue; //skip if the index of the mother of the tracks is not the same as mother of the jpsi
+		    if (abs(GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]]) != 511) continue; //skip anything that is not a B0. probably redundant at this point in the decay chain. but it is reasonable to keep it.
 		    break;
+		    
 		  case 3:
 		    if (b_type != 3) continue; // skip any non Kshort
 		    break;
+
 		  case 4:
 		    if (b_type != 6) continue; // skip any non phi
+		    
+		    if (abs(GenInfo->pdgId[MuonInfo->geninfo_index[mu1idx]]) != 13) continue; //skip any mu that was not generated as a mu+-
+		    if (abs(GenInfo->pdgId[MuonInfo->geninfo_index[mu2idx]]) != 13) continue; //skip any mu that was not generated as a mu+-    
+		    if (GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]] != GenInfo->mo1[MuonInfo->geninfo_index[mu2idx]]) continue; //skip if the two muons don't have the same mother particle index
+		    if (GenInfo->pdgId[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]] != 443) continue; //skip if the mother of the muons is not jpsi, this is redundant, in principle all come from jpsi	    
+		    if ((GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]!=321 || GenInfo->pdgId[TrackInfo->geninfo_index[tk2idx]]!=-321) &&
+			(GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]!=-321 || GenInfo->pdgId[TrackInfo->geninfo_index[tk2idx]]!=321)) continue; //skip anything that is not k+k- or k-k+
+		    if (GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]] != GenInfo->mo1[TrackInfo->geninfo_index[tk2idx]]) continue; //skip if the two tracks don't have the same mother particle index
+		    if (abs(GenInfo->pdgId[GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]]]) != 333) continue; //skip if the mother of the tracks is not phi
+		    if (GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]] != GenInfo->mo1[GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]]]) continue; //skip if the index of the mother of the tracks is not the same as mother of the jpsi
+		    if (abs(GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]]) != 531) continue; //skip anything that is not a Bs. probably redundant at this point in the decay chain. but it is reasonable to keep it.
 		    break;
 		  case 5:
 		    if (b_type != 7) continue; // skip any non pipi
@@ -378,12 +309,6 @@ int main(int argc, char** argv)
 	    br->nhltbook = N_HLT_BOOKINGS;
 	    for (int i=0;i<N_HLT_BOOKINGS;i++)
 	      br->hltbook[i] = HLT_book[i];
-            
-	    int ujidx = BInfo->rfuj_index[bidx];
-	    int tk1idx = BInfo->rftk1_index[bidx];
-	    int tk2idx = BInfo->rftk2_index[bidx];
-	    int mu1idx = BInfo->uj_rfmu1_index[ujidx];
-	    int mu2idx = BInfo->uj_rfmu2_index[ujidx];
             
 	    //the user chooses to preforme the cuts or not. this is useful to calculate efficiencies. this affects both data and MC.
 	    if(cuts)
@@ -483,40 +408,28 @@ int main(int argc, char** argv)
 	    v4_uj.SetPtEtaPhiM(BInfo->uj_pt[ujidx],BInfo->uj_eta[ujidx],BInfo->uj_phi[ujidx],BInfo->uj_mass[ujidx]);
 	    TLorentzVector v4_b;
 	    v4_b.SetPtEtaPhiM(BInfo->pt[bidx],BInfo->eta[bidx],BInfo->phi[bidx],BInfo->mass[bidx]);
-            
+	    
+	    //fill the br->gen info
 	    if(run_on_mc)
-	      {
-		double min_dR = 100.;
-		int min_idx = -1;
-		
-		for (int idx=0; idx<gen_b_count; idx++)
-		  {
-		    double dR = v4_b.DeltaR(gen_v4_b[idx]);
-		    
-		    if (dR<min_dR)
-		      {
-			min_idx = idx;
-			min_dR = dR;
-		      }
-		  }
-		
-		if (min_idx>=0)
-		  {
-		    br->genmass = gen_v4_b[min_idx].Mag();
-		    br->genpt   = gen_v4_b[min_idx].Pt();
-		    br->geneta  = gen_v4_b[min_idx].Eta();
-		    br->genphi  = gen_v4_b[min_idx].Phi();
-		    br->geny    = gen_v4_b[min_idx].Rapidity();
-		    
-		    br->genvx   = gen_vtx_b[min_idx].x();
-		    br->genvy   = gen_vtx_b[min_idx].y();
-		    br->genvz   = gen_vtx_b[min_idx].z();
-
-		    br->genujvx = gen_vtx_uj[min_idx].x();
-		    br->genujvy = gen_vtx_uj[min_idx].y();
-		    br->genujvz = gen_vtx_uj[min_idx].z();
-		  }
-	      }
+	       {
+		 TLorentzVector v4_b_gen;
+		 
+		 br->genmass = GenInfo->mass[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]];
+		 br->genpt   = GenInfo->pt[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]];
+		 br->geneta  = GenInfo->eta[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]];
+		 br->genphi  = GenInfo->phi[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]];
+		 
+		 v4_b_gen.SetPtEtaPhiM(br->genpt,br->geneta,br->genphi,br->genmass);
+		 br->geny    = v4_b_gen.Rapidity();
+		 
+		 br->genvx   = GenInfo->vx[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]];
+		 br->genvy   = GenInfo->vy[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]];
+		 br->genvz   = GenInfo->vz[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]];
+		 
+		 br->genujvx = GenInfo->vx[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]];
+		 br->genujvy = GenInfo->vy[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]];
+		 br->genujvz = GenInfo->vz[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]];
+	       }
 	    
 	    TLorentzVector v4_tktk;
 	    TVector3 tktkvtx, tktkvtx_err;
@@ -529,8 +442,7 @@ int main(int argc, char** argv)
 	      }
 	    
 	    //-----------------------------------------------------------------
-	    // Start to fill the B hadron information
-            
+	    // Start to fill the B hadron information            
 	    br->mass = BInfo->mass[bidx];
 	    br->pt = BInfo->pt[bidx];
 	    br->eta = BInfo->eta[bidx];
@@ -552,7 +464,6 @@ int main(int argc, char** argv)
             
 	    //-----------------------------------------------------------------
 	    // calculate the proper decay time
-            
 	    TVector3 v_l = bvtx-PV, v_lerr2; // displace vector, error^2 vector for displacement
 	    v_lerr2.SetX(bvtx_err.x()*bvtx_err.x()+PV_err.x()*PV_err.x());
 	    v_lerr2.SetY(bvtx_err.y()*bvtx_err.y()+PV_err.y()*PV_err.y());
