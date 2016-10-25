@@ -85,7 +85,7 @@ RooRealVar* branching_fraction(int channel);
 
 void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::string> col_name, std::vector<std::string> labels, std::vector<std::vector<double> > numbers, std::string caption);
 
-//input example: signal_yield_new --channel 1 --bins pt/y --preeff 1 --recoeff 1 --mc 1 --syst 1
+//input example: signal_yield_new --channel 1 --bins pt/y --preeff 1 --recoeff 1 --mc 0 --syst 0
 int main(int argc, char** argv)
 {
   int channel = 0;
@@ -366,8 +366,8 @@ int main(int argc, char** argv)
 	      pt_bin_edges_eff_Hi[i] = pt_bin_edges[i+1] - pt_bin_centres_eff[i];
 		  
 	      //pre-filter efficiency
-	      //pre_filter_eff = prefilter_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1],y_bin_edges[c],y_bin_edges[c+1]);
-	      pre_filter_eff = prefilter_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1],y_bin_edges[0],y_bin_edges[nybins]);
+	      pre_filter_eff = prefilter_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1],y_bin_edges[c],y_bin_edges[c+1]);
+	      //pre_filter_eff = prefilter_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1],y_bin_edges[0],y_bin_edges[nybins]);
 		 
 	      pre_eff_array[c][i] = pre_filter_eff->getVal();
 	      pre_eff_err_array[c][i] = pre_filter_eff->getError();
@@ -622,7 +622,6 @@ double bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, 
   RooAbsData* data_cut;
   RooWorkspace ws_cut;
   RooAbsPdf* model_cut;
-  //  RooRealVar* signal_res;
 
   data_original = w.data("data");
   
@@ -1645,15 +1644,24 @@ void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::st
 //the input file must be produced with myloop_gen.cc to have the gen info. otherwise the signal needs to be extracted using a fit.
 RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max, double y_min, double y_max)
 {
-  TString mc_gen_input_file = TString::Format(BASE_DIR) + "myloop_gen_" + channel_to_ntuple_name(channel) + "_bfilter.root";
+  TString mc_gen_input_file = TString::Format(BASE_DIR) + "reduced_myloop_gen_" + channel_to_ntuple_name(channel) + "_bfilter.root";
   TFile *fin = new TFile(mc_gen_input_file);
   
-  TString ntuple_name = channel_to_ntuple_name(channel) + "_gen";
+  TString ntuple_name = channel_to_ntuple_name(channel);
   TTree *tin = (TTree*)fin->Get(ntuple_name);
-
-  ReducedGenBranches gen;
-  gen.setbranchadd(tin);
-
+  
+  //set up the variables needed
+  double pt_b, eta_b, y_b, pt_mu1, pt_mu2, eta_mu1, eta_mu2;
+  
+  //read the ntuple from selected_data
+  tin->SetBranchAddress("eta", &eta_b);
+  tin->SetBranchAddress("y", &y_b);
+  tin->SetBranchAddress("pt", &pt_b);
+  tin->SetBranchAddress("mu1pt", &pt_mu1);
+  tin->SetBranchAddress("mu2pt", &pt_mu2);
+  tin->SetBranchAddress("mu1eta", &eta_mu1);
+  tin->SetBranchAddress("mu2eta", &eta_mu2);
+  
   //use histograms to count the events, and TEfficiency for efficiency, because it takes care of the errors and propagation
   TH1D* hist_tot = new TH1D("hist_tot","hist_tot",1,pt_min,pt_max);
   TH1D* hist_passed = new TH1D("hist_passed","hist_passed",1,pt_min,pt_max);
@@ -1662,15 +1670,15 @@ RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max, doub
     {
       tin->GetEntry(evt);
       
-      if (fabs(gen.eta) > 2.4) continue; //B mesons inside the detector region eta < 2.4
-      if (fabs(gen.y)<y_min || fabs(gen.y)>y_max) continue; // within the y binning
+      if (fabs(eta_b) > 2.4) continue; //B mesons inside the detector region eta < 2.4
+      if (fabs(y_b)<y_min || fabs(y_b)>y_max) continue; // within the y binning
            
-      hist_tot->Fill(gen.pt);
-      
-      bool muon1Filter = fabs(gen.mu1eta)<2.4 && gen.mu1pt>2.8;
-      bool muon2Filter = fabs(gen.mu2eta)<2.4 && gen.mu2pt>2.8;
+      hist_tot->Fill(pt_b);
+            
+      bool muon1Filter = fabs(eta_mu1) < 2.4 && pt_mu1>2.8;
+      bool muon2Filter = fabs(eta_mu2) < 2.4 && pt_mu2>2.8;
  
-      if (muon1Filter && muon2Filter) hist_passed->Fill(gen.pt);//count only the events with the muon selection above
+      if (muon1Filter && muon2Filter) hist_passed->Fill(pt_b);//count only the events with the muon selection above
     }
   //calculates the efficiency by dividing the histograms
   TEfficiency* efficiency = new TEfficiency(*hist_passed, *hist_tot);
@@ -1700,70 +1708,69 @@ RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max, doub
 
 RooRealVar* reco_efficiency(int channel, double pt_min, double pt_max, double y_min, double y_max)
 {
-  //------------read monte carlo without cuts-----------------------------
-  TString mc_input_no_cuts = TString::Format(BASE_DIR) + "myloop_gen_" + channel_to_ntuple_name(channel) + "_bmuonfilter_no_cuts.root";
+  //------------read monte carlo gen without cuts-----------------------------
+  TString mc_input_no_cuts = TString::Format(BASE_DIR) + "reduced_myloop_gen_" + channel_to_ntuple_name(channel) + "_bmuonfilter.root";
   TFile *fin_no_cuts = new TFile(mc_input_no_cuts);
-  TTree *tin_no_cuts = (TTree*)fin_no_cuts->Get(channel_to_ntuple_name(channel));
-
-  double pt, eta, mass, y, mu1pt, mu1eta, mu2pt, mu2eta;
-
-  tin_no_cuts->SetBranchAddress("pt",&pt);
-  tin_no_cuts->SetBranchAddress("eta",&eta);
-  tin_no_cuts->SetBranchAddress("mass",&mass);
-  tin_no_cuts->SetBranchAddress("y",&y);
-  tin_no_cuts->SetBranchAddress("mu1pt",&mu1pt);
-  tin_no_cuts->SetBranchAddress("mu1eta",&mu1eta);
-  tin_no_cuts->SetBranchAddress("mu2pt",&mu2pt);
-  tin_no_cuts->SetBranchAddress("mu2eta",&mu2eta);
+  TString ntuple_name = channel_to_ntuple_name(channel);
+  TTree *tin_no_cuts = (TTree*)fin_no_cuts->Get(ntuple_name);
   
+  //set up the variables needed
+  double pt_b, eta_b, y_b, pt_mu1, pt_mu2, eta_mu1, eta_mu2;
+  
+  //read the ntuple from selected_data
+  tin_no_cuts->SetBranchAddress("eta", &eta_b);
+  tin_no_cuts->SetBranchAddress("y", &y_b);
+  tin_no_cuts->SetBranchAddress("pt", &pt_b);
+  tin_no_cuts->SetBranchAddress("mu1pt", &pt_mu1);
+  tin_no_cuts->SetBranchAddress("mu2pt", &pt_mu2);
+  tin_no_cuts->SetBranchAddress("mu1eta", &eta_mu1);
+  tin_no_cuts->SetBranchAddress("mu2eta", &eta_mu2);
+ 
   //use histograms to count the events, and TEfficiency for efficiency, because it takes care of the errors and propagation
   TH1D* hist_tot = new TH1D("hist_tot","hist_tot",1,pt_min,pt_max);
   
-  for (int evt=0;evt<tin_no_cuts->GetEntries();evt++)
+  for (int evt=0; evt < tin_no_cuts->GetEntries(); evt++)
     {
       tin_no_cuts->GetEntry(evt);
       
-      if (fabs(y)<y_min || fabs(y)>y_max) continue; // within the y binning
+      if (fabs(y_b)<y_min || fabs(y_b)>y_max) continue; // within the y binning
       
-      if (fabs(eta) > 2.4) continue; //B mesons inside the detector region eta < 2.4
-      //if (fabs(mass) < 5 || mass > 5.5) continue;
+      if (fabs(eta_b) > 2.4) continue; //B mesons inside the detector region eta < 2.4
                  
-      bool muon1Filter = fabs(mu1eta)<2.4 && mu1pt>2.8;
-      bool muon2Filter = fabs(mu2eta)<2.4 && mu2pt>2.8;
+      bool muon1Filter = fabs(eta_mu1) < 2.4 && pt_mu1 > 2.8;
+      bool muon2Filter = fabs(eta_mu2) < 2.4 && pt_mu2 > 2.8;
  
-      if (muon1Filter && muon2Filter) hist_tot->Fill(pt);//count only the events with the muon selection above
+      if (muon1Filter && muon2Filter) hist_tot->Fill(pt_b);//count only the events with the muon selection above
     }
-   
+      
     //--------------------------------read monte carlo with cuts------------------------
     TString mc_input_with_cuts = TString::Format(BASE_DIR) + "selected_mc_" + channel_to_ntuple_name(channel) + "_bmuonfilter_with_cuts.root";
     TFile *fin_with_cuts = new TFile(mc_input_with_cuts);
     TTree *tin_with_cuts = (TTree*)fin_with_cuts->Get(channel_to_ntuple_name(channel));
-    
-    //re-use the variables from above    
-    tin_with_cuts->SetBranchAddress("pt",&pt);
-    tin_with_cuts->SetBranchAddress("eta",&eta);
-    tin_with_cuts->SetBranchAddress("mass",&mass);
-    tin_with_cuts->SetBranchAddress("y",&y);
-    tin_with_cuts->SetBranchAddress("mu1pt",&mu1pt);
-    tin_with_cuts->SetBranchAddress("mu1eta",&mu1eta);
-    tin_with_cuts->SetBranchAddress("mu2pt",&mu2pt);
-    tin_with_cuts->SetBranchAddress("mu2eta",&mu2eta);
-    
+   
+    //read the ntuple from selected_data
+    tin_with_cuts->SetBranchAddress("eta", &eta_b);
+    tin_with_cuts->SetBranchAddress("y", &y_b);
+    tin_with_cuts->SetBranchAddress("pt", &pt_b);
+    tin_with_cuts->SetBranchAddress("mu1pt", &pt_mu1);
+    tin_with_cuts->SetBranchAddress("mu2pt", &pt_mu2);
+    tin_with_cuts->SetBranchAddress("mu1eta", &eta_mu1);
+    tin_with_cuts->SetBranchAddress("mu2eta", &eta_mu2);
+ 
     TH1D* hist_passed = new TH1D("hist_passed","hist_passed",1,pt_min,pt_max);
 
-    for (int evt=0;evt<tin_with_cuts->GetEntries();evt++)
+    for (int evt=0; evt < tin_with_cuts->GetEntries(); evt++)
       {
 	tin_with_cuts->GetEntry(evt);
 	
-	if (fabs(y)<y_min || fabs(y)>y_max) continue; // within the y binning
+	if (fabs(y_b)<y_min || fabs(y_b)>y_max) continue; // within the y binning
 	
-	if (fabs(eta) > 2.4) continue; //B mesons inside the detector region eta < 2.4
-	//if (fabs(mass) < 5 || mass > 5.5) continue;
+	if (fabs(eta_b) > 2.4) continue; //B mesons inside the detector region eta < 2.4
 	
-	bool muon1Filter = fabs(mu1eta)<2.4 && mu1pt>2.8;
-	bool muon2Filter = fabs(mu2eta)<2.4 && mu2pt>2.8;
+	bool muon1Filter = fabs(eta_mu1) < 2.4 && pt_mu1 > 2.8;
+	bool muon2Filter = fabs(eta_mu2) < 2.4 && pt_mu2 > 2.8;
 	
-	if (muon1Filter && muon2Filter) hist_passed->Fill(pt);//count only the events with the muon selection above
+	if (muon1Filter && muon2Filter) hist_passed->Fill(pt_b);//count only the events with the muon selection above
       }
     
     //calculates the efficiency by dividing the histograms
