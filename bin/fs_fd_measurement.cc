@@ -47,18 +47,14 @@ using namespace RooFit;
 
 // General fitting options
 #define NUMBER_OF_CPU       1
-#define VERSION             "v7"
+#define VERSION             "v1"
 #define BASE_DIR            "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/"
 #define LUMINOSITY          2.71
 
 //-----------------------------------------------------------------
 // Definition of channel #
-// channel = 1: B+ -> J/psi K+
 // channel = 2: B0 -> J/psi K*
-// channel = 3: B0 -> J/psi Ks
 // channel = 4: Bs -> J/psi phi
-// channel = 5: Jpsi + pipi
-// channel = 6: Lambda_b -> Jpsi + Lambda
 
 void create_dir(std::vector<std::string> list);
 
@@ -85,10 +81,9 @@ RooRealVar* branching_fraction(int channel);
 
 void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::string> col_name, std::vector<std::string> labels, std::vector<std::vector<double> > numbers, std::string caption);
 
-//input example: signal_yield_new --channel 1 --bins pt/y --preeff 1 --recoeff 1 --mc 0 --syst 0
+//input example: fs_fd --bins pt/y --preeff 1 --recoeff 1 --mc 0 --syst 0
 int main(int argc, char** argv)
 {
-  int channel = 0;
   std::string yield_sub_samples = "full";
   int calculate_pre_filter_eff = 0;
   int calculate_reco_eff = 0;
@@ -100,11 +95,6 @@ int main(int argc, char** argv)
       std::string argument = argv[i];
       std::stringstream convert;
 
-      if(argument == "--channel")
-	{
-	  convert << argv[++i];
-	  convert >> channel;
-	}
       if(argument == "--bins")
 	{
 	  convert << argv[++i];
@@ -132,372 +122,333 @@ int main(int argc, char** argv)
 	}
     }
 
-  if(channel==0)
-    {
-      std::cout << "Warning: No channel was provided as input. Please use --channel. Example: signal_yield_new --channel 1" << std::endl;
-      return 0;
-    }
-  
-  //to create the directories to save the .png files
-  std::vector<std::string> dir_list;
-  dir_list.push_back("full_dataset_mass_fit");
-  dir_list.push_back("full_dataset_mass_pt_histo");
-  dir_list.push_back(static_cast<const char*>("pt_bin_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION)));
-  dir_list.push_back("signal_yield");
-  dir_list.push_back("efficiencies");
-  dir_list.push_back("mcstudy_bin");
-  dir_list.push_back("full_dataset_mcstudy");
-  dir_list.push_back("full_dataset_systematics");
-  
-  create_dir(dir_list);
-
   //pt bins
   int nptbins=1;
-
-  double ntkp_pt_bin_edges[]={9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 80, 90, 100, 120};
-  double ntkstar_pt_bin_edges[]={9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90};
-  double ntks_pt_bin_edges[]={0};
-  double ntphi_pt_bin_edges[]={9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90};
-  double ntmix_pt_bin_edges[]={0};
-  double ntlambda_pt_bin_edges[]={0};
-  
+  double pt_bins[]={9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90};
   double total_pt_bin_edges[]={0, 400};
   double* pt_bin_edges=total_pt_bin_edges;
 
   //y bins
   int nybins=1;
-
-  double ntkp_y_bin_edges[]={0.0, 0.5, 1.0, 1.5, 2.25};
-  double ntkstar_y_bin_edges[]={0.0, 0.5, 1.0, 1.5, 2.25};
-  double ntks_y_bin_edges[]={0.0, 0.5, 1.0, 1.5, 2.25};
-  double ntphi_y_bin_edges[]={0.0, 0.5, 1.0, 1.5, 2.25};
-  double ntmix_y_bin_edges[]={0.0, 0.5, 1.0, 1.5, 2.25};
-  double ntlambda_y_bin_edges[]={0.0, 0.5, 1.0, 1.5, 2.25};
-  
+  double y_bins[]={0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2, 2.25};
   double total_y_bin_edges[]={0.0, 2.25};
   double* y_bin_edges=total_y_bin_edges;
-    
-  TString data_selection_input_file = TString::Format(BASE_DIR) + "selected_data_" + channel_to_ntuple_name(channel) + ".root";
-  RooWorkspace* ws = new RooWorkspace("ws","Bmass");
-  RooRealVar* signal_res; 
 
-  TString pt_dist_directory="";
-  TString y_dist_directory="";
-  TString mass_fit_directory="";
-
-  //set up mass, pt and y variables inside ws  
-  set_up_workspace_variables(*ws,channel);
-  //read data from the selected data file, and import it as a dataset into the workspace.
-  read_data(*ws, data_selection_input_file,channel);
-
-  ws->Print();
-
-  if(yield_sub_samples=="full")
-    {    
-      pt_bin_edges = total_pt_bin_edges;
-      nptbins = 1 ;
-      y_bin_edges = total_y_bin_edges;
-      nybins = 1;
-    }  
+  //set the pt and y bin edges
   if(yield_sub_samples=="pt")
     {    
-      switch (channel) {
-      default:
-      case 1:
-	pt_bin_edges = ntkp_pt_bin_edges;
-	nptbins = (sizeof(ntkp_pt_bin_edges) / sizeof(double)) - 1 ; //if pt_bin_edges is an empty array, then nptbins is equal to 0
-	break;
-      case 2:
-	pt_bin_edges = ntkstar_pt_bin_edges;
-	nptbins = (sizeof(ntkstar_pt_bin_edges) / sizeof(double)) - 1 ;
-	break;
-      case 3:
-	pt_bin_edges = ntks_pt_bin_edges;
-	nptbins = (sizeof(ntks_pt_bin_edges) / sizeof(double)) - 1 ;
-	break;
-      case 4:
-	pt_bin_edges = ntphi_pt_bin_edges;
-	nptbins = (sizeof(ntphi_pt_bin_edges) / sizeof(double)) - 1 ;
-	break;
-      case 5:
-	pt_bin_edges = ntmix_pt_bin_edges;
-	nptbins = (sizeof(ntmix_pt_bin_edges) / sizeof(double)) - 1 ;
-	break;
-      case 6:
-	pt_bin_edges = ntlambda_pt_bin_edges;
-	nptbins = (sizeof(ntlambda_pt_bin_edges) / sizeof(double)) - 1 ;
-	break;
-      }
+	pt_bin_edges = pt_bins;
+	nptbins = (sizeof(pt_bins) / sizeof(double)) - 1; //if pt_bin_edges is an empty array, then nptbins is equal to 0
+    }
+  if(yield_sub_samples=="y")
+    {    
+	y_bin_edges = y_bins;
+	nybins = (sizeof(y_bins) / sizeof(double)) - 1;
     }
   if(yield_sub_samples=="pt/y")
     {
-      switch (channel) {
-      default:
-      case 1:
-	pt_bin_edges = ntkp_pt_bin_edges;
-	nptbins = (sizeof(ntkp_pt_bin_edges) / sizeof(double)) - 1 ; //if pt_bin_edges is an empty array, then nptbins is equal to 0
+	pt_bin_edges = pt_bins;
+	nptbins = (sizeof(pt_bins) / sizeof(double)) - 1;
 	
-	y_bin_edges = ntkp_y_bin_edges;
-	nybins = (sizeof(ntkp_y_bin_edges) / sizeof(double)) - 1 ; //if y_bin_edges is an empty array, then nptbins is equal to 0
-	break;
-      case 2:
-	pt_bin_edges = ntkstar_pt_bin_edges;
-	nptbins = (sizeof(ntkstar_pt_bin_edges) / sizeof(double)) - 1 ;
-
-	y_bin_edges = ntkstar_y_bin_edges;	
-	nybins = (sizeof(ntkstar_y_bin_edges) / sizeof(double)) - 1 ;
-	break;
-      case 3:
-	pt_bin_edges = ntks_pt_bin_edges;
-	nptbins = (sizeof(ntks_pt_bin_edges) / sizeof(double)) - 1 ;
-	    
-	y_bin_edges = ntks_y_bin_edges;
-	nybins = (sizeof(ntks_y_bin_edges) / sizeof(double)) - 1 ;
-	break;
-      case 4:
-	pt_bin_edges = ntphi_pt_bin_edges;
-	nptbins = (sizeof(ntphi_pt_bin_edges) / sizeof(double)) - 1 ;
-	    
-	y_bin_edges = ntphi_y_bin_edges;
-	nybins = (sizeof(ntphi_y_bin_edges) / sizeof(double)) - 1 ;
-	break;
-      case 5:
-	pt_bin_edges = ntmix_pt_bin_edges;
-	nptbins = (sizeof(ntmix_pt_bin_edges) / sizeof(double)) - 1 ;
-
-	y_bin_edges = ntmix_y_bin_edges;
-	nybins = (sizeof(ntmix_y_bin_edges) / sizeof(double)) - 1 ;
-	break;
-      case 6:
-	pt_bin_edges = ntlambda_pt_bin_edges;
-	nptbins = (sizeof(ntlambda_pt_bin_edges) / sizeof(double)) - 1 ;
-	    
-	y_bin_edges = ntlambda_y_bin_edges;
-	nybins = (sizeof(ntlambda_y_bin_edges) / sizeof(double)) - 1 ;
-	break;
-      }
+	y_bin_edges = y_bins;
+	nybins = (sizeof(y_bins) / sizeof(double)) - 1;
     }
 
-  double pt_bin_size[nptbins];
-  double y_bin_size[nybins];
-  double pt_bin_means[nptbins];
-  double pt_bin_edges_Lo[nptbins];
-  double pt_bin_edges_Hi[nptbins];
-
-  double yield_array[nybins][nptbins];
-  double errLo_array[nybins][nptbins];
-  double errHi_array[nybins][nptbins];
-  double yield_syst_array[nybins][nptbins];
+  double yield_array[2][nybins][nptbins];
+  double errLo_array[2][nybins][nptbins];
+  double errHi_array[2][nybins][nptbins];
+  double yield_syst_array[2][nybins][nptbins];
  
-  double pt_bin_centres_eff[nptbins];
-  double pt_bin_edges_eff_Lo[nptbins];
-  double pt_bin_edges_eff_Hi[nptbins];
+  double pt_bin_centre[nptbins];
+  double pt_bin_centre_Lo[nptbins];
+  double pt_bin_centre_Hi[nptbins];
+
+  double y_bin_centre[nybins-1];
+  double y_bin_centre_Lo[nybins-1];
+  double y_bin_centre_Hi[nybins-1];
       
   RooRealVar* pre_filter_eff;
       
-  double pre_eff_array[nybins][nptbins];
-  double pre_eff_err_array[nybins][nptbins];
+  double pre_eff_array[2][nybins][nptbins];
+  double pre_eff_err_lo_array[2][nybins][nptbins];
+  double pre_eff_err_hi_array[2][nybins][nptbins];
+
+  double y_pre_eff_array[2][nybins];
+  double y_pre_eff_err_lo_array[2][nybins];
+  double y_pre_eff_err_hi_array[2][nybins];
       
   RooRealVar* reco_eff;
       
-  double reco_eff_array[nybins][nptbins];
-  double reco_eff_err_array[nybins][nptbins];
-            
-  double x_sec_array[nybins][nptbins];
-  double x_sec_errLo_array[nybins][nptbins];
-  double x_sec_errHi_array[nybins][nptbins];
-  double x_sec_syst_array[nybins][nptbins];
-      
-  RooRealVar* branch = branching_fraction(channel);
+  double reco_eff_array[2][nybins][nptbins];
+  double reco_eff_err_lo_array[2][nybins][nptbins];
+  double reco_eff_err_hi_array[2][nybins][nptbins];
 
-  for(int c=0; c<nybins; c++)
-    { 
-      std::cout << "processing subsample: " << y_bin_edges[c] << " < |y| < " << y_bin_edges[c+1] << std::endl;
+  double y_reco_eff_array[2][nybins];
+  double y_reco_eff_err_lo_array[2][nybins];
+  double y_reco_eff_err_hi_array[2][nybins];
 
-      //calculate the size of the y bins
-      y_bin_size[c] = y_bin_edges[c+1]-y_bin_edges[c];
+  double fs_fd_array[nybins][nptbins];
+  double fs_fd_errLo_array[nybins][nptbins];
+  double fs_fd_errHi_array[nybins][nptbins];
+  double fs_fd_syst_lo_array[nybins][nptbins];
+  double fs_fd_syst_hi_array[nybins][nptbins];
+  
+  double b_fraction[2];
+  double b_fraction_err[2];
 
-      for(int i=0; i<nptbins; i++)
-	{
-	  std::cout << "processing subsample: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
-	      
-	  //calculate the size of the pt bins
-	  pt_bin_size[i] = pt_bin_edges[i+1]-pt_bin_edges[i];
-	      
-	  //calculate the mean of the pt bin, to plot the cross section at this point
-	  pt_bin_means[i] = pt_bin_mean(*ws,pt_bin_edges[i],pt_bin_edges[i+1]);
-	      
-	  //calculate the new edges of the bin, since the centre is the mean. This is just for plotting.
-	  pt_bin_edges_Lo[i] = pt_bin_means[i] - pt_bin_edges[i];
-	  pt_bin_edges_Hi[i] = pt_bin_edges[i+1] - pt_bin_means[i];
-	      
-	  //calculate the signal yield for a bin of pt and y.
-	  signal_res = bin_mass_fit(*ws,channel,pt_bin_edges[i],pt_bin_edges[i+1], y_bin_edges[c], y_bin_edges[c+1], mcstudy);
-	  
-	  if(yield_sub_samples=="full")
-	    {
-	      pt_bin_size[0] = 1; //force the bin size equal to one when we want to calculate full dataset cross section.
-	      y_bin_size[0] = 1;
-	    }
-	  if(yield_sub_samples=="pt")
-	    {
-	      y_bin_size[0]=1;
-	    }
-
-	  yield_array[c][i] = (signal_res->getVal())/(pt_bin_size[i]*y_bin_size[c]);
-	  errLo_array[c][i] = -(signal_res->getAsymErrorLo())/(pt_bin_size[i]*y_bin_size[c]);
-	  errHi_array[c][i] = (signal_res->getAsymErrorHi())/(pt_bin_size[i]*y_bin_size[c]);
-	  yield_syst_array[c][i] = bin_systematics(*ws, channel, pt_bin_edges[i], pt_bin_edges[i+1], y_bin_edges[c], y_bin_edges[c+1],signal_res->getVal(), data_selection_input_file, syst)/(pt_bin_size[i]*y_bin_size[c]);
-	}
+  for(int i=0; i<nptbins; i++)
+    {
+      pt_bin_centre[i] = pt_bin_edges[i] + (pt_bin_edges[i+1]-pt_bin_edges[i])/2;
+      pt_bin_centre_Lo[i] = pt_bin_centre[i] - pt_bin_edges[i];
+      pt_bin_centre_Hi[i] = pt_bin_edges[i+1] - pt_bin_centre[i];
     }
   
-  //to calculate pre-filter efficiency
-  if(calculate_pre_filter_eff)
+  for(int i=0; i<nybins; i++)
     {
-      for(int c=0; c<nybins; c++)
-	{ 
-	  std::cout << "processing subsample: " << y_bin_edges[c] << " < |y| < " << y_bin_edges[c+1] << std::endl;
-	  for(int i=0; i<nptbins; i++)
-	    {
-	      std::cout <<"calculating pre-filter efficiency: "<< (int)pt_bin_edges[i] <<" < pt < "<< (int)pt_bin_edges[i+1] << std::endl;
-		  
-	      pt_bin_centres_eff[i] = pt_bin_edges[i] + (pt_bin_edges[i+1]-pt_bin_edges[i])/2;
-	      pt_bin_edges_eff_Lo[i] = pt_bin_centres_eff[i] - pt_bin_edges[i];
-	      pt_bin_edges_eff_Hi[i] = pt_bin_edges[i+1] - pt_bin_centres_eff[i];
-		  
-	      //pre-filter efficiency
-	      pre_filter_eff = prefilter_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1],y_bin_edges[c],y_bin_edges[c+1]);
-	      //pre_filter_eff = prefilter_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1],y_bin_edges[0],y_bin_edges[nybins]);
-		 
-	      pre_eff_array[c][i] = pre_filter_eff->getVal();
-	      pre_eff_err_array[c][i] = pre_filter_eff->getError();
-	    }
-	  //plot of the pre-filter efficiency as a function of pT for each y bin
-	  TCanvas ce;
-	  TGraphAsymmErrors* graph_pre_eff = new TGraphAsymmErrors(nptbins, pt_bin_centres_eff, pre_eff_array[c], pt_bin_edges_eff_Lo, pt_bin_edges_eff_Hi, pre_eff_err_array[c], pre_eff_err_array[c]);
-	  graph_pre_eff->SetTitle("pre-filter efficiency");
-	  graph_pre_eff->SetMarkerColor(4);
-	  graph_pre_eff->SetMarkerStyle(21);
-	  graph_pre_eff->Draw("AP");
-	  TString eff1_name = "";
-	  eff1_name = "efficiencies/pre_filter_efficiency_" + channel_to_ntuple_name(channel) + "_" + TString::Format("y_from_%.1f_to_%.1f",y_bin_edges[c],y_bin_edges[c+1]) + ".png";
-	  ce.SaveAs(eff1_name);
-	}
+      y_bin_centre[i] = y_bin_edges[i] + (y_bin_edges[i+1]-y_bin_edges[i])/2;
+      y_bin_centre_Lo[i] = y_bin_centre[i] - y_bin_edges[i];
+      y_bin_centre_Hi[i] = y_bin_edges[i+1] - y_bin_centre[i];	  
     }
-  //to calculate reconstruction efficiency
-  if(calculate_reco_eff)
-    {
-      for(int c=0; c<nybins; c++)
-	{ 
-	  std::cout << "processing subsample: " << y_bin_edges[c] << " < |y| < " << y_bin_edges[c+1] << std::endl;
-	  for(int i=0; i<nptbins; i++)
-	    {
-	      std::cout << "calculating reconstruction efficiency: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
-		  
-	      pt_bin_centres_eff[i] = pt_bin_edges[i] + (pt_bin_edges[i+1]-pt_bin_edges[i])/2;
-	      pt_bin_edges_eff_Lo[i] = pt_bin_centres_eff[i] - pt_bin_edges[i];
-	      pt_bin_edges_eff_Hi[i] = pt_bin_edges[i+1] - pt_bin_centres_eff[i];
-		  
-	      //reco efficiency
-	      reco_eff = reco_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1],y_bin_edges[c],y_bin_edges[c+1]);
-		 
-	      reco_eff_array[c][i] = reco_eff->getVal();
-	      reco_eff_err_array[c][i] = reco_eff->getError();
-	    }
-	  //plot of the reco efficiency as a function of pT for each y bin
-	  TCanvas cp;
-	  TGraphAsymmErrors* graph_reco_eff = new TGraphAsymmErrors(nptbins, pt_bin_centres_eff, reco_eff_array[c], pt_bin_edges_eff_Lo, pt_bin_edges_eff_Hi, reco_eff_err_array[c], reco_eff_err_array[c]);
-	  graph_reco_eff->SetTitle("reconstruction efficiency");
-	  graph_reco_eff->SetMarkerColor(4);
-	  graph_reco_eff->SetMarkerStyle(21);
-	  graph_reco_eff->Draw("AP");
-	  TString eff2_name = "";
-	  eff2_name = "efficiencies/reco_efficiency_" + channel_to_ntuple_name(channel) + "_" + TString::Format("y_from_%.1f_to_%.1f",y_bin_edges[c],y_bin_edges[c+1]) + ".png";
-	  cp.SaveAs(eff2_name);
-	}
-    }
+  
+  for(int ch=0; ch<2; ch++)
+    {  
+      int channel = 2*(ch+1); //if ch=0 -> channel=2, if ch=1 -> channel=4
       
-  //to calculate cross section
+      //to create the directories to save the .png files
+      std::vector<std::string> dir_list;
+      dir_list.push_back(static_cast<const char*>("mass_fits/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION)));
+      dir_list.push_back("fs_fd");
+      dir_list.push_back("efficiencies");
+      
+      create_dir(dir_list);
+      
+      //------------data input---------------------
+      TString data_selection_input_file = TString::Format(BASE_DIR) + "selected_data_" + channel_to_ntuple_name(channel) + ".root";
+      RooWorkspace* ws = new RooWorkspace("ws","Bmass");
+      RooRealVar* signal_res; 
+  
+      //set up mass, pt and y variables inside ws  
+      set_up_workspace_variables(*ws,channel);
+      //read data from the selected data file, and import it as a dataset into the workspace.
+      read_data(*ws, data_selection_input_file,channel);
+
+      ws->Print();
+      //------------------------------------------
+
+      RooRealVar* branch = branching_fraction(channel); //need to correct the function  
+      b_fraction[ch] = branch->getVal();
+      b_fraction_err[ch] = branch->getError();
+
+      for(int j=0; j<nybins; j++)
+	{ 
+	  std::cout << "processing subsample: " << y_bin_edges[j] << " < |y| < " << y_bin_edges[j+1] << std::endl;
+
+	  for(int i=0; i<nptbins; i++)
+	    {
+	      std::cout << "processing subsample: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
+	      
+	      //calculate the signal yield for a bin of pt and y.
+	      signal_res = bin_mass_fit(*ws,channel,pt_bin_edges[i],pt_bin_edges[i+1], y_bin_edges[j], y_bin_edges[j+1], mcstudy);
+	  
+	      yield_array[ch][j][i] = signal_res->getVal();
+	      errLo_array[ch][j][i] = -(signal_res->getAsymErrorLo());
+	      errHi_array[ch][j][i] = signal_res->getAsymErrorHi();
+	      yield_syst_array[ch][j][i] = bin_systematics(*ws, channel, pt_bin_edges[i], pt_bin_edges[i+1], y_bin_edges[j], y_bin_edges[j+1],signal_res->getVal(), data_selection_input_file, syst);
+	    }
+	}
+  
+      //to calculate pre-filter efficiency
+      if(calculate_pre_filter_eff)
+	{
+	  for(int c=0; c<nybins; c++)
+	    { 
+	      std::cout << "processing subsample: " << y_bin_edges[c] << " < |y| < " << y_bin_edges[c+1] << std::endl;
+	      for(int i=0; i<nptbins; i++)
+		{
+		  std::cout <<"calculating pre-filter efficiency: "<< (int)pt_bin_edges[i] <<" < pt < "<< (int)pt_bin_edges[i+1] << std::endl;
+		  		  	  
+		  //pre-filter efficiency
+		  pre_filter_eff = prefilter_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1],y_bin_edges[c],y_bin_edges[c+1]);
+		 
+		  pre_eff_array[ch][c][i] = pre_filter_eff->getVal();
+		  pre_eff_err_lo_array[ch][c][i] = -(pre_filter_eff->getAsymErrorLo());
+		  pre_eff_err_hi_array[ch][c][i] = pre_filter_eff->getAsymErrorHi();
+		}
+
+	      if(yield_sub_samples=="pt/y" || yield_sub_samples=="pt")
+		{
+		  //plot of the pre-filter efficiency as a function of pT for each y bin
+		  TCanvas ce;
+		  TGraphAsymmErrors* graph_pre_eff = new TGraphAsymmErrors(nptbins, pt_bin_centre, pre_eff_array[ch][c], pt_bin_centre_Lo, pt_bin_centre_Hi, pre_eff_err_lo_array[ch][c], pre_eff_err_hi_array[ch][c]);
+		  graph_pre_eff->SetTitle("pre-filter efficiency");
+		  graph_pre_eff->SetMarkerColor(4);
+		  graph_pre_eff->SetMarkerStyle(21);
+		  graph_pre_eff->Draw("AP");
+		  TString eff1_name = "";
+		  eff1_name = "efficiencies/pre_filter_efficiency_" + channel_to_ntuple_name(channel) + "_" + TString::Format("y_from_%.1f_to_%.1f",y_bin_edges[c],y_bin_edges[c+1]) + ".png";
+		  ce.SaveAs(eff1_name);
+		}
+	      if(yield_sub_samples=="y")
+		{
+		  //transpose the arrays to plot as function of y
+		  y_pre_eff_array[ch][c] = pre_eff_array[ch][c][0];
+		  y_pre_eff_err_lo_array[ch][c] = pre_eff_err_lo_array[ch][c][0];
+		  y_pre_eff_err_hi_array[ch][c] = pre_eff_err_hi_array[ch][c][0];
+		}
+	    }
+	  if(yield_sub_samples=="y")
+	    {
+	      //plot of the pre-filter efficiency as a function of y
+	      TCanvas cj;
+	      TGraphAsymmErrors* y_graph_pre_eff = new TGraphAsymmErrors(nybins, y_bin_centre, y_pre_eff_array[ch], y_bin_centre_Lo, y_bin_centre_Hi, y_pre_eff_err_lo_array[ch], y_pre_eff_err_hi_array[ch]);
+	      y_graph_pre_eff->SetTitle("pre-filter efficiency");
+	      y_graph_pre_eff->SetMarkerColor(4);
+	      y_graph_pre_eff->SetMarkerStyle(21);
+	      y_graph_pre_eff->Draw("AP");
+	      TString eff1_name = "";
+	      eff1_name = "efficiencies/y_pre_filter_efficiency_" + channel_to_ntuple_name(channel) + ".png";
+	      cj.SaveAs(eff1_name);
+	    }
+	}
+
+      //to calculate reconstruction efficiency
+      if(calculate_reco_eff)
+	{
+	  for(int c=0; c<nybins; c++)
+	    { 
+	      std::cout << "processing subsample: " << y_bin_edges[c] << " < |y| < " << y_bin_edges[c+1] << std::endl;
+	      for(int i=0; i<nptbins; i++)
+		{
+		  std::cout << "calculating reconstruction efficiency: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
+		   
+		  //reco efficiency
+		  reco_eff = reco_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1],y_bin_edges[c],y_bin_edges[c+1]);
+		 
+		  reco_eff_array[ch][c][i] = reco_eff->getVal();
+		  reco_eff_err_lo_array[ch][c][i] = -(reco_eff->getAsymErrorLo());
+		  reco_eff_err_hi_array[ch][c][i] = reco_eff->getAsymErrorHi();
+		}
+
+	      if(yield_sub_samples=="pt/y" || yield_sub_samples=="pt")
+		{
+		  //plot of the reco efficiency as a function of pT for each y bin
+		  TCanvas cp;
+		  TGraphAsymmErrors* graph_reco_eff = new TGraphAsymmErrors(nptbins, pt_bin_centre, reco_eff_array[ch][c], pt_bin_centre_Lo, pt_bin_centre_Hi, reco_eff_err_lo_array[ch][c], reco_eff_err_hi_array[ch][c]);
+		  graph_reco_eff->SetTitle("reconstruction efficiency");
+		  graph_reco_eff->SetMarkerColor(4);
+		  graph_reco_eff->SetMarkerStyle(21);
+		  graph_reco_eff->Draw("AP");
+		  TString eff2_name = "";
+		  eff2_name = "efficiencies/reco_efficiency_" + channel_to_ntuple_name(channel) + "_" + TString::Format("y_from_%.1f_to_%.1f",y_bin_edges[c],y_bin_edges[c+1]) + ".png";
+		  cp.SaveAs(eff2_name);
+		}
+	      if(yield_sub_samples=="y")
+		{
+		  //transpose the arrays to plot as function of y
+		  y_reco_eff_array[ch][c] = reco_eff_array[ch][c][0];
+		  y_reco_eff_err_lo_array[ch][c] = reco_eff_err_lo_array[ch][c][0];
+		  y_reco_eff_err_hi_array[ch][c] = reco_eff_err_hi_array[ch][c][0];
+		}
+	    }
+	  if(yield_sub_samples=="y")
+	    {
+	      //plot of the reco efficiency as a function of y
+	      TCanvas cq;
+	      TGraphAsymmErrors* y_graph_reco_eff = new TGraphAsymmErrors(nybins, y_bin_centre, y_reco_eff_array[ch], y_bin_centre_Lo, y_bin_centre_Hi, y_reco_eff_err_lo_array[ch], y_reco_eff_err_hi_array[ch]);
+	      y_graph_reco_eff->SetTitle("reconstruction efficiency");
+	      y_graph_reco_eff->SetMarkerColor(4);
+	      y_graph_reco_eff->SetMarkerStyle(21);
+	      y_graph_reco_eff->Draw("AP");
+	      TString eff2_name = "";
+	      eff2_name = "efficiencies/y_reco_efficiency_" + channel_to_ntuple_name(channel) + ".png";
+	      cq.SaveAs(eff2_name);
+	    }
+	}
+      delete ws;
+    }//end of channel cicle
+  
+  //To show the values of signal yield and the errors at the end, like a table
+  for(int ch=0; ch<2; ch++)
+    {
+      std::cout << std::endl;
+      std::cout << "CHANNEL: " << 2*(ch+1) << std::endl;
+      
+      for(int j=0; j<nybins; j++)
+	{
+	  std::cout << "BIN y: " << y_bin_edges[j] << " to " << y_bin_edges[j+1] << " : " << std::endl;
+	  
+	  for(int i=0; i<nptbins; i++)
+	    {
+	      std::cout << "BIN pt: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " <<  yield_array[ch][j][i] << " +" << errHi_array[ch][j][i] << " -"<< errLo_array[ch][j][i] << " +-" << yield_syst_array[ch][j][i] << std::endl;
+	    }
+	  
+	  std::cout << std::endl;
+	}
+    }//end of channel cicle
+  
+  //to calculate the fd/fs     
   for(int j=0; j<nybins; j++)
     {
       for(int i=0; i<nptbins; i++)
 	{
 	  if(calculate_reco_eff && calculate_pre_filter_eff)
 	    {
-	      x_sec_array[j][i] = (yield_array[j][i] / (2  * reco_eff_array[j][i] * pre_eff_array[j][i] * LUMINOSITY * branch->getVal())) * (1e-9) * pow(10,j);
-	      x_sec_errLo_array[j][i] = ((x_sec_array[j][i] * errLo_array[j][i]) / yield_array[j][i]);
-	      x_sec_errHi_array[j][i] = ((x_sec_array[j][i] * errHi_array[j][i]) / yield_array[j][i]);
-	      x_sec_syst_array[j][i] = x_sec_array[j][i] * sqrt( pow(yield_syst_array[j][i]/yield_array[j][i],2) + pow(branch->getError()/branch->getVal(),2) + pow(pre_eff_err_array[j][i]/pre_eff_array[j][i],2) + pow(reco_eff_err_array[j][i]/reco_eff_array[j][i],2) + pow(0.04,2) );
+	      if(yield_sub_samples=="y")
+		fs_fd_array[j][i] =(yield_array[1][j][i]/yield_array[0][j][i])* ((pre_eff_array[0][j][i]*reco_eff_array[0][j][i])/(pre_eff_array[1][j][i]*reco_eff_array[1][j][i])) * (b_fraction[0]/b_fraction[1]);
+	      else
+		fs_fd_array[j][i] = (yield_array[1][j][i]/yield_array[0][j][i])* ((pre_eff_array[0][j][i]*reco_eff_array[0][j][i])/(pre_eff_array[1][j][i]*reco_eff_array[1][j][i])) * (b_fraction[0]/b_fraction[1]) * pow(10,j);
+	      
+	      fs_fd_syst_lo_array[j][i]  = fs_fd_array[j][i] * sqrt(pow(yield_syst_array[0][j][i]/yield_array[0][j][i],2) + pow(yield_syst_array[1][j][i]/yield_array[1][j][i],2) + pow(pre_eff_err_lo_array[0][j][i]/pre_eff_array[0][j][i],2) + pow(reco_eff_err_lo_array[0][j][i]/reco_eff_array[0][j][i],2) + pow(pre_eff_err_lo_array[1][j][i]/pre_eff_array[1][j][i],2) + pow(reco_eff_err_lo_array[1][j][i]/reco_eff_array[1][j][i],2) + pow(b_fraction_err[0]/b_fraction[0],2) + pow(b_fraction_err[1]/b_fraction[0],2));
+
+	      fs_fd_syst_hi_array[j][i]  = fs_fd_array[j][i] * sqrt(pow(yield_syst_array[0][j][i]/yield_array[0][j][i],2) + pow(yield_syst_array[1][j][i]/yield_array[1][j][i],2) + pow(pre_eff_err_hi_array[0][j][i]/pre_eff_array[0][j][i],2) + pow(reco_eff_err_hi_array[0][j][i]/reco_eff_array[0][j][i],2) + pow(pre_eff_err_hi_array[1][j][i]/pre_eff_array[1][j][i],2) + pow(reco_eff_err_hi_array[1][j][i]/reco_eff_array[1][j][i],2) + pow(b_fraction_err[0]/b_fraction[0],2) + pow(b_fraction_err[1]/b_fraction[0],2));
 	    }
 	  else
 	    {
-	      x_sec_array[j][i] = yield_array[j][i] * pow(10,j);
-	      x_sec_errLo_array[j][i] = errLo_array[j][i] * pow(10,j);
-	      x_sec_errHi_array[j][i] = errHi_array[j][i] * pow(10,j);
-	      x_sec_syst_array[j][i] = yield_syst_array[j][i] * pow(10,j);
+	      if(yield_sub_samples=="y")
+		fs_fd_array[j][i] = (yield_array[1][j][i]/yield_array[0][j][i]);
+	      else
+		fs_fd_array[j][i] = (yield_array[1][j][i]/yield_array[0][j][i]) * pow(10,j);
+	      
+	      fs_fd_syst_lo_array[j][i]  = fs_fd_array[j][i] * sqrt( pow(yield_syst_array[0][j][i]/yield_array[0][j][i],2) + pow(yield_syst_array[1][j][i]/yield_array[1][j][i],2) );
+	      fs_fd_syst_hi_array[j][i]  = fs_fd_syst_lo_array[j][i];
 	    }
+	  fs_fd_errLo_array[j][i] = fs_fd_array[j][i] * sqrt( pow(errLo_array[0][j][i]/yield_array[0][j][i],2) + pow(errLo_array[1][j][i]/yield_array[1][j][i],2) );
+	  fs_fd_errHi_array[j][i] = fs_fd_array[j][i] * sqrt( pow(errHi_array[0][j][i]/yield_array[0][j][i],2) + pow(errHi_array[1][j][i]/yield_array[1][j][i],2) );
 	}
     }
 
-  //To show the values of cross section or signal yield and the errors at the end, like a table
-  std::cout << "CROSS SECTION" << std::endl;
-
-  for(int c=0; c<nybins; c++)
+  //To show the values of fs/fd and the errors at the end, like a table
+  for(int j=0; j<nybins; j++)
     {
-      std::cout << "BIN y: " << y_bin_edges[c] << " to " << y_bin_edges[c+1] << " : " << std::endl;
-	  
+      std::cout << "BIN y: " << y_bin_edges[j] << " to " << y_bin_edges[j+1] << " : " << std::endl;
+      
       for(int i=0; i<nptbins; i++)
 	{
-	  std::cout << "BIN pt: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " <<  x_sec_array[c][i] << " +" << x_sec_errHi_array[c][i] << " -"<< x_sec_errLo_array[c][i] << " +-" << x_sec_syst_array[c][i] << std::endl;
+	  std::cout << "BIN pt: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " <<  fs_fd_array[j][i] << " +" << fs_fd_errHi_array[j][i] << " -"<< fs_fd_errLo_array[j][i] << " +" << fs_fd_syst_hi_array[j][i] << " -" << fs_fd_syst_lo_array[j][i] << std::endl;
 	}
-
+      
       std::cout << std::endl;
     }
 
-  if(calculate_pre_filter_eff)
+    //To show the values of reco eff at the end, like a table
+  Printf("=====================DEBUG==========================");
+  for(int j=0; j<nybins; j++)
     {
-      //to show the values of pre-filter efficiency like a table.
-      std::cout << "PRE FILTER EFFICIENCY" << std::endl;
-
-      for(int c=0; c<nybins; c++)
+      std::cout << "BIN y: " << y_bin_edges[j] << " to " << y_bin_edges[j+1] << " : " << std::endl;
+      
+      for(int i=0; i<nptbins; i++)
 	{
-	  std::cout << "BIN y: " << y_bin_edges[c] << " to " << y_bin_edges[c+1] << " : " << std::endl;
-	  
-	  for(int i=0; i<nptbins; i++)
-	    {
-	      std::cout << "BIN pt: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " <<  pre_eff_array[c][i] << " +" << pre_eff_err_array[c][i] << " -"<< pre_eff_err_array[c][i] << std::endl;
-	    }
-
-	  std::cout << std::endl;
+	  std::cout << "BIN pt: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " <<  reco_eff_array[0][j][i] << " +" << reco_eff_err_hi_array[0][j][i] << " -"<< reco_eff_err_lo_array[0][j][i] << std::endl;
 	}
+      
+      std::cout << std::endl;
     }
   
-  //to show the values of pre-filter efficiency like a table.
-  if(calculate_reco_eff)
-    {
-      std::cout << "RECONSTRUCTION EFFICIENCY" << std::endl;
-      
-      for(int c=0; c<nybins; c++)
-	{
-	  std::cout << "BIN y: " << y_bin_edges[c] << " to " << y_bin_edges[c+1] << " : " << std::endl;
-	  
-	  for(int i=0; i<nptbins; i++)
-	    {
-	      std::cout << "BIN pt: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " <<  reco_eff_array[c][i] << " +" << reco_eff_err_array[c][i] << " -"<< reco_eff_err_array[c][i] << std::endl;
-	    }
-
-	  std::cout << std::endl;
-	}
-    }
-      
-  //print the branching fraction
-  std::cout << "branching fraction: " << branch->getVal() << std::endl;
-
-  //plot of the cross section
+  //plot fs/fd
   TCanvas cz;
   TPad *pad = new TPad("pad", "pad", 0.05, 0.05, 0.99, 0.99);
   pad->Draw();      
-  TLegend *leg = new TLegend (0.65, 0.65, 0.85, 0.85);
+  TLegend *leg = new TLegend (0.70, 0.70, 0.90, 0.90);
       
   TLatex * tex = new TLatex(0.69,0.91,TString::Format("%.2f fb^{-1} (13 TeV)",LUMINOSITY));
   tex->SetNDC(kTRUE);
@@ -510,11 +461,13 @@ int main(int argc, char** argv)
   tex->SetTextSize(0.04);
   tex->SetLineWidth(2);
   tex->Draw();
-      
+  
+  if(yield_sub_samples=="pt/y" || yield_sub_samples=="pt") //plot as a funtion of pt, with one or more y bins
+    {
   for(int i=0; i<nybins; i++)
     {
-      TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_means, x_sec_array[i], pt_bin_edges_Lo, pt_bin_edges_Hi, x_sec_errLo_array[i], x_sec_errHi_array[i]);
-      graph->SetTitle("Differential cross section");
+      TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_centre, fs_fd_array[i], pt_bin_centre_Lo, pt_bin_centre_Hi, fs_fd_errLo_array[i], fs_fd_errHi_array[i]);
+      graph->SetTitle("Fragmentation fraction");
       graph->SetMarkerColor(i+2);
       graph->SetMarkerSize(0.5);
       graph->SetMarkerStyle(20+i);
@@ -523,9 +476,8 @@ int main(int argc, char** argv)
       if(i==0) 
 	{
 	  graph->GetXaxis()->SetTitle("p_{T}(B) [GeV]");
-	  graph->GetYaxis()->SetTitle("d#sigma/dp_{T} [#mub/GeV]");
-	  //to set the range of the plot, it takes the min and max value of cross section.
-	  graph->GetYaxis()->SetRangeUser(1e-5/*0.1*x_sec_array[0][0]*/,10*x_sec_array[nybins-1][0]);
+	  //to set the range of the plot.
+	  graph->GetYaxis()->SetRangeUser(0.1*fs_fd_array[0][0],2*fs_fd_array[nybins-1][0]);
 	  graph->Draw("ap same");
 	  //print the rapidity bin
 	  leg->AddEntry(graph, TString::Format("%.1f < |y| < %.1f",y_bin_edges[i],y_bin_edges[i+1]), "lp");
@@ -535,20 +487,66 @@ int main(int argc, char** argv)
 	  graph->Draw("p same");
 	  leg->AddEntry(graph, TString::Format("(#times 10^{%d}) %.1f < |y| < %.1f",i,y_bin_edges[i],y_bin_edges[i+1]), "lp");
 	}
-      
+
       //systematic errors
-      TGraphAsymmErrors* graph_syst = new TGraphAsymmErrors(nptbins, pt_bin_means, x_sec_array[i], pt_bin_edges_Lo, pt_bin_edges_Hi, x_sec_syst_array[i], x_sec_syst_array[i]);
-      graph_syst->SetFillColor(i+2);
-      graph_syst->SetFillStyle(3001);
-      graph_syst->Draw("2 same");
-      
+      if(syst)
+	{
+	  TGraphAsymmErrors* graph_syst = new TGraphAsymmErrors(nptbins, pt_bin_centre, fs_fd_array[i], pt_bin_centre_Lo, pt_bin_centre_Hi, fs_fd_syst_lo_array[i], fs_fd_syst_hi_array[i]);
+	  graph_syst->SetFillColor(i+2);
+	  graph_syst->SetFillStyle(3001);
+	  graph_syst->Draw("2 same");
+	}
     }//end of the ybins for
-  
-  if(yield_sub_samples=="pt/y") yield_sub_samples="pt_y";
-      
+
   leg->Draw("same");
   cz.Update();
-  cz.SetLogy();
+  //cz.SetLogy();
+    }
+  
+  if(yield_sub_samples=="y") //plot as a function of y, only one pt bin for now
+    {
+      //to transpose the arrays fd_fd_
+      double y_fs_fd_array[nybins];
+      double y_fs_fd_errLo_array[nybins];
+      double y_fs_fd_errHi_array[nybins];
+      double y_fs_fd_syst_lo_array[nybins];
+      double y_fs_fd_syst_hi_array[nybins];
+
+      for(int i=0; i<nybins; i++)
+	{
+	  y_fs_fd_array[i] = fs_fd_array[i][0];
+	  y_fs_fd_errLo_array[i] = fs_fd_errLo_array[i][0];
+	  y_fs_fd_errHi_array[i] = fs_fd_errHi_array[i][0];
+	  y_fs_fd_syst_lo_array[i] = fs_fd_syst_lo_array[i][0];
+	  y_fs_fd_syst_hi_array[i] = fs_fd_syst_hi_array[i][0];
+	}
+
+      TGraphAsymmErrors* graph = new TGraphAsymmErrors(nybins, y_bin_centre, y_fs_fd_array, y_bin_centre_Lo, y_bin_centre_Hi, y_fs_fd_errLo_array, y_fs_fd_errHi_array);
+      graph->SetTitle("Fragmentation fraction");
+      graph->SetMarkerColor(2);
+      graph->SetMarkerSize(0.5);
+      graph->SetMarkerStyle(20);
+      
+      //draw this for the first rapidity bin, or in case there is only one rapidity bin.
+      graph->GetXaxis()->SetTitle("y(B)");
+      //to set the range of the plot.
+      graph->GetYaxis()->SetRangeUser(0.1*y_fs_fd_array[0],2*y_fs_fd_array[0]);
+      graph->Draw("ap same");
+      
+      //systematic errors
+      if(syst)
+	{
+	  TGraphAsymmErrors* graph_syst = new TGraphAsymmErrors(nybins, y_bin_centre, y_fs_fd_array, y_bin_centre_Lo, y_bin_centre_Hi, y_fs_fd_syst_lo_array, y_fs_fd_syst_hi_array);
+	  graph_syst->SetFillColor(2);
+	  graph_syst->SetFillStyle(3001);
+	  graph_syst->Draw("2 same");
+	}
+      
+      cz.Update();
+      //cz.SetLogy();
+    }
+
+  if(yield_sub_samples=="pt/y") yield_sub_samples="pt_y";
       
   TString systematic = "";
       
@@ -557,16 +555,32 @@ int main(int argc, char** argv)
       
   if(calculate_pre_filter_eff && calculate_reco_eff)
     {
-      cz.SaveAs("signal_yield/x_sec_" + yield_sub_samples + "_bins_" + channel_to_ntuple_name(channel) + systematic + "_" + TString::Format(VERSION) + ".png");
-      cz.SaveAs("signal_yield/x_sec_" + yield_sub_samples + "_bins_" + channel_to_ntuple_name(channel) + systematic + "_" + TString::Format(VERSION) + ".C");
+      cz.SaveAs("fs_fd/fs_fd_" + yield_sub_samples + "_bins" + systematic + "_" + TString::Format(VERSION) + ".png");
     }
   else
     {
-      cz.SaveAs("signal_yield/signal_yield_" + yield_sub_samples + "_bins_" + channel_to_ntuple_name(channel) + systematic + "_" + TString::Format(VERSION) + ".png");
-      cz.SaveAs("signal_yield/signal_yield_" + yield_sub_samples + "_bins_" + channel_to_ntuple_name(channel) + systematic + "_" + TString::Format(VERSION) + ".C");
+      cz.SaveAs("fs_fd/yield_ratio_" + yield_sub_samples + "_bins" + systematic + "_" + TString::Format(VERSION) + ".png");
     }
-  //    }//end of else
-}//end of signal_yield_new
+  /* 
+  Printf("+++++++++++++++Debug: table++++++++++++++++++");
+
+  std::string table = "table_test";
+
+  std::vector<std::string> col_name;
+  col_name.push_back("col1");
+  col_name.push_back("col2");
+
+  std::vector<std::string> labels;
+  labels.push_back("line1");
+  labels.push_back("line2");
+  labels.push_back("line3");
+
+  std::vector<std::vector<double> > numbers = {{1,2} , {3,4} , {5,6}};
+  std::string caption = "caption_test";
+
+  latex_table(table, 2, 3, col_name, labels, numbers, caption);
+  */
+}//end of main
 
 RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, int mcstudy)
 {
@@ -605,7 +619,7 @@ RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_
   model_cut->fitTo(*data_cut,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
 
   TString dir = "";
-  dir = "pt_bin_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "_mass_fit_" + TString::Format("pt_from_%d_to_%d_y_from_%lf_to_%lf",(int)pt_min,(int)pt_max,y_min,y_max);
+  dir = "mass_fits/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "_mass_fit_" + TString::Format("pt_from_%d_to_%d_y_from_%lf_to_%lf",(int)pt_min,(int)pt_max,y_min,y_max);
   
   plot_mass_fit(ws_cut,channel,dir, (int) pt_max, (int) pt_min);
  
@@ -682,7 +696,7 @@ double bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, 
   model_cut->fitTo(*data_cut,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
 
   TString dir = "";
-  dir = "pt_bin_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "mass_fit_" + TString::Format("pt_from_%d_to_%d_y_from_%lf_to_%lf",(int)pt_min,(int)pt_max,y_min,y_max);
+  dir = "mass_fits/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "_syst_" + choice + "_" + choice2 + "_mass_fit_" + TString::Format("pt_from_%d_to_%d_y_from_%lf_to_%lf",(int)pt_min,(int)pt_max,y_min,y_max);
   
   plot_mass_fit(ws_cut,channel,dir, (int) pt_max, (int) pt_min);
 
@@ -726,7 +740,7 @@ double bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, 
   model_cut->fitTo(*data_cut,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
 
   TString dir = "";
-  dir = "pt_bin_mass_fit/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "mass_fit_" + TString::Format("pt_from_%d_to_%d_y_from_%lf_to_%lf",(int)pt_min,(int)pt_max,y_min,y_max);
+  dir = "mass_fits/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "_mass_fit_" + TString::Format("pt_from_%d_to_%d_y_from_%lf_to_%lf",(int)pt_min,(int)pt_max,y_min,y_max);
   
   plot_mass_fit(ws_cut,channel,dir, (int) pt_max, (int) pt_min);
 
@@ -1612,32 +1626,25 @@ void create_dir(std::vector<std::string> list)
     }
 }
 
-void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::string> col_name, std::vector<std::string> labels, 
-		 std::vector<std::vector<double> > numbers, std::string caption)
+void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::string> col_name, std::vector<std::string> labels, std::vector<std::vector<double> > numbers, std::string caption)
 {
   std::ofstream file;
 
   //Begin Document                                                                                                                               
-
   file.open(filename + ".tex");
 
   file << "\\documentclass{article}" << std::endl;
-  //file << "\\usepackage[utf8]{inputenc}" << std::endl;                                                                                        
-
   file << "\\usepackage{cancel}" << std::endl;
   file << "\\usepackage{geometry}" << std::endl;
   file << "\\usepackage{booktabs}" << std::endl;
   file << "\\geometry{a4paper, total={170mm,257mm}, left=20mm, top=20mm,}" << std::endl;
-
   file << "\\title{B production at 13 TeV}" << std::endl;
-  file << "\\author{Joao Melo & Julia Silva}" << std::endl;
-  file << "\\date{July 2016}" << std::endl;
   file << "\\begin{document}" << std::endl;
   file << "\\maketitle" << std::endl;
 
   // Create table                                                                                                                                
   file << "\\begin{table}[!h]" << std::endl;
-  // file << "\\centering" << std::endl;                                                                                                         
+
   //setup table size                                                                                                                             
   std::string col="c";
 
@@ -1664,13 +1671,12 @@ void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::st
 
   file << "\\bottomrule" << std::endl;
 
-  //End Table                                                                                                                                    
+  //End Table                                                                                                                                
   file << "\\end{tabular}" << std::endl;
   file << "\\caption{"+caption+"}" << std::endl;
-
   file << "\\end{table}" << std::endl;
-  //End document                                                                                                                                 
 
+  //End document
   file << "\\end{document}" << std::endl;
 
   system(("pdflatex " + filename + ".tex").c_str());
@@ -1720,21 +1726,15 @@ RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max, doub
   TEfficiency* efficiency = new TEfficiency(*hist_passed, *hist_tot);
   
   double eff;
-  double err;
   double eff_lo;
   double eff_hi;
 
   eff = efficiency->GetEfficiency(1);
-  eff_lo = efficiency->GetEfficiencyErrorLow(1);
+  eff_lo = -(efficiency->GetEfficiencyErrorLow(1));
   eff_hi = efficiency->GetEfficiencyErrorUp(1);
   
-  if(abs(eff_lo)<eff_hi)
-    err=eff_hi;
-  else
-    err=eff_lo;
-
   RooRealVar* eff1 = new RooRealVar("eff1","eff1",eff);
-  eff1->setError(err);
+  eff1->setAsymError(eff_lo,eff_hi);
 
   fin->Close();
   delete fin;
@@ -1813,21 +1813,15 @@ RooRealVar* reco_efficiency(int channel, double pt_min, double pt_max, double y_
     TEfficiency* efficiency = new TEfficiency(*hist_passed, *hist_tot);
     
     double eff;
-    double err;
     double eff_lo;
     double eff_hi;
     
     eff = efficiency->GetEfficiency(1);
-    eff_lo = efficiency->GetEfficiencyErrorLow(1);
+    eff_lo = -(efficiency->GetEfficiencyErrorLow(1));
     eff_hi = efficiency->GetEfficiencyErrorUp(1);
-    
-    if(abs(eff_lo)<eff_hi)
-      err=eff_hi;
-    else
-      err=eff_lo;
-    
+        
     RooRealVar* eff2 = new RooRealVar("eff2","eff2",eff);
-    eff2->setError(err);
+    eff2->setAsymError(eff_lo,eff_hi);
     
     fin_no_cuts->Close();
     delete fin_no_cuts;
@@ -1843,46 +1837,30 @@ RooRealVar* branching_fraction(int channel)
   RooRealVar* b_fraction = new RooRealVar("b_fraction","b_fraction",1);
   b_fraction->setError(1);
   
-  RooRealVar* jpsi_to_mu_mu = new RooRealVar("jpsi","jpsi",5.93e-2);
-  jpsi_to_mu_mu->setError(0.06e-2);
-
-  RooRealVar* bu_to_jpsi_ku = new RooRealVar("bu","bu",1.026e-3);
-  bu_to_jpsi_ku->setError(0.031e-3);
-  
   RooRealVar* bd_to_jpsi_kstar = new RooRealVar("bd","bd",1.32e-3);
-  bd_to_jpsi_kstar->setError(0.06e-3);
+  bd_to_jpsi_kstar->setError(6e-5);
   
+  RooRealVar* kstar_to_k_pi = new RooRealVar("kstar","kstar",0.99901);
+  kstar_to_k_pi->setError(9e-5);
+
   RooRealVar* bs_to_jpsi_phi = new RooRealVar("bs","bs",1.08e-3);
-  bs_to_jpsi_phi->setError(0.09e-3);
+  bs_to_jpsi_phi->setError(9e-5);
 
   RooRealVar* phi_to_k_k = new RooRealVar("phi","phi",48.9e-2);
-  phi_to_k_k->setError(0.5e-2);
+  phi_to_k_k->setError(5e-3);
 
   double err =1;
   
   switch (channel) 
     {
     default:
-    case 1:
-      b_fraction->setVal(bu_to_jpsi_ku->getVal() * jpsi_to_mu_mu->getVal());
-      err = b_fraction->getVal()*sqrt(pow(bu_to_jpsi_ku->getError()/bu_to_jpsi_ku->getVal(),2)+pow(jpsi_to_mu_mu->getError()/jpsi_to_mu_mu->getVal(),2));
-      break;
     case 2:
-      b_fraction->setVal(bd_to_jpsi_kstar->getVal() * jpsi_to_mu_mu->getVal());
-      err = b_fraction->getVal()*sqrt(pow(bd_to_jpsi_kstar->getError()/bd_to_jpsi_kstar->getVal(),2)+pow(jpsi_to_mu_mu->getError()/jpsi_to_mu_mu->getVal(),2));
-      break;
-    case 3:
-      b_fraction->setVal(-1);
+      b_fraction->setVal( bd_to_jpsi_kstar->getVal() * kstar_to_k_pi->getVal());
+      err = b_fraction->getVal() * sqrt( pow(bd_to_jpsi_kstar->getError()/bd_to_jpsi_kstar->getVal(),2) + pow(kstar_to_k_pi->getError()/kstar_to_k_pi->getVal(),2) );
       break;
     case 4:
-      b_fraction->setVal( bs_to_jpsi_phi->getVal() * jpsi_to_mu_mu->getVal() * phi_to_k_k->getVal() );
-      err = b_fraction->getVal()*sqrt(pow(bs_to_jpsi_phi->getError()/bs_to_jpsi_phi->getVal(),2) + pow(jpsi_to_mu_mu->getError()/jpsi_to_mu_mu->getVal(),2) + pow(phi_to_k_k->getError()/phi_to_k_k->getVal(),2));
-      break;
-    case 5:
-      b_fraction->setVal(-1);
-      break;
-    case 6:
-      b_fraction->setVal(-1);
+      b_fraction->setVal( bs_to_jpsi_phi->getVal() * phi_to_k_k->getVal() );
+      err = b_fraction->getVal() * sqrt( pow(bs_to_jpsi_phi->getError()/bs_to_jpsi_phi->getVal(),2) + pow(phi_to_k_k->getError()/phi_to_k_k->getVal(),2) );
       break;
     }
 
