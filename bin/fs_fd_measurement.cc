@@ -216,9 +216,9 @@ int main(int argc, char** argv)
       
       //to create the directories to save the .png files
       std::vector<std::string> dir_list;
-      dir_list.push_back(static_cast<const char*>("mass_fits/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION)));
-      dir_list.push_back("fs_fd");
-      dir_list.push_back("efficiencies");
+      dir_list.push_back(static_cast<const char*>("fs_fd_measurement/mass_fits/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION)));
+      dir_list.push_back("fs_fd_measurement/fs_fd");
+      dir_list.push_back("fs_fd_measurement/efficiencies");
       
       create_dir(dir_list);
       
@@ -285,7 +285,7 @@ int main(int argc, char** argv)
 		  graph_pre_eff->SetMarkerStyle(21);
 		  graph_pre_eff->Draw("AP");
 		  TString eff1_name = "";
-		  eff1_name = "efficiencies/pre_filter_efficiency_" + channel_to_ntuple_name(channel) + "_" + TString::Format("y_from_%.1f_to_%.1f",y_bin_edges[c],y_bin_edges[c+1]) + ".png";
+		  eff1_name = "fs_fd_measurement/efficiencies/pre_filter_efficiency_" + channel_to_ntuple_name(channel) + "_" + TString::Format("y_from_%.1f_to_%.1f",y_bin_edges[c],y_bin_edges[c+1]) + ".png";
 		  ce.SaveAs(eff1_name);
 		}
 	      if(yield_sub_samples=="y")
@@ -306,7 +306,7 @@ int main(int argc, char** argv)
 	      y_graph_pre_eff->SetMarkerStyle(21);
 	      y_graph_pre_eff->Draw("AP");
 	      TString eff1_name = "";
-	      eff1_name = "efficiencies/y_pre_filter_efficiency_" + channel_to_ntuple_name(channel) + ".png";
+	      eff1_name = "fs_fd_measurement/efficiencies/y_pre_filter_efficiency_" + channel_to_ntuple_name(channel) + ".png";
 	      cj.SaveAs(eff1_name);
 	    }
 	}
@@ -339,7 +339,7 @@ int main(int argc, char** argv)
 		  graph_reco_eff->SetMarkerStyle(21);
 		  graph_reco_eff->Draw("AP");
 		  TString eff2_name = "";
-		  eff2_name = "efficiencies/reco_efficiency_" + channel_to_ntuple_name(channel) + "_" + TString::Format("y_from_%.1f_to_%.1f",y_bin_edges[c],y_bin_edges[c+1]) + ".png";
+		  eff2_name = "fs_fd_measurement/efficiencies/reco_efficiency_" + channel_to_ntuple_name(channel) + "_" + TString::Format("y_from_%.1f_to_%.1f",y_bin_edges[c],y_bin_edges[c+1]) + ".png";
 		  cp.SaveAs(eff2_name);
 		}
 	      if(yield_sub_samples=="y")
@@ -360,7 +360,7 @@ int main(int argc, char** argv)
 	      y_graph_reco_eff->SetMarkerStyle(21);
 	      y_graph_reco_eff->Draw("AP");
 	      TString eff2_name = "";
-	      eff2_name = "efficiencies/y_reco_efficiency_" + channel_to_ntuple_name(channel) + ".png";
+	      eff2_name = "fs_fd_measurement/efficiencies/y_reco_efficiency_" + channel_to_ntuple_name(channel) + ".png";
 	      cq.SaveAs(eff2_name);
 	    }
 	}
@@ -555,11 +555,11 @@ int main(int argc, char** argv)
       
   if(calculate_pre_filter_eff && calculate_reco_eff)
     {
-      cz.SaveAs("fs_fd/fs_fd_" + yield_sub_samples + "_bins" + systematic + "_" + TString::Format(VERSION) + ".png");
+      cz.SaveAs("fs_fd_measurement/fs_fd/fs_fd_" + yield_sub_samples + "_bins" + systematic + "_" + TString::Format(VERSION) + ".png");
     }
   else
     {
-      cz.SaveAs("fs_fd/yield_ratio_" + yield_sub_samples + "_bins" + systematic + "_" + TString::Format(VERSION) + ".png");
+      cz.SaveAs("fs_fd_measurement/fs_fd/yield_ratio_" + yield_sub_samples + "_bins" + systematic + "_" + TString::Format(VERSION) + ".png");
     }
   /* 
   Printf("+++++++++++++++Debug: table++++++++++++++++++");
