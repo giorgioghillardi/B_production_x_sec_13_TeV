@@ -10,11 +10,12 @@
 #include "UserCode/B_production_x_sec_13_TeV/interface/myloop.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/channel.h"
 
-//myloop --channel 1 --mc 1 --cuts 1 --dir /some/place
+//myloop --channel 2 --mc 1 -- truth 0 --cuts 1 --output /some/place
 int main(int argc, char** argv)
 {
   int channel = 1;
   int run_on_mc= 0;
+  int mc_truth=0;
   int cuts = 1;
   std::string dir ="";
 
@@ -35,13 +36,19 @@ int main(int argc, char** argv)
           convert >> run_on_mc;
         }
 
+      if(argument == "--truth")
+        {
+          convert << argv[++i];
+          convert >> mc_truth;
+        }
+
       if(argument == "--cuts")
 	{
           convert << argv[++i];
           convert >> cuts;
         }
 
-      if(argument == "--dir")
+      if(argument == "--output")
         {
           convert << argv[++i];
           convert >> dir;
@@ -112,7 +119,6 @@ int main(int argc, char** argv)
     
     //-----------------------------------------------------------------
     // setting memory addresses to the branches
-    // create new output trees
 
     GenInfoBranches *GenInfo = new GenInfoBranches;    
     EvtInfoBranches *EvtInfo = new EvtInfoBranches;
@@ -138,15 +144,25 @@ int main(int argc, char** argv)
         HltTree->SetBranchAddress(HLT_paths[i],&HLT_book[i]);
     
     TString directory = "";
+    TString data = "";
     TString filter = "";
-    TString bf = "";
     
     if(cuts)
       filter = "with_cuts";
     else
       filter = "no_cuts";
     
-    directory = "myloop_new_" + channel_to_ntuple_name(channel) + "_" + filter + ".root";
+    if(run_on_mc)
+      {
+	if(mc_truth)
+	  data = "mc_truth_" + channel_to_ntuple_name(channel);
+	else
+	  data = "mc_" + channel_to_ntuple_name(channel);
+      }
+    else
+      data = "data";
+    
+    directory = "selected_" + data + "_" + filter + "_test.root";
 
     if(dir != "")
       directory = dir + directory;
@@ -157,6 +173,8 @@ int main(int argc, char** argv)
     ReducedBranches brpi;
     ReducedBranches brks;
     ReducedBranches brkstar;
+    ReducedBranches brkstar_true;
+    ReducedBranches brkstar_swap;
     ReducedBranches brphi;
     ReducedBranches brmix;
     ReducedBranches brlambda;
@@ -165,6 +183,8 @@ int main(int argc, char** argv)
     TTree *ntpi = new TTree("ntpi","ntpi");
     TTree *ntks = new TTree("ntks","ntks");
     TTree *ntkstar = new TTree("ntkstar","ntkstar");
+    TTree *ntkstar_true = new TTree("ntkstar_true","ntkstar_true");
+    TTree *ntkstar_swap = new TTree("ntkstar_swap","ntkstar_swap");
     TTree *ntphi = new TTree("ntphi","ntphi");
     TTree *ntmix = new TTree("ntmix","ntmix");
     TTree *ntlambda = new TTree("ntlambda","ntlambda");
@@ -173,17 +193,21 @@ int main(int argc, char** argv)
     brpi.regTree(ntpi);
     brks.regTree(ntks);
     brkstar.regTree(ntkstar);
+    brkstar_true.regTree(ntkstar_true);
+    brkstar_swap.regTree(ntkstar_swap);
     brphi.regTree(ntphi);
     brmix.regTree(ntmix);
     brlambda.regTree(ntlambda);
 
-    for (int evt=0; evt<n_entries; evt++) 
+    std::vector<ReducedBranches> selected_bees;
+
+    for (int evt=0; evt<n_entries; evt++)
       {
-        if (evt%1000==0 || evt==n_entries-1) printf("processing %d/%d (%.2f%%).\n",evt,n_entries-1,(double)evt/(double)(n_entries-1)*100.);
+	if (evt%1000==0 || evt==n_entries-1) printf("processing %d/%d (%.2f%%).\n",evt,n_entries-1,(double)evt/(double)(n_entries-1)*100.);
         
         root->GetEntry(evt);
         HltTree->GetEntry(evt);
-
+	
         // verify the Run # and Event #
         if (EvtInfo->EvtNo!=(int)HltTree_Event || EvtInfo->RunNo!=HltTree_Run) 
 	  {
@@ -196,14 +220,17 @@ int main(int argc, char** argv)
 	int tk2idx = -1;
 	int mu1idx = -1;
 	int mu2idx = -1;
+
+	//clear the vector that stores the selected bees in each event
+	selected_bees.clear();
 	
 	// Start of BInfo loop
 	for (int bidx = 0; bidx < BInfo->size; bidx++)
-	  {   
+	  {
 	    int b_type = BInfo->type[bidx];
 	    
 	    //the indices to run over the Binfo. These are used to identify the signal when running on MC.
-	    ujidx = BInfo->rfuj_index[bidx];
+	    ujidx = BInfo->rfuj_index[bidx]; 
 	    tk1idx = BInfo->rftk1_index[bidx];
 	    tk2idx = BInfo->rftk2_index[bidx];
 	    mu1idx = BInfo->uj_rfmu1_index[ujidx];
@@ -217,8 +244,10 @@ int main(int argc, char** argv)
 		  default:
 		  case 1:
 		    //to translate the channel to the type. type is defined in Bfinder to destinguish the Bees
-		    if (b_type != 1) continue; // skip any non K+		
+		    if (b_type != 1) continue; // skip any non K+
 		    //to select the reconstructed Bees that we save. This way we only save signal.
+		    if (mc_truth)
+		      {
 		    if (abs(GenInfo->pdgId[MuonInfo->geninfo_index[mu1idx]]) != 13) continue; //skip any mu that was not generated as a mu+-
 		    if (abs(GenInfo->pdgId[MuonInfo->geninfo_index[mu2idx]]) != 13) continue; //skip any mu that was not generated as a mu+-
 		    if (GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]] != GenInfo->mo1[MuonInfo->geninfo_index[mu2idx]]) continue; //skip if the two muons don't have the same index for the mother particle
@@ -226,11 +255,14 @@ int main(int argc, char** argv)
 		    if (abs(GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]) != 321) continue; //skip any tk that was not generated as a K+-
 		    if (GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]] != GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]]) continue; //skip if the index of the mother of the track is not the same as  mother of the jpsi
 		    if (abs(GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]]) != 521) continue; //skip anything that is not a B+-. probably redundant at this point in the decay chain. but it is reasonable to keep it.
+		      }
 		    break;
 
 		  case 2:
-		    if (b_type != 4) continue; // skip any non Kstar		   
+		    if (b_type != 4 && b_type != 5) continue; // skip any non Kstar
 		    //to select the reconstructed Bees that we save. This way we only save signal.
+		    if (mc_truth)
+		      {
 		    if (abs(GenInfo->pdgId[MuonInfo->geninfo_index[mu1idx]]) != 13) continue; //skip any mu that was not generated as a mu+-
 		    if (abs(GenInfo->pdgId[MuonInfo->geninfo_index[mu2idx]]) != 13) continue; //skip any mu that was not generated as a mu+-    
 		    if (GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]] != GenInfo->mo1[MuonInfo->geninfo_index[mu2idx]]) continue; //skip if the two muons don't have the same mother particle index
@@ -241,6 +273,7 @@ int main(int argc, char** argv)
 		    if (abs(GenInfo->pdgId[GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]]]) != 313) continue; //skip if the mother of the tracks is not K*0
 		    if (GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]] != GenInfo->mo1[GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]]]) continue; //skip if the index of the mother of the tracks is not the same as mother of the jpsi
 		    if (abs(GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]]) != 511) continue; //skip anything that is not a B0. probably redundant at this point in the decay chain. but it is reasonable to keep it.
+		      }
 		    break;
 		    
 		  case 3:
@@ -249,7 +282,9 @@ int main(int argc, char** argv)
 
 		  case 4:
 		    if (b_type != 6) continue; // skip any non phi
-		    
+		    //to select the reconstructed Bees that we save. This way we only save signal.
+		    if (mc_truth)
+		      {	    
 		    if (abs(GenInfo->pdgId[MuonInfo->geninfo_index[mu1idx]]) != 13) continue; //skip any mu that was not generated as a mu+-
 		    if (abs(GenInfo->pdgId[MuonInfo->geninfo_index[mu2idx]]) != 13) continue; //skip any mu that was not generated as a mu+-    
 		    if (GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]] != GenInfo->mo1[MuonInfo->geninfo_index[mu2idx]]) continue; //skip if the two muons don't have the same mother particle index
@@ -260,16 +295,17 @@ int main(int argc, char** argv)
 		    if (abs(GenInfo->pdgId[GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]]]) != 333) continue; //skip if the mother of the tracks is not phi
 		    if (GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]] != GenInfo->mo1[GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]]]) continue; //skip if the index of the mother of the tracks is not the same as mother of the jpsi
 		    if (abs(GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]]) != 531) continue; //skip anything that is not a Bs. probably redundant at this point in the decay chain. but it is reasonable to keep it.
+		      }
 		    break;
 		  case 5:
 		    if (b_type != 7) continue; // skip any non pipi
 		    break;
 		  case 6:
-		    if (b_type != 8) continue; // skip any non lambda
+		    if (b_type != 8 && b_type!=9) continue; // skip any non lambda
 		    break;
-		  }
+		  }		
 	      }//end of if(run_on_mc)
-	
+	    
 	    // Find the target branching/ntuple to fill
 	    ReducedBranches *br = NULL;
 	    TTree *nt = NULL;
@@ -288,10 +324,10 @@ int main(int argc, char** argv)
 	      case 6:
 		br = &brphi; nt = ntphi; break; // phi
 	      case 7:
-		br = &brmix; nt = ntmix; break; // low mass pipi
+		br  = &brmix; nt = ntmix; break; // low mass pipi
 	      case 8:
 	      case 9:
-		br = &brlambda; nt = ntlambda; break; // lambda
+		br  = &brlambda; nt = ntlambda; break; // lambda
 	      default:
 		printf("Error: unknown BInfo->type.\n");
 		return 0;
@@ -324,21 +360,24 @@ int main(int argc, char** argv)
 		
 		//-----------------------------------------------------------------
 		// Basic track selections
-		if (b_type==1 || b_type==2) { // k, pi
-		  if (TrackInfo->pt[tk1idx]<=0.8) continue;
-		  if (fabs(TrackInfo->eta[tk1idx])>=2.5) continue;
-		  if (TrackInfo->chi2[tk1idx]/TrackInfo->ndf[tk1idx]>=5.) continue;
-		  if (TrackInfo->striphit[tk1idx]+TrackInfo->pixelhit[tk1idx]<5) continue;
-		}else { // others (2 tracks)
-		  if (TrackInfo->pt[tk1idx]<=0.7) continue;
-		  if (TrackInfo->pt[tk2idx]<=0.7) continue;
-		  if (fabs(TrackInfo->eta[tk1idx])>=2.5) continue;
-		  if (fabs(TrackInfo->eta[tk2idx])>=2.5) continue;
-		  if (TrackInfo->chi2[tk1idx]/TrackInfo->ndf[tk1idx]>=5.) continue;
-		  if (TrackInfo->chi2[tk2idx]/TrackInfo->ndf[tk2idx]>=5.) continue;
-		  if (TrackInfo->striphit[tk1idx]+TrackInfo->pixelhit[tk1idx]<5) continue;
-		  if (TrackInfo->striphit[tk2idx]+TrackInfo->pixelhit[tk2idx]<5) continue;
-		}
+		if (b_type==1 || b_type==2) // k, pi
+		  {
+		    if (TrackInfo->pt[tk1idx]<=1.6) continue; //was 0.8
+		    if (fabs(TrackInfo->eta[tk1idx])>=2.5) continue;
+		    if (TrackInfo->chi2[tk1idx]/TrackInfo->ndf[tk1idx]>=5.) continue;
+		    if (TrackInfo->striphit[tk1idx]+TrackInfo->pixelhit[tk1idx]<5) continue;
+		  }
+		else
+		  { // others (2 tracks)
+		    if (TrackInfo->pt[tk1idx]<=0.7) continue;
+		    if (TrackInfo->pt[tk2idx]<=0.7) continue;
+		    if (fabs(TrackInfo->eta[tk1idx])>=2.5) continue;
+		    if (fabs(TrackInfo->eta[tk2idx])>=2.5) continue;
+		    if (TrackInfo->chi2[tk1idx]/TrackInfo->ndf[tk1idx]>=5.) continue;
+		    if (TrackInfo->chi2[tk2idx]/TrackInfo->ndf[tk2idx]>=5.) continue;
+		    if (TrackInfo->striphit[tk1idx]+TrackInfo->pixelhit[tk1idx]<5) continue;
+		    if (TrackInfo->striphit[tk2idx]+TrackInfo->pixelhit[tk2idx]<5) continue;
+		  }
 		
 		//-----------------------------------------------------------------
 		// J/psi cut
@@ -348,24 +387,46 @@ int main(int argc, char** argv)
 		
 		//-----------------------------------------------------------------
 		// ditrack selections
+
 		if (b_type==3) // Ks mode
-		  {
-		    if (fabs(BInfo->tktk_mass[bidx]-KSHORT_MASS)>=0.060) continue;
-		  }
+		  {if (fabs(BInfo->tktk_mass[bidx]-KSHORT_MASS)>=0.015) continue;} //this was 0.060
+
 		if (b_type==4 || b_type==5) // Kstar mode
 		  {
-		    if (fabs(BInfo->tktk_mass[bidx]-KSTAR_MASS)>=0.100) continue;
+		    if (fabs(BInfo->tktk_mass[bidx]-KSTAR_MASS)>=0.050) continue; // this was 0.100 before
+		    
+		    TLorentzVector v4_tk1, v4_tk2;
+		    v4_tk1.SetPtEtaPhiM(TrackInfo->pt[tk1idx],TrackInfo->eta[tk1idx],TrackInfo->phi[tk1idx],KAON_MASS);
+		    v4_tk2.SetPtEtaPhiM(TrackInfo->pt[tk2idx],TrackInfo->eta[tk2idx],TrackInfo->phi[tk2idx],KAON_MASS);
+		    if (fabs((v4_tk1+v4_tk2).Mag()-PHI_MASS)<=0.010) continue;
 		  }
+
 		if (b_type==6) // phi mode
 		  {
-		    if (fabs(BInfo->tktk_mass[bidx]-PHI_MASS)>=0.060) continue;
+		    if (fabs(BInfo->tktk_mass[bidx]-PHI_MASS)>=0.010) continue; //this was 0.060
+
+		    TLorentzVector v4_tk1, v4_tk2;
+		    v4_tk1.SetPtEtaPhiM(TrackInfo->pt[tk1idx],TrackInfo->eta[tk1idx],TrackInfo->phi[tk1idx],KAON_MASS);
+		    v4_tk2.SetPtEtaPhiM(TrackInfo->pt[tk2idx],TrackInfo->eta[tk2idx],TrackInfo->phi[tk2idx],PION_MASS);
+		    if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=0.050) continue;
+
+		    v4_tk1.SetPtEtaPhiM(TrackInfo->pt[tk1idx],TrackInfo->eta[tk1idx],TrackInfo->phi[tk1idx],PION_MASS);
+		    v4_tk2.SetPtEtaPhiM(TrackInfo->pt[tk2idx],TrackInfo->eta[tk2idx],TrackInfo->phi[tk2idx],KAON_MASS);
+		    if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=0.050) continue;
 		  }
-					
+
 		if (b_type==8 || b_type==9) // Lambda mode
 		  {
-		    if (fabs(BInfo->tktk_mass[bidx]-LAMBDA_MASS)>=0.060) continue;
+		    if (fabs(BInfo->tktk_mass[bidx]-LAMBDA_MASS)>=0.015) continue; //was 0.060
+		    
+		    TLorentzVector v4_tk1, v4_tk2;
+		    v4_tk1.SetPtEtaPhiM(TrackInfo->pt[tk1idx],TrackInfo->eta[tk1idx],TrackInfo->phi[tk1idx],PION_MASS);
+		    v4_tk2.SetPtEtaPhiM(TrackInfo->pt[tk2idx],TrackInfo->eta[tk2idx],TrackInfo->phi[tk2idx],PION_MASS);
+		    if (fabs((v4_tk1+v4_tk2).Mag()-KSHORT_MASS)<=0.015) continue;
 		  }
-	      } //end of cuts
+		//-----------------------------------------------------------------
+		
+	      } //end of cuts, there are more cuts later in the code
 	    
             //-----------------------------------------------------------------
             // Find the best pointing PV
@@ -544,9 +605,123 @@ int main(int argc, char** argv)
 		br->mu2hltphi[i] = MuonInfo->MuTrgMatchTrgObjPhi->at(mu2idx)[i];
 	      }
             
-	    nt->Fill();
-            
+	    if(cuts)
+	      {
+		// cuts that depend on complex variables defined above.
+		
+		//----------------------------------------------------------------
+		//HLT selection
+		if(b_type != 7) //not to use HLT filter in the jpsi pipi channel
+		  {
+		    if(run_on_mc)
+		      {if (br->hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1) continue;}
+		    else
+		      {if (br->hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1 && br->hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;}
+		  }
+		//-----------------------------------------------------------------
+		
+		if(b_type==1 || b_type==2 || b_type==4 || b_type==5 || b_type==6) //for K+, pi+, K*0, phi
+		  {
+		    if (br->vtxprob<=0.2) continue; //original cut 0.1
+		    if (br->lxy/br->errxy<=4.5) continue; //original cut 3.0
+		    if (br->cosalpha2d<=0.996) continue; //original cut 0.99
+		  }
+		
+		if(b_type==3 || b_type==8 || b_type==9) // Ks and lambda
+		  {
+		    if (br->vtxprob<=0.1) continue;
+		    if (br->lxy/br->errxy<=3.0) continue;
+		    if (br->cosalpha2d<=0.99) continue;
+		    if (br->tktkblxy/br->tktkberrxy<=3.0) continue;
+		  }
+		
+		if(b_type==7) // pipi
+		  {
+		    if (br->vtxprob<=0.2) continue;
+		    if (fabs(br->tk1eta)>=1.6) continue;
+		    if (fabs(br->tk2eta)>=1.6) continue;
+		  }
+		//-----------------------------------------------------------------
+	      }//end of cuts
+	    
+	    if(b_type == 4 || b_type == 5)
+	      {
+		selected_bees.push_back(*br); //copy the selected bees of channel 2 into the selected_bees vector
+	      }
+	    else
+	      nt->Fill();//fill the other channels the usual way
+	    
 	  } // end of BInfo loop
+	
+	//===========================================================================================================================
+	//cicle over the selected_bees vector, and choose the best B0 candidate. This is for channel 2, to take care of the K pi swap
+		
+	//set the reducedbranches and ttree pointer to the right addresses
+	ReducedBranches *br_cand = NULL;
+	TTree *nt_cand = NULL;
+	br_cand = &brkstar;
+	nt_cand = ntkstar;
+	
+	//compare the i-th candidade with the j-th candidate: if the j is not closer to the KSTAR_MASS, keep the i as the best candidate.
+	for(std::vector<int>::size_type i = 0; i != selected_bees.size(); i++)
+	  {
+	    if(selected_bees[i].type != 4 && selected_bees[i].type != 5)
+	      printf("ERROR: the vector with the k pi candidates contains other channels!! \n");  
+	    
+	    bool isbestkstar = true; //start by assuming the i-th is the best mass.
+	    
+	    for(std::vector<int>::size_type j = 0; j != selected_bees.size(); j++)
+	      {
+		if(j==i) continue; //only compare with different candidates.
+		if (selected_bees[i].mu1idx==selected_bees[j].mu1idx && selected_bees[i].mu2idx==selected_bees[j].mu2idx && selected_bees[i].tk1idx==selected_bees[j].tk1idx && selected_bees[i].tk2idx==selected_bees[j].tk2idx) //if a candidate is built with the same muons and tracks
+		  {
+		    if (fabs(selected_bees[j].tktkmass-KSTAR_MASS)<fabs(selected_bees[i].tktkmass-KSTAR_MASS)) //if the j-th is closer, then set isbestkstar to false, because it refers to the i-th candidate.
+		      {
+			isbestkstar = false;
+			continue;
+		      }
+		  }
+	      }
+	    
+	    if(isbestkstar) //isbestkstar is true if the i-th is closer than the j-th candidate, or if there is only one candidate.
+	      {
+		*br_cand = selected_bees[i]; //put the values of the selected B into br_cand
+		nt_cand->Fill();
+		
+		if(run_on_mc && channel==2)//run this part for --truth 0 or 1. if --truth 0: this separates the true and swapped signal. if --truth 1: this should fill only the true signal ntuple.
+		  {
+		    printf("debug: evt %d \n", evt);
+		    
+		    if((selected_bees[i].type == 4 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]]==321 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]==-211) ||
+		       (selected_bees[i].type == 4 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]]==-321 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]==211) ||
+		       (selected_bees[i].type == 5 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]]==211 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]==-321) ||
+		       (selected_bees[i].type == 5 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]]==-211 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]==321)) //true signal
+		      {
+			br_cand = &brkstar_true;
+			nt_cand = ntkstar_true;
+			*br_cand = selected_bees[i]; //put the values of the selected B into br_cand
+			nt_cand->Fill();
+			
+			printf("debug signal: type: %d B_pdgId: %d tk1_pdgId: %d tk2_pdgId: %d \n", selected_bees[i].type, GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[selected_bees[i].mu1idx]]]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]);
+		      }
+		    else 
+		      if((selected_bees[i].type == 4 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]]==211 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]==-321) ||
+			 (selected_bees[i].type == 4 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]]==-211 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]==321) ||
+			 (selected_bees[i].type == 5 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]]==321 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]==-211) ||
+			 (selected_bees[i].type == 5 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]]==-321 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]==211)) //swapped signal
+			{
+			  br_cand = &brkstar_swap;
+			  nt_cand = ntkstar_swap;
+			  *br_cand = selected_bees[i]; //put the values of the selected B into br_cand
+			  nt_cand->Fill();
+			  
+			  printf("debug swapped: type: %d B_pdgId: %d tk1_pdgId: %d tk2_pdgId: %d \n", selected_bees[i].type, GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[selected_bees[i].mu1idx]]]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]);
+			}
+		      else
+			printf("debug unidentified: type: %d B_pdgId: %d tk1_pdgId: %d tk2_pdgId: %d \n", selected_bees[i].type, GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[selected_bees[i].mu1idx]]]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]);
+		  }
+	      }//end of is best kstar	    
+	  }//end of the selected_bees loop	
       } // end of evt loop
     
     fout->Write();

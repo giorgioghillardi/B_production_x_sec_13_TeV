@@ -15,7 +15,8 @@
   <bin name="draw_FOM"   file="draw_FOM.cc"></bin>
   <bin name="myloop_new"   file="myloop_new.cc"></bin>
   <bin name="reduce_tree"   file="reduce_mc_tree.cc"></bin>
-  <bin name="fs_fd"   file="fs_fd_measurement.cc"></bin>
+  <bin name="fs_fd_ratio"   file="fs_fd_measurement.cc"></bin>
+  <bin name="swap"   file="k_pi_swap.cc"></bin>
 </environment>
 
 <Flags CXXFLAGS="-g"/>

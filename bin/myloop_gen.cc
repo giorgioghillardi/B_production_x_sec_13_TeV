@@ -132,12 +132,16 @@ tgen/crab_Bfinder_mc_Bd_muonfilter_v1/160812_135133/0000/Bfinder_mc_*.root");
   int idx_mu1  = -1;
   int idx_mu2  = -1;
   
+  int b_counter = 0;
+
   for (int evt=0; evt<n_entries; evt++) 
     {
       if (evt%1000==0 || evt==n_entries-1) printf("processing %d/%d (%.2f%%).\n",evt,n_entries-1,(double)evt/(double)(n_entries-1)*100.);
       
       root->GetEntry(evt);
-      
+
+      b_counter = 0;
+
       // Look for indices of the whole decay tree
       for (int idx = 0; idx < GenInfo->size; idx++) 
 	{
@@ -173,6 +177,10 @@ tgen/crab_Bfinder_mc_Bd_muonfilter_v1/160812_135133/0000/Bfinder_mc_*.root");
 	      if ((GenInfo->pdgId[idx_tk1]!=321 || GenInfo->pdgId[idx_tk2]!=-211) && (GenInfo->pdgId[idx_tk1]!=-321 || GenInfo->pdgId[idx_tk2]!=211)) continue; //not k+pi- and k-pi+
      	      if (abs(GenInfo->pdgId[idx_mu1])!=13) continue; // not mu+-
 	      if (abs(GenInfo->pdgId[idx_mu2])!=13) continue; // not mu+-
+	      
+	      //debug: count the number of Bee in each event
+	      b_counter ++;
+	      
 	      break;
 	      
 	    case 3:
@@ -244,6 +252,11 @@ tgen/crab_Bfinder_mc_Bd_muonfilter_v1/160812_135133/0000/Bfinder_mc_*.root");
 
 	  nt->Fill();
 	} //end of GenInfo loop
+
+      //debug: print the number of signal bees, in each event. For channel 2.
+      if(channel == 2 && b_counter > 1)
+	printf("Number of signal B: %d \n", b_counter);
+
     } // end of evt loop
   
   fout->Write();
