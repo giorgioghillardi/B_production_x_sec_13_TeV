@@ -17,6 +17,7 @@ int main(int argc, char** argv)
   int run_on_mc= 0;
   int mc_truth=0;
   int cuts = 1;
+  int debug = 0;
   std::string dir ="";
 
   for(int i=1 ; i<argc ; ++i)
@@ -46,6 +47,12 @@ int main(int argc, char** argv)
 	{
           convert << argv[++i];
           convert >> cuts;
+        }
+      
+      if(argument == "--debug")
+	{
+          convert << argv[++i];
+          convert >> debug;
         }
 
       if(argument == "--output")
@@ -136,11 +143,16 @@ int main(int argc, char** argv)
     
     ULong64_t HltTree_Event;
     int HltTree_Run;
-    int HLT_book[N_HLT_BOOKINGS];
+    int hlt_size = N_HLT_BOOKINGS;
+
+    if(run_on_mc)
+      hlt_size = N_HLT_BOOKINGS - 1;
+    
+    int HLT_book[hlt_size];
     
     HltTree->SetBranchAddress("Event",&HltTree_Event);
     HltTree->SetBranchAddress("Run",&HltTree_Run);
-    for (int i=0;i<N_HLT_BOOKINGS;i++)
+    for (int i=0; i<hlt_size; i++)
         HltTree->SetBranchAddress(HLT_paths[i],&HLT_book[i]);
     
     TString directory = "";
@@ -342,8 +354,8 @@ int main(int argc, char** argv)
             
 	    //-----------------------------------------------------------------
 	    // save HLT paths
-	    br->nhltbook = N_HLT_BOOKINGS;
-	    for (int i=0;i<N_HLT_BOOKINGS;i++)
+	    br->nhltbook = hlt_size;
+	    for (int i=0;i<hlt_size;i++)
 	      br->hltbook[i] = HLT_book[i];
             
 	    //the user chooses to preforme the cuts or not. this is useful to calculate efficiencies. this affects both data and MC.
@@ -690,7 +702,7 @@ int main(int argc, char** argv)
 		
 		if(run_on_mc && channel==2)//run this part for --truth 0 or 1. if --truth 0: this separates the true and swapped signal. if --truth 1: this should fill only the true signal ntuple.
 		  {
-		    printf("debug: evt %d \n", evt);
+		    if(debug) printf("debug: evt %d \n", evt);
 		    
 		    if((selected_bees[i].type == 4 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]]==321 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]==-211) ||
 		       (selected_bees[i].type == 4 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]]==-321 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]==211) ||
@@ -702,7 +714,7 @@ int main(int argc, char** argv)
 			*br_cand = selected_bees[i]; //put the values of the selected B into br_cand
 			nt_cand->Fill();
 			
-			printf("debug signal: type: %d B_pdgId: %d tk1_pdgId: %d tk2_pdgId: %d \n", selected_bees[i].type, GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[selected_bees[i].mu1idx]]]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]);
+			if(debug) printf("debug signal: type: %d B_pdgId: %d tk1_pdgId: %d tk2_pdgId: %d \n", selected_bees[i].type, GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[selected_bees[i].mu1idx]]]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]);
 		      }
 		    else 
 		      if((selected_bees[i].type == 4 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]]==211 && GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]==-321) ||
@@ -715,10 +727,10 @@ int main(int argc, char** argv)
 			  *br_cand = selected_bees[i]; //put the values of the selected B into br_cand
 			  nt_cand->Fill();
 			  
-			  printf("debug swapped: type: %d B_pdgId: %d tk1_pdgId: %d tk2_pdgId: %d \n", selected_bees[i].type, GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[selected_bees[i].mu1idx]]]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]);
+			  if(debug) printf("debug swapped: type: %d B_pdgId: %d tk1_pdgId: %d tk2_pdgId: %d \n", selected_bees[i].type, GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[selected_bees[i].mu1idx]]]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]);
 			}
 		      else
-			printf("debug unidentified: type: %d B_pdgId: %d tk1_pdgId: %d tk2_pdgId: %d \n", selected_bees[i].type, GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[selected_bees[i].mu1idx]]]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]);
+			if(debug) printf("debug unidentified: type: %d B_pdgId: %d tk1_pdgId: %d tk2_pdgId: %d \n", selected_bees[i].type, GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[selected_bees[i].mu1idx]]]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]);
 		  }
 	      }//end of is best kstar	    
 	  }//end of the selected_bees loop	
