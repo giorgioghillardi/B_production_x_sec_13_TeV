@@ -174,7 +174,7 @@ int main(int argc, char** argv)
     else
       data = "data";
     
-    directory = "selected_" + data + "_" + filter + "_test.root";
+    directory = "selected_" + data + "_" + filter + ".root";
 
     if(dir != "")
       directory = dir + directory;
