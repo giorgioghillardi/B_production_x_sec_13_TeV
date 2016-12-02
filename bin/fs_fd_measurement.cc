@@ -6,14 +6,16 @@ using namespace RooFit;
 
 //-----------------------------------------------------------------
 // Definition of channel #
+// channel = 1: B+ -> J/psi K+
 // channel = 2: B0 -> J/psi K*
 // channel = 4: Bs -> J/psi phi
 
 //RooRealVar* branching_fraction(int channel);
 
-//input example: fs_fd --bins pt/y --preeff 1 --recoeff 1 --mc 0 --syst 0
+//input example: fs_fd_ratio --ratio fs_fd --bins pt/y --preeff 1 --recoeff 1 --mc 0 --syst 0
 int main(int argc, char** argv)
 {
+  std::string ratio = "fs_fu";
   std::string yield_sub_samples = "full";
   int calculate_pre_filter_eff = 0;
   int calculate_reco_eff = 0;
@@ -25,6 +27,11 @@ int main(int argc, char** argv)
       std::string argument = argv[i];
       std::stringstream convert;
 
+      if(argument == "--ratio")
+	{
+	  convert << argv[++i];
+	  convert >> ratio;
+	}
       if(argument == "--bins")
 	{
 	  convert << argv[++i];
@@ -146,9 +153,26 @@ int main(int argc, char** argv)
   
   for(int ch=0; ch<2; ch++)
     { 
-      //int channel = 2*(ch+1); //if ch=0 -> channel=2, if ch=1 -> channel=4
-      int channel = 3*ch+1; //if ch=0 -> channel=1, if ch=1 -> channel=4
-
+      //CHOOSE THE CHANNEL HERE!!
+      int channel= 1; //just the default value for the channel, it should be assigned below.
+      
+      if(ratio == "fs_fu")
+	channel = 3*ch+1; //fs_fu: if ch=0 -> channel=1, if ch=1 -> channel=4
+      else
+	if(ratio == "fs_fd")
+	  channel = 2*(ch+1); //fs_fd: if ch=0 -> channel=2, if ch=1 -> channel=4
+	else
+	  if(ratio == "fd_fu")
+	    {
+	      channel= ch+1;
+	      printf("THIS IS STILL NOT TESTED: TAKE IT WITH A GRAIN OF SALT...");
+	    }
+	  else
+	    {
+	      printf("ERROR: The ratio you asked for is not deffined. Please check in the code.");
+	      return 0;
+	    }
+      
       //to create the directories to save the .png files
       std::vector<std::string> dir_list;
       dir_list.push_back(static_cast<const char*>("mass_fits/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION)));
@@ -350,8 +374,11 @@ int main(int argc, char** argv)
 	      if(yield_sub_samples=="y")
 		fs_fd_array[j][i] = (yield_array[1][j][i]/yield_array[0][j][i]);
 	      else
-		fs_fd_array[j][i] = (yield_array[1][j][i]/yield_array[0][j][i]) * pow(10,j);
-	      
+		{
+		  printf("debug: signal yield ratio %d \n", j);
+		  fs_fd_array[j][i] = (yield_array[1][j][i]/yield_array[0][j][i]) * pow(10,j);
+		}
+
 	      fs_fd_syst_lo_array[j][i]  = fs_fd_array[j][i] * sqrt( pow(yield_syst_array[0][j][i]/yield_array[0][j][i],2) + pow(yield_syst_array[1][j][i]/yield_array[1][j][i],2) );
 	      fs_fd_syst_hi_array[j][i]  = fs_fd_syst_lo_array[j][i];
 	    }
@@ -510,11 +537,11 @@ int main(int argc, char** argv)
       
   if(calculate_pre_filter_eff && calculate_reco_eff)
     {
-      cz.SaveAs("fs_fd/fs_fd_" + yield_sub_samples + "_bins" + systematic + "_" + TString::Format(VERSION) + ".png");
+      cz.SaveAs("fs_fd/" + ratio + "_" + yield_sub_samples + "_bins" + systematic + "_" + TString::Format(VERSION) + ".png");
     }
   else
     {
-      cz.SaveAs("fs_fd/yield_ratio_" + yield_sub_samples + "_bins" + systematic + "_" + TString::Format(VERSION) + ".png");
+      cz.SaveAs("fs_fd/" + ratio + "_yield_ratio_" + yield_sub_samples + "_bins" + systematic + "_" + TString::Format(VERSION) + ".png");
     }
   /* 
   Printf("+++++++++++++++Debug: table++++++++++++++++++");
