@@ -9,8 +9,7 @@ using namespace RooFit;
 
 int main(int argc, char** argv)
 {
-  //int channel = 2;
-  std::string dir ="";
+  std::string output ="";
 
   for(int i=1 ; i<argc ; ++i)
     {
@@ -20,7 +19,7 @@ int main(int argc, char** argv)
       if(argument == "--output")
         {
           convert << argv[++i];
-          convert >> dir;
+          convert >> output;
         }
     }
 
@@ -39,27 +38,26 @@ int main(int argc, char** argv)
 
   TFile *fin = new TFile(input_file);
 
-  TString ntuple_signal = "ntkstar_true";
-  TTree *tree_signal = (TTree*)fin->Get(ntuple_signal);
-  RooDataSet* data_signal = new RooDataSet("data_signal","data_signal", tree_signal, RooArgSet(mass,pt,y) );
+  TString nt = "ntkstar_true";
+  TTree *tr = (TTree*)fin->Get(nt);
+  
+  RooDataSet* data_signal = new RooDataSet("data_signal","data_signal", tr, RooArgSet(mass,pt,y) );
 
   TCanvas c1;
   TH1D* mass_signal = (TH1D*)data_signal->createHistogram("mass_signal", mass);
   c1.SetLogy();
   mass_signal->Draw();
   
-  TString directory = dir + "mass_signal.png";
+  TString directory = output + "mass_signal.png";
   c1.SaveAs(directory);
 
   //TString ntuple_signal = "ntkstar_swap";
 
   delete data_signal;
+}
 
-  //ReducedBranches br;  
-  //br.setbranchadd(tin);  
-}  
-  /*
-    GenInfoBranches *GenInfo = new GenInfoBranches;
+/*
+  GenInfoBranches *GenInfo = new GenInfoBranches;
   EvtInfoBranches *EvtInfo = new EvtInfoBranches;
   VtxInfoBranches *VtxInfo = new VtxInfoBranches;
   MuonInfoBranches *MuonInfo = new MuonInfoBranches;
@@ -72,7 +70,10 @@ int main(int argc, char** argv)
   MuonInfo->setbranchadd(tin);
   TrackInfo->setbranchadd(tin);
   BInfo->setbranchadd(tin);
-
+  
+  ReducedBranches br;  
+  br.setbranchadd(tin);  
+      
   TString directory = "";
   directory = "k_pi_true_and_swapped_signal.root";
 
