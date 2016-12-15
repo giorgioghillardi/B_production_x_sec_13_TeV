@@ -60,7 +60,7 @@ int main(int argc, char** argv)
     }
 
   //pt bins
-  double pt_bins[]={10, 15, 20, 25, 30, 35, 40, 70}; //{9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90};
+  double pt_bins[]= {10, 15, 20, 25, 30, 35, 40, 60, 100}; //{9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90};
   double total_pt_bin_edges[]={0, 400};
   int nptbins=1;
   double* pt_bin_edges=total_pt_bin_edges;
@@ -182,7 +182,8 @@ int main(int argc, char** argv)
       create_dir(dir_list);
       
       //------------data input---------------------
-      TString data_selection_input_file = TString::Format(BASE_DIR) + "selected_data_" + channel_to_ntuple_name(channel) + ".root";
+      //TString data_selection_input_file = TString::Format(BASE_DIR) + "selected_data_" + channel_to_ntuple_name(channel) + ".root";
+      TString data_selection_input_file = "/exper-sw/cmst3/cmssw/users/brunogal/CMSSW_7_4_15/src/UserCode/B_production_x_sec_13_TeV/selected_data_with_cuts.root";
       RooWorkspace* ws = new RooWorkspace("ws","Bmass");
       RooRealVar* signal_res; 
   
@@ -193,7 +194,7 @@ int main(int argc, char** argv)
 
       ws->Print();
       //------------------------------------------
-
+            
       RooRealVar* branch = branching_fraction(channel); //need to correct the function  
       b_fraction[ch] = branch->getVal();
       b_fraction_err[ch] = branch->getError();
@@ -208,14 +209,14 @@ int main(int argc, char** argv)
 	      
 	      //calculate the signal yield for a bin of pt and y.
 	      signal_res = bin_mass_fit(*ws,channel,pt_bin_edges[i],pt_bin_edges[i+1], y_bin_edges[j], y_bin_edges[j+1], mcstudy);
-	  
+	      
 	      yield_array[ch][j][i] = signal_res->getVal();
 	      errLo_array[ch][j][i] = -(signal_res->getAsymErrorLo());
 	      errHi_array[ch][j][i] = signal_res->getAsymErrorHi();
 	      yield_syst_array[ch][j][i] = bin_systematics(*ws, channel, pt_bin_edges[i], pt_bin_edges[i+1], y_bin_edges[j], y_bin_edges[j+1],signal_res->getVal(), data_selection_input_file, syst);
 	    }
 	}
-  
+      
       //to calculate pre-filter efficiency
       if(calculate_pre_filter_eff)
 	{
@@ -400,15 +401,29 @@ int main(int argc, char** argv)
       std::cout << std::endl;
     }
 
-  //To show the values of reco eff at the end, like a table
-  Printf("=====================DEBUG: reco eff values==========================");
+    //To show the values of pre eff at the end, like a table
+  Printf("=====================DEBUG: Bs pre eff values==========================");
   for(int j=0; j<nybins; j++)
     {
       std::cout << "BIN y: " << y_bin_edges[j] << " to " << y_bin_edges[j+1] << " : " << std::endl;
       
       for(int i=0; i<nptbins; i++)
 	{
-	  std::cout << "BIN pt: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " <<  reco_eff_array[0][j][i] << " +" << reco_eff_err_hi_array[0][j][i] << " -"<< reco_eff_err_lo_array[0][j][i] << std::endl;
+	  std::cout << "BIN pt: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " <<  pre_eff_array[1][j][i] << " +" << pre_eff_err_hi_array[1][j][i] << " -"<< pre_eff_err_lo_array[1][j][i] << std::endl;
+	}
+      
+      std::cout << std::endl;
+    }
+
+  //To show the values of reco eff at the end, like a table
+  Printf("=====================DEBUG: Bs reco eff values==========================");
+  for(int j=0; j<nybins; j++)
+    {
+      std::cout << "BIN y: " << y_bin_edges[j] << " to " << y_bin_edges[j+1] << " : " << std::endl;
+      
+      for(int i=0; i<nptbins; i++)
+	{
+	  std::cout << "BIN pt: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " <<  reco_eff_array[1][j][i] << " +" << reco_eff_err_hi_array[1][j][i] << " -"<< reco_eff_err_lo_array[1][j][i] << std::endl;
 	}
       
       std::cout << std::endl;
