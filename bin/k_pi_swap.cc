@@ -41,7 +41,7 @@ int main(int argc, char** argv)
   RooRealVar pt("pt","pt",pt_min,pt_max);
   RooRealVar y("y","y",y_min,y_max);
   
-  TString input_file = "selected_mc_ntkstar_with_cuts.root";
+  TString input_file = TString::Format(BASE_DIR) + "selected_mc_ntkstar_with_cuts.root";
 
   TFile *fin = new TFile(input_file);
   TString directory = "";

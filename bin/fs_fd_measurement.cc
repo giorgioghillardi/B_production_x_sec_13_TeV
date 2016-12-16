@@ -558,6 +558,7 @@ int main(int argc, char** argv)
     {
       cz.SaveAs("fs_fd/" + ratio + "_yield_ratio_" + yield_sub_samples + "_bins" + systematic + "_" + TString::Format(VERSION) + ".png");
     }
+
   /* 
   Printf("+++++++++++++++Debug: table++++++++++++++++++");
 
@@ -577,43 +578,5 @@ int main(int argc, char** argv)
 
   latex_table(table, 2, 3, col_name, labels, numbers, caption);
   */
+
 }//end of main
-
-/*
-RooRealVar* branching_fraction(int channel)
-{
-  RooRealVar* b_fraction = new RooRealVar("b_fraction","b_fraction",1);
-  b_fraction->setError(1);
-  
-  RooRealVar* bd_to_jpsi_kstar = new RooRealVar("bd","bd",1.32e-3);
-  bd_to_jpsi_kstar->setError(6e-5);
-  
-  RooRealVar* kstar_to_k_pi = new RooRealVar("kstar","kstar",0.99901);
-  kstar_to_k_pi->setError(9e-5);
-
-  RooRealVar* bs_to_jpsi_phi = new RooRealVar("bs","bs",1.08e-3);
-  bs_to_jpsi_phi->setError(9e-5);
-
-  RooRealVar* phi_to_k_k = new RooRealVar("phi","phi",48.9e-2);
-  phi_to_k_k->setError(5e-3);
-
-  double err =1;
-  
-  switch (channel) 
-    {
-    default:
-    case 2:
-      b_fraction->setVal( bd_to_jpsi_kstar->getVal() * kstar_to_k_pi->getVal());
-      err = b_fraction->getVal() * sqrt( pow(bd_to_jpsi_kstar->getError()/bd_to_jpsi_kstar->getVal(),2) + pow(kstar_to_k_pi->getError()/kstar_to_k_pi->getVal(),2) );
-      break;
-    case 4:
-      b_fraction->setVal( bs_to_jpsi_phi->getVal() * phi_to_k_k->getVal() );
-      err = b_fraction->getVal() * sqrt( pow(bs_to_jpsi_phi->getError()/bs_to_jpsi_phi->getVal(),2) + pow(phi_to_k_k->getError()/phi_to_k_k->getVal(),2) );
-      break;
-    }
-
-  b_fraction->setError(err);
-  
-  return b_fraction;
-}
-*/
