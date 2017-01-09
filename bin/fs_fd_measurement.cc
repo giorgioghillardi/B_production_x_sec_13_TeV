@@ -60,7 +60,7 @@ int main(int argc, char** argv)
     }
 
   //pt bins
-  double pt_bins[]= {10, 15, 20, 25, 30, 35, 40, 60, 100}; //{9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90};
+  double pt_bins[]= {9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90}; //{10, 15, 20, 25, 30, 35, 40, 60, 100};
   double total_pt_bin_edges[]={0, 400};
   int nptbins=1;
   double* pt_bin_edges=total_pt_bin_edges;
@@ -183,7 +183,7 @@ int main(int argc, char** argv)
       
       //------------data input---------------------
       //TString data_selection_input_file = TString::Format(BASE_DIR) + "selected_data_" + channel_to_ntuple_name(channel) + ".root";
-      TString data_selection_input_file = "/exper-sw/cmst3/cmssw/users/brunogal/CMSSW_7_4_15/src/UserCode/B_production_x_sec_13_TeV/selected_data_with_cuts.root";
+      TString data_selection_input_file = TString::Format(BASE_DIR) + "selected_data_with_cuts.root";
       RooWorkspace* ws = new RooWorkspace("ws","Bmass");
       RooRealVar* signal_res; 
   
