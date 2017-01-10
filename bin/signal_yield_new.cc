@@ -14,8 +14,6 @@ using namespace RooFit;
 // channel = 6: Lambda_b -> Jpsi + Lambda
 //-----------------------------------------------------------------
 
-//RooRealVar* branching_fraction(int channel);
-
 //input example: signal_yield_new --channel 1 --bins pt/y --preeff 1 --recoeff 1 --mc 0 --syst 0
 int main(int argc, char** argv)
 {
@@ -505,58 +503,3 @@ int main(int argc, char** argv)
     }
   //    }//end of else
 }//end of signal_yield_new
-
-/*
-RooRealVar* branching_fraction(int channel)
-{
-  RooRealVar* b_fraction = new RooRealVar("b_fraction","b_fraction",1);
-  b_fraction->setError(1);
-  
-  RooRealVar* jpsi_to_mu_mu = new RooRealVar("jpsi","jpsi",5.93e-2);
-  jpsi_to_mu_mu->setError(0.06e-2);
-
-  RooRealVar* bu_to_jpsi_ku = new RooRealVar("bu","bu",1.026e-3);
-  bu_to_jpsi_ku->setError(0.031e-3);
-  
-  RooRealVar* bd_to_jpsi_kstar = new RooRealVar("bd","bd",1.32e-3);
-  bd_to_jpsi_kstar->setError(0.06e-3);
-  
-  RooRealVar* bs_to_jpsi_phi = new RooRealVar("bs","bs",1.08e-3);
-  bs_to_jpsi_phi->setError(0.09e-3);
-
-  RooRealVar* phi_to_k_k = new RooRealVar("phi","phi",48.9e-2);
-  phi_to_k_k->setError(0.5e-2);
-
-  double err =1;
-  
-  switch (channel) 
-    {
-    default:
-    case 1:
-      b_fraction->setVal(bu_to_jpsi_ku->getVal() * jpsi_to_mu_mu->getVal());
-      err = b_fraction->getVal()*sqrt(pow(bu_to_jpsi_ku->getError()/bu_to_jpsi_ku->getVal(),2)+pow(jpsi_to_mu_mu->getError()/jpsi_to_mu_mu->getVal(),2));
-      break;
-    case 2:
-      b_fraction->setVal(bd_to_jpsi_kstar->getVal() * jpsi_to_mu_mu->getVal());
-      err = b_fraction->getVal()*sqrt(pow(bd_to_jpsi_kstar->getError()/bd_to_jpsi_kstar->getVal(),2)+pow(jpsi_to_mu_mu->getError()/jpsi_to_mu_mu->getVal(),2));
-      break;
-    case 3:
-      b_fraction->setVal(-1);
-      break;
-    case 4:
-      b_fraction->setVal( bs_to_jpsi_phi->getVal() * jpsi_to_mu_mu->getVal() * phi_to_k_k->getVal() );
-      err = b_fraction->getVal()*sqrt(pow(bs_to_jpsi_phi->getError()/bs_to_jpsi_phi->getVal(),2) + pow(jpsi_to_mu_mu->getError()/jpsi_to_mu_mu->getVal(),2) + pow(phi_to_k_k->getError()/phi_to_k_k->getVal(),2));
-      break;
-    case 5:
-      b_fraction->setVal(-1);
-      break;
-    case 6:
-      b_fraction->setVal(-1);
-      break;
-    }
-
-  b_fraction->setError(err);
-  
-  return b_fraction;
-}
-*/

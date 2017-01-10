@@ -10,8 +10,6 @@ using namespace RooFit;
 // channel = 2: B0 -> J/psi K*
 // channel = 4: Bs -> J/psi phi
 
-//RooRealVar* branching_fraction(int channel);
-
 //input example: fs_fd_ratio --ratio fs_fd --bins pt/y --preeff 1 --recoeff 1 --mc 0 --syst 0
 int main(int argc, char** argv)
 {
