@@ -48,158 +48,34 @@ TCanvas *canvasDressing(TString name = "c1")
     
   return c1;
 }
-//#########################################
-void Legend(int channel, int pt_low, int pt_high, bool pt_bins_flag)
+
+void Legend(int channel, int pt_min, int pt_max, double y_min, double y_max, bool pt_bins_flag)
 {
-  double x_pos = 0.65;
-  double y_pos_s = 0.93;
-  double y_pos = 0.91;
-  double y_space = -0.075;
-  double x1_line = x_pos-0.07;
-  double x2_line = x_pos-0.02;
-  double y_line = y_pos+0.02;
-  double x_signal = x_pos + 0.1;
-  double y_separation = -0.05;
+  double y_top = 0.92;
+  double x_top_1 = 0.1;
+  double x_top_2 = 0.7;
 
-  TPaveText *pt = new TPaveText(0.3,0.9,0.6,0.95,"blNDC");
-  pt->SetName("title");
-  pt->SetBorderSize(0);
-  pt->SetFillColor(0);
-  pt->SetFillStyle(0);
-  pt->SetTextFont(42);
-  pt->Draw();
-  TLatex * tex = new TLatex(0.7,y_pos_s,"2.71 fb^{-1} (13 TeV)");
+  double x_pt_lable = 0.13;
+  double y_pt_lable = 0.84;
+
+  TLatex * tex = new TLatex(x_top_2,y_top,"2.71 fb^{-1} (13 TeV)");
   tex->SetNDC(kTRUE);
   tex->SetLineWidth(2);
   tex->Draw();
-  tex = new TLatex(0.1,y_pos_s,"CMS Preliminary");
+  tex = new TLatex(x_top_1,y_top,"CMS Preliminary");
   tex->SetNDC(kTRUE);
   tex->SetTextFont(42);
   tex->SetLineWidth(2);
   tex->Draw();
-  /*tex = new TLatex(x_pos,y_pos + 2*y_space,"Preliminary");
-    tex->SetNDC(kTRUE);
-    tex->SetTextFont(52);
-    tex->SetLineWidth(2);
-    tex->Draw();*/
-
+  
   if(pt_bins_flag)
-    tex = new TLatex(0.55,y_pos + y_space-0.04,TString::Format("%d < p_{T} < %d [GeV]",pt_low,pt_high));
-  else
-    tex = new TLatex(0.55,y_pos + y_space-0.04 ,TString::Format("p_{T} > 10 GeV"));
-
-  //###########################################
+    tex = new TLatex(x_pt_lable, y_pt_lable, TString::Format("%d < p_{T} < %d GeV, %.2f < |y| < %.2f",pt_min, pt_max, y_min, y_max));
 
   tex->SetNDC(kTRUE);
   tex->SetLineWidth(2);
+  tex->SetTextSize(0.04);
   tex->Draw();
-
-  TLine *line = new TLine(x1_line,y_separation+y_line+4*y_space,x2_line,y_separation+y_line+4*y_space);
-  line->SetNDC(kTRUE);
-  line->SetLineColor(4);
-  line->SetLineWidth(3);
-  line->Draw();
-  tex = new TLatex(x_pos,y_separation+y_pos+4*y_space,"Total fit");
-  tex->SetNDC(kTRUE);
-  tex->SetTextFont(42);
-  tex->SetLineWidth(2);
-  tex->Draw();
-  line = new TLine(x1_line,y_separation+y_line+5*y_space,x2_line,y_separation+y_line+5*y_space);
-  line->SetNDC(kTRUE);
-  line->SetLineColor(9);
-  line->SetLineStyle(2);
-  line->SetLineWidth(3);
-  line->Draw();
-  tex = new TLatex(x_pos,y_separation+y_pos+5*y_space,"Background");
-  tex->SetNDC(kTRUE);
-  tex->SetTextFont(42);
-  tex->SetLineWidth(2);
-  tex->Draw();
-  TPave *pave = new TPave(x1_line,y_separation+y_line+6.75*y_space,x2_line,y_separation+y_line+7.25*y_space,4,"blNDC");
-  pave->SetFillColor(8);
-  pave->SetFillStyle(3008);
-  pave->SetLineColor(30);
-  pave->Draw();
-  tex = new TLatex(x_pos,y_separation+y_pos+7*y_space,"Signal");
-  tex->SetNDC(kTRUE);
-  tex->SetTextFont(42);
-  tex->SetLineWidth(2);
-  tex->Draw();
-
-  switch(channel){
-  case 1:
-    tex = new TLatex(x_pos,y_pos + 3*y_space,"B^{#pm} #rightarrow J/#psi K^{#pm}");
-    tex->SetNDC(kTRUE);
-    tex->SetLineWidth(2);
-    tex->Draw();
-    tex = new TLatex(x_pos,y_separation+y_pos+2*y_space,"Peaking background");
-    tex->SetNDC(kTRUE);
-    tex->SetTextFont(42);
-    tex->SetLineWidth(2);
-    tex->Draw();
-    line = new TLine(x1_line,y_separation+y_line+7*y_space,x2_line,y_separation+y_line+7*y_space);
-    line->SetNDC(kTRUE); 
-    line->SetLineColor(6);
-    line->SetLineStyle(2);
-    line->SetLineWidth(3);
-    line->Draw();
-    break;
-  case 2:
-    tex = new TLatex(0.55,y_pos + 2*y_space-0.04,"B^{0}_{d} #rightarrow J/#psi K^{0*}");
-    tex->SetNDC(kTRUE);
-    tex->SetLineWidth(2);
-    tex->Draw();
-    break;
-  case 3:
-    tex = new TLatex(x_pos,y_pos + 2*y_space,"B^{0}_{d} #rightarrow J/#psi K_{s}");
-    tex->SetNDC(kTRUE);
-    tex->SetLineWidth(2);
-    tex->Draw();
-    break;
-  case 4:
-    tex = new TLatex(0.55,y_pos + 2*y_space-0.04,"B^{0}_{s} #rightarrow J/#psi #phi");
-    tex->SetNDC(kTRUE);
-    tex->SetLineWidth(2);
-    tex->Draw();
-    break;
-  case 5:
-    tex = new TLatex(x_pos,y_pos + 3*y_space,"#psi_{2S}#rightarrowJ/#psi #pi^{+}#pi^{-}");
-    tex->SetNDC(kTRUE);
-    tex->SetLineWidth(2);
-    tex->Draw();
-    tex = new TLatex(x_signal,y_separation+y_pos+8*y_space,"(#psi_{2S})");
-    tex->SetNDC(kTRUE);
-    tex->SetTextFont(42);
-    tex->SetLineWidth(2);
-    tex->Draw();
-    tex = new TLatex(x_pos,y_separation+y_pos+9*y_space,"Signal");
-    tex->SetNDC(kTRUE);
-    tex->SetTextFont(42);
-    tex->SetLineWidth(2);
-    tex->Draw();
-    tex = new TLatex(x_signal,y_separation+y_pos+9*y_space,"(X(3872))");
-    tex->SetNDC(kTRUE);
-    tex->SetTextFont(42);
-    tex->SetLineWidth(2);
-    tex->Draw();
-    pave = new TPave(x1_line,y_separation+y_line+8.75*y_space,x2_line,y_separation+y_line+9.25*y_space,4,"blNDC");
-    pave->SetFillColor(kOrange);
-    pave->SetFillStyle(3008);
-    pave->SetLineColor(2);
-    pave->Draw();
-    break;
-  case 6:
-    tex = new TLatex(x_pos,y_pos + 3*y_space,"#Lambda_{b} #rightarrow J/#psi #Lambda_{0}");
-    tex->SetNDC(kTRUE);
-    tex->SetLineWidth(2);
-    tex->Draw();
-    break;
-  }
 }
-
-
-
-
 
 void LegendChannelOne()
 {

@@ -14,7 +14,7 @@ using namespace RooFit;
 // channel = 6: Lambda_b -> Jpsi + Lambda
 //-----------------------------------------------------------------
 
-//input example: signal_yield_new --channel 1 --bins pt/y --preeff 1 --recoeff 1 --mc 0 --syst 0
+//input example: signal_yield_new --channel 1 --bins pt/y --preeff 1 --recoeff 1 --mcstudy 0 --syst 0
 int main(int argc, char** argv)
 {
   int channel = 0;
@@ -49,7 +49,7 @@ int main(int argc, char** argv)
 	  convert << argv[++i];
 	  convert >> calculate_reco_eff;
 	}
-      if(argument == "--mc")
+      if(argument == "--mcstudy")
 	{
 	  convert << argv[++i];
 	  convert >> mcstudy;
@@ -72,16 +72,16 @@ int main(int argc, char** argv)
   
   
   dir_list.push_back(static_cast<const char*>("mass_fits/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION)));
+  dir_list.push_back(static_cast<const char*>("mc_study/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION)));
   dir_list.push_back("signal_yield");
   dir_list.push_back("efficiencies");
-  dir_list.push_back("mcstudy_bin");
   
   create_dir(dir_list);
 
   //pt bins
   int nptbins=1;
 
-  double ntkp_pt_bin_edges[]={9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 80, 90, 100, 120};
+  double ntkp_pt_bin_edges[]={9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 80, 90, 120};
   double ntkstar_pt_bin_edges[]={9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90};
   double ntks_pt_bin_edges[]={0};
   double ntphi_pt_bin_edges[]={9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90};
@@ -263,7 +263,15 @@ int main(int argc, char** argv)
 	  pt_bin_edges_Hi[i] = pt_bin_edges[i+1] - pt_bin_means[i];
 	      
 	  //calculate the signal yield for a bin of pt and y.
-	  signal_res = bin_mass_fit(*ws, channel, pt_bin_edges[i], pt_bin_edges[i+1], y_bin_edges[c], y_bin_edges[c+1], mcstudy);
+	  signal_res = bin_mass_fit(*ws, channel, pt_bin_edges[i], pt_bin_edges[i+1], y_bin_edges[c], y_bin_edges[c+1]);
+	  
+	  //MC study
+	  if(mcstudy)
+	    {
+	      std::cout << "MC study of bin: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
+
+	      mc_study(*ws, channel, pt_bin_edges[i], pt_bin_edges[i+1], y_bin_edges[c], y_bin_edges[c+1]);
+	    }
 	  
 	  if(yield_sub_samples=="full")
 	    {

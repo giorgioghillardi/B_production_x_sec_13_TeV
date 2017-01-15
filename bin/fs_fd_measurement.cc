@@ -10,7 +10,7 @@ using namespace RooFit;
 // channel = 2: B0 -> J/psi K*
 // channel = 4: Bs -> J/psi phi
 
-//input example: fs_fd_ratio --ratio fs_fd --bins pt/y --preeff 1 --recoeff 1 --mc 0 --syst 0
+//input example: fs_fd_ratio --ratio fs_fd --bins pt/y --preeff 1 --recoeff 1 --mcstudy 0 --syst 0
 int main(int argc, char** argv)
 {
   std::string ratio = "fs_fu";
@@ -45,7 +45,7 @@ int main(int argc, char** argv)
 	  convert << argv[++i];
 	  convert >> calculate_reco_eff;
 	}
-      if(argument == "--mc")
+      if(argument == "--mcstudy")
 	{
 	  convert << argv[++i];
 	  convert >> mcstudy;
@@ -206,8 +206,16 @@ int main(int argc, char** argv)
 	      std::cout << "processing subsample: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
 	      
 	      //calculate the signal yield for a bin of pt and y.
-	      signal_res = bin_mass_fit(*ws,channel,pt_bin_edges[i],pt_bin_edges[i+1], y_bin_edges[j], y_bin_edges[j+1], mcstudy);
+	      signal_res = bin_mass_fit(*ws,channel,pt_bin_edges[i],pt_bin_edges[i+1], y_bin_edges[j], y_bin_edges[j+1]);
 	      
+	      //MC study
+	      if(mcstudy)
+		{
+		  std::cout << "MC study of bin: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
+
+		  mc_study(*ws,channel,pt_bin_edges[i],pt_bin_edges[i+1], y_bin_edges[j], y_bin_edges[j+1]);
+		}
+
 	      yield_array[ch][j][i] = signal_res->getVal();
 	      errLo_array[ch][j][i] = -(signal_res->getAsymErrorLo());
 	      errHi_array[ch][j][i] = signal_res->getAsymErrorHi();

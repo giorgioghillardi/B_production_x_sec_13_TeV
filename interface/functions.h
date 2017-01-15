@@ -51,17 +51,18 @@ using namespace RooFit;
 
 // General fitting options
 #define NUMBER_OF_CPU       1
-#define VERSION             "v3"
+#define VERSION             "v4"
 #define BASE_DIR            "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/"
 
-//-----------------------------------------------------------------
-// Definition of channel #
-// channel = 1: B+ -> J/psi K+
-// channel = 2: B0 -> J/psi K*
-// channel = 2: B0 -> J/psi Ks
-// channel = 4: Bs -> J/psi phi
-// channel = 5: Jpsi + pipi
-// channel = 6: Lambda_b -> Jpsi + Lambda
+//////////////////////////////////////////////
+// Definition of channel #                  //
+// channel = 1: B+ -> J/psi K+              //
+// channel = 2: B0 -> J/psi K*              //
+// channel = 2: B0 -> J/psi Ks              //
+// channel = 4: Bs -> J/psi phi             //
+// channel = 5: Jpsi + pipi                 //
+// channel = 6: Lambda_b -> Jpsi + Lambda   //
+//////////////////////////////////////////////
 
 void create_dir(std::vector<std::string> list);
 
@@ -69,21 +70,82 @@ void set_up_workspace_variables(RooWorkspace& w, int channel, double mass_min = 
 void read_data(RooWorkspace& w, TString filename,int channel);
 void read_data_cut(RooWorkspace& w, RooAbsData* data);
 void build_pdf(RooWorkspace& w, int channel, std::string choice = "", std::string choice2 = "");
-void plot_pt_dist(RooWorkspace& w, int channel, TString directory);
-void plot_mass_fit(RooWorkspace& w, int channel, TString directory,int pt_high, int pt_low);
+
 double pt_bin_mean(RooWorkspace& w, double pt_min, double pt_max);
+void plot_pt_dist(RooWorkspace& w, int channel, TString directory);
+void plot_mass_fit(RooWorkspace& w, int channel, TString directory,int pt_high, int pt_low, double y_min, double y_max);
+
+RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, std::string choice = "", std::string choice2 = "", double mass_min = 0.0, double mass_max = 0.0);
 double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_max, double y_min, double y_max, double signal_res, TString data_selection_input_file, int syst);
+
 RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max, double y_min, double y_max);
 RooRealVar* reco_efficiency(int channel, double pt_min, double pt_max, double y_min, double y_max);
 RooRealVar* branching_fraction(int channel);
 
-RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, int mcstudy);
-double bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, std::string choice, std::string choice2);
-double bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, double mass_min, double mass_max);
-
+void mc_study(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max);
 void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::string> col_name, std::vector<std::string> labels, std::vector<std::vector<double> > numbers, std::string caption);
 
-RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, int mcstudy)
+//////////////////////////////////////////FUNCIONS////////////////////////////////////////////////////
+void mc_study(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max)
+{
+  RooRealVar pt = *(w.var("pt"));
+  RooRealVar pt_low("pt_low","pt_low",pt_min);
+  RooRealVar pt_high("pt_high","pt_high",pt_max);
+
+  RooRealVar y = *(w.var("y"));
+  RooRealVar y_low("y_low","y_low",y_min);
+  RooRealVar y_high("y_high","y_high",y_max);
+  
+  RooAbsData* data_original;
+  RooAbsData* data_cut;
+  RooWorkspace ws_cut;
+  RooAbsPdf* model_cut;
+  RooRealVar* signal_res;
+
+  data_original = w.data("data");
+  
+  RooFormulaVar cut("cut","pt>pt_low && pt<pt_high && ((y>y_low && y<y_high) || (y>-y_high && y<-y_low))", RooArgList(pt,pt_low,pt_high,y,y_low,y_high));
+  
+  data_cut = data_original->reduce(cut);
+  read_data_cut(ws_cut,data_cut);
+
+  build_pdf(ws_cut,channel);
+  model_cut = ws_cut.pdf("model");
+  model_cut->fitTo(*data_cut,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
+
+  signal_res = ws_cut.var("n_signal");
+  
+  RooRealVar* mass = w.var("mass");
+  
+  RooMCStudy* mctoy = new RooMCStudy (*model_cut, *model_cut, *mass, "", "mhv"); 
+  mctoy->generateAndFit(5000, data_cut->sumEntries());
+  
+  RooPlot* f_pull_signal = mctoy->plotPull(*signal_res, FitGauss(kTRUE));
+  RooPlot* f_param_signal = mctoy->plotParam(*signal_res);
+  RooPlot* f_error_signal = mctoy->plotError(*signal_res);
+  RooPlot* f_nll = mctoy->plotNLL();
+  
+  TString dir_mc = "";
+  dir_mc = "mc_study/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "_mc_study_" + TString::Format("pt_from_%d_to_%d_y_from_%.2f_to_%.2f",(int)pt_min,(int)pt_max,y_min,y_max);
+  
+  TCanvas c;
+  f_param_signal->Draw();
+  c.SaveAs(dir_mc + "_param_signal.png");
+  
+  TCanvas c2;
+  f_error_signal->Draw();
+  c2.SaveAs(dir_mc + "_error_signal.png");
+  
+  TCanvas c3;
+  f_pull_signal->Draw();
+  c3.SaveAs(dir_mc + "_pull_signal.png");
+  
+  TCanvas c4;
+  f_nll->Draw();
+  c4.SaveAs(dir_mc + "_nll_signal.png");
+}
+
+RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, std::string choice, std::string choice2, double mass_min, double mass_max)
 {
   RooRealVar pt = *(w.var("pt"));
   RooRealVar pt_low("pt_low","pt_low",pt_min);
@@ -101,76 +163,13 @@ RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_
 
   data_original = w.data("data");
   
-  RooFormulaVar cut("cut","pt>pt_low && pt<pt_high && ((y>y_low && y<y_high) || (y>-y_high && y<-y_low))", RooArgList(pt,pt_low,pt_high,y,y_low,y_high));
-  
-  data_cut = data_original->reduce(cut);
-  read_data_cut(ws_cut,data_cut);
+  //if mass_min and mass_max are provided as input, it sets that mass windos in the workspace ws_cut.
+  //if mass_min or mass_max are not provided it uses mass window from workspace w.
+  if(mass_min!=0.0 && mass_max!=0.0)
+    set_up_workspace_variables(ws_cut,channel,mass_min,mass_max);
 
-  build_pdf(ws_cut,channel);
-  
-  model_cut = ws_cut.pdf("model");
-    
-  model_cut->fitTo(*data_cut,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
-
-  TString dir = "";
-  dir = "mass_fits/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "_mass_fit_" + TString::Format("pt_from_%d_to_%d_y_from_%lf_to_%lf",(int)pt_min,(int)pt_max,y_min,y_max);
-  
-  plot_mass_fit(ws_cut, channel, dir, (int) pt_max, (int) pt_min);
- 
-  signal_res = ws_cut.var("n_signal");
-  
-  if(mcstudy)
-    {
-      RooRealVar* mass = ws_cut.var("mass");
-
-      RooMCStudy* mctoy = new RooMCStudy (*model_cut, *model_cut, *mass, "", "mhv"); 
-      mctoy->generateAndFit(5000, data_cut->sumEntries());
-      
-      RooPlot* f_pull_signal = mctoy->plotPull(*signal_res, FitGauss(kTRUE));
-      RooPlot* f_param_signal = mctoy->plotParam(*signal_res);
-      RooPlot* f_error_signal = mctoy->plotError(*signal_res);
-      RooPlot* f_nll = mctoy->plotNLL();
-      //RooPlot* f_pull_sigma1 = mctoy->plotPull(sigma1, FitGauss(kTRUE));
-      //RooPlot* f_pull_mean = mctoy->plotPull(mean, FitGauss(kTRUE));
-      //RooPlot* f_pull_mean = mctoy->plotPull(mean, FitGauss(kTRUE));
-		  
-      TCanvas c;
-      f_param_signal->Draw();
-      c.SaveAs("mcstudy_bin/param_signal.png");
-
-      TCanvas c2;
-      f_error_signal->Draw();
-      c2.SaveAs("mcstudy_bin/error_signal.png");
-	  
-      TCanvas c3;
-      f_pull_signal->Draw();
-      c3.SaveAs("mcstudy_bin/pull_signal.png");
-
-      TCanvas c4;
-      f_nll->Draw();
-      c4.SaveAs("mcstudy_bin/nll_signal.png");
-    }
-  
-  return signal_res;
-}
-
-double bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, std::string choice, std::string choice2)
-{
-  RooRealVar pt = *(w.var("pt"));
-  RooRealVar pt_low("pt_low","pt_low",pt_min);
-  RooRealVar pt_high("pt_high","pt_high",pt_max);
-  RooRealVar y = *(w.var("y"));
-  RooRealVar y_low("y_low","y_low",y_min);
-  RooRealVar y_high("y_high","y_high",y_max);
-  RooAbsData* data_original;
-  RooAbsData* data_cut;
-  RooWorkspace ws_cut;
-  RooAbsPdf* model_cut;
-
-  data_original = w.data("data");
-  
   set_up_workspace_variables(ws_cut,channel);
-   
+  
   RooFormulaVar cut("cut","pt>pt_low && pt<pt_high && ((y>y_low && y<y_high) || (y>-y_high && y<-y_low))", RooArgList(pt,pt_low,pt_high,y,y_low,y_high));
   
   data_cut = data_original->reduce(cut);
@@ -181,58 +180,35 @@ double bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, 
   model_cut = ws_cut.pdf("model");
    
   model_cut->fitTo(*data_cut,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
+  
+  TString mass_info = "";
+  if(mass_min!=0.0 && mass_max!=0.0)
+    mass_info = TString::Format("_mass_from_%.2f_to_%.2f",mass_min,mass_max);
+  
+  TString syst_info = "";
+  if(choice != "" && choice2 != "")
+    syst_info = "_syst_" + choice + "_" + choice2;
 
   TString dir = "";
-  dir = "mass_fits/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "_syst_" + choice + "_" + choice2 + "_mass_fit_" + TString::Format("pt_from_%d_to_%d_y_from_%lf_to_%lf",(int)pt_min,(int)pt_max,y_min,y_max);
   
-  plot_mass_fit(ws_cut, channel, dir, (int) pt_max, (int) pt_min);
-
-  return (ws_cut.var("n_signal")->getVal());
-}
-
-double bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, double mass_min, double mass_max)
-{
-  RooRealVar pt = *(w.var("pt"));
-  RooRealVar pt_low("pt_low","pt_low",pt_min);
-  RooRealVar pt_high("pt_high","pt_high",pt_max);
-  RooRealVar y = *(w.var("y"));
-  RooRealVar y_low("y_low","y_low",y_min);
-  RooRealVar y_high("y_high","y_high",y_max);
-  RooAbsData* data_original;
-  RooAbsData* data_cut;
-  RooWorkspace ws_cut;
-  RooAbsPdf* model_cut;
- 
-  data_original = w.data("data");
+  dir = "mass_fits/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + syst_info + "_mass_fit_" + TString::Format("pt_from_%d_to_%d_y_from_%.2f_to_%.2f",(int)pt_min,(int)pt_max,y_min,y_max) + mass_info;
   
-  set_up_workspace_variables(ws_cut,channel,mass_min,mass_max);
-   
-  RooFormulaVar cut("cut","pt>pt_low && pt<pt_high && ((y>y_low && y<y_high) || (y>-y_high && y<-y_low))", RooArgList(pt,pt_low,pt_high,y,y_low,y_high));
-  
-  data_cut = data_original->reduce(cut);
-  read_data_cut(ws_cut,data_cut);
+  plot_mass_fit(ws_cut, channel, dir, (int) pt_max, (int) pt_min, y_min, y_max);
 
-  build_pdf(ws_cut,channel);
-  
-  model_cut = ws_cut.pdf("model");
-    
-  model_cut->fitTo(*data_cut,Minos(kTRUE),NumCPU(NUMBER_OF_CPU),Offset(kTRUE));
-
-  TString dir = "";
-  dir = "mass_fits/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "_mass_fit_" + TString::Format("pt_from_%d_to_%d_y_from_%lf_to_%lf",(int)pt_min,(int)pt_max,y_min,y_max);
-  
-  plot_mass_fit(ws_cut,channel,dir, (int) pt_max, (int) pt_min);
-
-  return (ws_cut.var("n_signal")->getVal());
+  signal_res = ws_cut.var("n_signal");
+  return signal_res;
 }
 
 double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_max, double y_min, double y_max,double signal_res, TString data_selection_input_file, int syst)
 {
   if(syst==0) return 0.;
+
+  RooRealVar* fit_res;
+
   std::vector<std::string> background = {"2exp", "bern", "power"};
   std::vector<std::string> signal = {"crystal", "1gauss", "3gauss"};
 
-  std::vector<double> mass_min(2);	  
+  std::vector<double> mass_min(2);
   std::vector<double> mass_max(2);
   std::vector<std::string> mass_min_str(2);
   std::vector<std::string> mass_max_str(2);
@@ -277,14 +253,16 @@ double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_m
   //Background Systematics
   for(int i=0; i<3; i++)
     {
-      back_syst.push_back(bin_mass_fit(ws, channel, pt_min, pt_max, y_min, y_max, background[i], "background"));
+      fit_res = bin_mass_fit(ws, channel, pt_min, pt_max, y_min, y_max, background[i], "background");
+      back_syst.push_back((double)fit_res->getVal());
       std::cout << std::endl << std::endl << std::endl << " back_syst[" << i+1 << "]: " << back_syst[i+1] << std::endl << std::endl << std::endl;
     }
 
   //Signal Systematics
   for(int i=0; i<3; i++)
     {
-      signal_syst.push_back(bin_mass_fit(ws, channel, pt_min, pt_max, y_min, y_max, signal[i], "signal"));
+      fit_res = bin_mass_fit(ws, channel, pt_min, pt_max, y_min, y_max, signal[i], "signal");
+      signal_syst.push_back((double)fit_res->getVal());
       std::cout << std::endl << std::endl << std::endl << " signal_syst[" << i+1 << "]: " << signal_syst[i+1] << std::endl << std::endl << std::endl;
     }
 
@@ -293,13 +271,11 @@ double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_m
     {
       RooWorkspace* ws1 = new RooWorkspace("ws1","Bmass");
 
-      //set up mass, pt and y variables inside ws1 
       set_up_workspace_variables(*ws1,channel,mass_min[i],mass_max[1-i]);
-      //read data from the selected data file, and import it as a dataset into the workspace.
       read_data(*ws1, data_selection_input_file,channel);
       
-      range_syst.push_back(bin_mass_fit(*ws1, channel, pt_min, pt_max, y_min, y_max, mass_min[i], mass_max[1-i]));
-
+      fit_res = bin_mass_fit(*ws1, channel, pt_min, pt_max, y_min, y_max, "", "", mass_min[i], mass_max[1-i]);
+      range_syst.push_back((double)fit_res->getVal());
       std::cout << std::endl << std::endl << std::endl << " range_syst[" << i+1 << "]: " << range_syst[i+1] << std::endl << std::endl << std::endl;
     }
 
@@ -354,7 +330,7 @@ double pt_bin_mean(RooWorkspace& w, double pt_min, double pt_max)
   return centre;
 }
 
-void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high, int pt_low)
+void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high, int pt_low, double y_low, double y_high)
 {
   RooRealVar mass = *(w.var("mass"));
   RooAbsData* data = w.data("data");
@@ -381,23 +357,23 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high,
   
   model->plotOn(frame_m,Name("thePdf"),Precision(2E-4));
   
-  //model->paramOn(frame_m); //show all the parameters of the fit in the plot.
+  model->paramOn(frame_m,Layout(0.505,0.89,0.57)); // Layout(0.45,0.85,0.57) //show all the parameters of the fit in the plot.
   
-  model->plotOn(frame_m,Precision(2E-4),Components("pdf_m_signal"),LineColor(8),LineWidth(2),LineStyle(kSolid),FillStyle(3008),FillColor(8), VLines(), DrawOption("F"));
+  model->plotOn(frame_m,Name("signal"),Precision(2E-4),Components("pdf_m_signal"),LineColor(8),LineWidth(2),LineStyle(kSolid),FillStyle(3008),FillColor(8), VLines(), DrawOption("F"));
   
   if(channel==1 || channel==2 || channel==3 || channel==4 || channel==6)
-    model->plotOn(frame_m,Precision(2E-4),Components("pdf_m_combinatorial_exp"),LineColor(9),LineWidth(2),LineStyle(2));
+    model->plotOn(frame_m,Name("combinatorial"),Precision(2E-4),Components("pdf_m_combinatorial_exp"),LineColor(9),LineWidth(2),LineStyle(2));
   else
-    model->plotOn(frame_m,Precision(2E-4),Components("pdf_m_combinatorial_bern"),LineColor(kCyan+1),LineWidth(2),LineStyle(2));
+    model->plotOn(frame_m,Name("combinatorial"),Precision(2E-4),Components("pdf_m_combinatorial_bern"),LineColor(kCyan+1),LineWidth(2),LineStyle(2));
 
   if(channel==2) // k pi swap component
-    model->plotOn(frame_m,Precision(2E-4),Components("k_pi_swap"),LineColor(kViolet),LineWidth(2),LineStyle(7),FillStyle(3008),FillColor(kViolet), VLines(), DrawOption("F"));
+    model->plotOn(frame_m,Name("kpiswap"),Precision(2E-4),Components("k_pi_swap"),LineColor(kViolet),LineWidth(2),LineStyle(7),FillStyle(3008),FillColor(kViolet), VLines(), DrawOption("F"));
 
   if(channel==1 || channel==3)
-    model->plotOn(frame_m,Precision(2E-4),Components("pdf_m_nonprompt_erf"),LineColor(kViolet),LineWidth(2),LineStyle(7));
+    model->plotOn(frame_m,Name("nonprompt"),Precision(2E-4),Components("pdf_m_nonprompt_erf"),LineColor(kViolet),LineWidth(2),LineStyle(2));
   
   if(channel==1)
-    model->plotOn(frame_m,Precision(2E-4),Components("pdf_m_jpsipi"),LineColor(kRed),LineWidth(2),LineStyle(7),FillStyle(3008),FillColor(kRed), VLines(), DrawOption("F"));
+    model->plotOn(frame_m,Name("jpsipi"),Precision(2E-4),Components("pdf_m_jpsipi"),LineColor(kRed),LineWidth(2),LineStyle(7),FillStyle(3008),FillColor(kRed), VLines(), DrawOption("F"));
   
   if(channel==5)
     model->plotOn(frame_m,Precision(2E-4),Components("pdf_m_x3872"),LineColor(kOrange),LineWidth(2),LineStyle(kSolid),FillStyle(3008),FillColor(kOrange), VLines(), DrawOption("F"));
@@ -407,18 +383,17 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high,
   frame_m->GetYaxis()->SetLabelFont(42);
   frame_m->GetYaxis()->SetLabelOffset(0.01);
   frame_m->GetYaxis()->SetTitleOffset(0.8);
-  frame_m->GetYaxis()->SetTitleSize(0.05);
+  frame_m->GetYaxis()->SetTitleSize(0.06);
   frame_m->GetYaxis()->SetTitleFont(42);
   frame_m->GetYaxis()->SetLabelFont(42);
   frame_m->GetYaxis()->SetLabelSize(0.055);
-  
+
   RooHist* pull_hist = frame_m->pullHist("theData","thePdf");
   
   RooPlot* pull_plot = mass.frame();
   
   RooGenericPdf* line_ref = new RooGenericPdf("ref_0", "ref_0", RooConst(0.));
-  line_ref->plotOn(pull_plot, LineStyle(7), LineColor(13), LineWidth(2));  
-
+  line_ref->plotOn(pull_plot, LineStyle(7), LineColor(13), LineWidth(2));
 
   pull_plot->addPlotable(static_cast<RooPlotable*>(pull_hist),"P");
   pull_plot->SetTitle("");
@@ -431,7 +406,6 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high,
   pull_plot->GetXaxis()->SetLabelSize(0.17);
   pull_plot->GetXaxis()->SetTitleFont(42);
   pull_plot->GetXaxis()->SetTickLength(0.15);
-  //  pull_plot->GetYaxis()->SetTitle(TString::Format("Events / %g MeV",(mass.getMax()-mass.getMin())*1000./channel_to_nbins(channel)));
   pull_plot->GetYaxis()->SetLabelFont(42);
   pull_plot->GetYaxis()->SetLabelOffset(0.01);
   pull_plot->GetYaxis()->SetLabelSize(0.17);
@@ -439,6 +413,7 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high,
   pull_plot->GetYaxis()->SetTitleSize(0.17);
   pull_plot->GetYaxis()->SetTitleFont(42);
   pull_plot->GetYaxis()->SetNdivisions(305);
+  
   TCanvas *c1 = canvasDressing("c1"); c1->cd();
   
   TPad *p1 = new TPad("p1","p1",0.05,0.27,0.99,0.99);
@@ -455,11 +430,13 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high,
   p2->SetBorderSize(2); 
   p2->SetFrameBorderMode(0); 
   p2->Draw();
+  
+  double chi_square = frame_m->chiSquare("thePdf","theData");
+
   RooAbsReal* nll = model->createNLL(*data);
   double log_likelihood= nll->getVal();
   std::stringstream ll_str;
   ll_str >> log_likelihood;
-  double chis = frame_m->chiSquare();
   double lambda_exp = lambda.getVal();
   double lambda_exp_err = lambda.getError();
   double mean_gauss = mean.getVal();
@@ -473,60 +450,109 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high,
   double back_yield = n_back.getVal();
   double back_yield_err = n_back.getError();
 
-  TLatex* tex1 = new TLatex(0.165, 0.88, Form("#lambda_{exp} = %.3lf+/-%.3lf",lambda_exp,lambda_exp_err));
-  tex1->SetNDC(kTRUE);
-  tex1->SetTextFont(42);
-  tex1->SetTextSize(0.03);
-  tex1->Draw();  
+  bool show_legend = 0;
 
-  TLatex* tex2 = new TLatex(0.165, 0.84, Form("#mu_{gauss} = %.5lf+/-%.5lf",mean_gauss,mean_gauss_err));
-  tex2->SetNDC(kTRUE);
-  tex2->SetTextFont(42);
-  tex2->SetTextSize(0.03);
-  tex2->Draw();  
+  if(show_legend)
+    {
+      TLatex* tex1 = new TLatex(0.165, 0.88, Form("#lambda_{exp} = %.3lf+/-%.3lf",lambda_exp,lambda_exp_err));
+      tex1->SetNDC(kTRUE);
+      tex1->SetTextFont(42);
+      tex1->SetTextSize(0.03);
+      tex1->Draw();  
 
-  TLatex* tex3 = new TLatex(0.165, 0.80, Form("#sigma_{gauss1} = %.5lf+/-%.5lf",sigma1_gauss,sigma1_gauss_err));
-  tex3->SetNDC(kTRUE);
-  tex3->SetTextFont(42);
-  tex3->SetTextSize(0.03);
-  tex3->Draw();  
+      TLatex* tex2 = new TLatex(0.165, 0.84, Form("#mu_{gauss} = %.5lf+/-%.5lf",mean_gauss,mean_gauss_err));
+      tex2->SetNDC(kTRUE);
+      tex2->SetTextFont(42);
+      tex2->SetTextSize(0.03);
+      tex2->Draw();  
 
-  TLatex* tex4 = new TLatex(0.165, 0.76, Form("#sigma_{gauss2} = %.5lf+/-%.5lf",sigma2_gauss,sigma2_gauss_err));
-  tex4->SetNDC(kTRUE);
-  tex4->SetTextFont(42);
-  tex4->SetTextSize(0.03);
-  if(data->sumEntries()>250){
-    tex4->Draw();  
-  }
+      TLatex* tex3 = new TLatex(0.165, 0.80, Form("#sigma_{gauss1} = %.5lf+/-%.5lf",sigma1_gauss,sigma1_gauss_err));
+      tex3->SetNDC(kTRUE);
+      tex3->SetTextFont(42);
+      tex3->SetTextSize(0.03);
+      tex3->Draw();  
 
-  TLatex* tex5 = new TLatex(0.165, 0.70, Form("Signal = %.0lf+/-%.0lf",signal_yield,signal_yield_err));
-  tex5->SetNDC(kTRUE);
-  tex5->SetTextFont(42);
-  tex5->SetTextSize(0.03);
-  tex5->Draw();  
+      TLatex* tex4 = new TLatex(0.165, 0.76, Form("#sigma_{gauss2} = %.5lf+/-%.5lf",sigma2_gauss,sigma2_gauss_err));
+      tex4->SetNDC(kTRUE);
+      tex4->SetTextFont(42);
+      tex4->SetTextSize(0.03);
+    
+      if(data->sumEntries()>250)
+	{
+	  tex4->Draw();  
+	}
 
-  TLatex* tex6 = new TLatex(0.165, 0.66, Form("Background = %.0lf+/-%.0lf",back_yield,back_yield_err));
-  tex6->SetNDC(kTRUE);
-  tex6->SetTextFont(42);
-  tex6->SetTextSize(0.03);
-  tex6->Draw();  
+      TLatex* tex5 = new TLatex(0.165, 0.70, Form("Signal = %.0lf+/-%.0lf",signal_yield,signal_yield_err));
+      tex5->SetNDC(kTRUE);
+      tex5->SetTextFont(42);
+      tex5->SetTextSize(0.03);
+      tex5->Draw();  
 
-  TLatex* tex7 = new TLatex(0.165, 0.60, Form("lnL = %.3lf", log_likelihood));
-  tex7->SetNDC(kTRUE);
-  tex7->SetTextFont(42);
-  tex7->SetTextSize(0.03);
-  tex7->Draw();  
+      TLatex* tex6 = new TLatex(0.165, 0.66, Form("Background = %.0lf+/-%.0lf",back_yield,back_yield_err));
+      tex6->SetNDC(kTRUE);
+      tex6->SetTextFont(42);
+      tex6->SetTextSize(0.03);
+      tex6->Draw();  
 
-  TLatex* tex8 = new TLatex(0.165, 0.56, Form("#chi^{2} = %.3lf", chis));
+      TLatex* tex7 = new TLatex(0.165, 0.60, Form("lnL = %.3lf", log_likelihood));
+      tex7->SetNDC(kTRUE);
+      tex7->SetTextFont(42);
+      tex7->SetTextSize(0.03);
+      tex7->Draw();  
+    }
+ 
+  TLatex* tex8 = new TLatex(0.17, 0.5, Form("#chi^{2} = %.3lf", chi_square));
   tex8->SetNDC(kTRUE);
   tex8->SetTextFont(42);
-  tex8->SetTextSize(0.03);
-  tex8->Draw();  
- 
+  tex8->SetTextSize(0.035);
+  tex8->Draw();
+
   p1->cd();
   frame_m->Draw();
   histo_data->Draw("Esame");
-  Legend(channel,pt_low,pt_high,1);
+  Legend(channel, pt_low, pt_high, y_low, y_high, 1);
+
+  //////////////////////////////////////////
+  double x_1 = 0.505; //0.45
+  double x_2 = 0.89; //0.85
+  double y_1;
+  double y_2= 0.88;
+  double y_space = 0.05;
+
+  int nitems = 6;
+  y_1 = y_2 - y_space*nitems;
+
+  TLegend *leg = new TLegend(x_1, y_1, x_2, y_2);
+  leg->SetTextSize(0.04);
+  leg->AddEntry(histo_data,"Data", "EPL");
+  leg->AddEntry("thePdf","Total Fit", "L");
+  
+  switch(channel)
+    {
+    case 1:
+      leg->AddEntry("signal","B^{#pm} #rightarrow J/#psi K^{#pm} Signal", "F");
+      leg->AddEntry("combinatorial","Combinatorial background", "L");
+      leg->AddEntry("jpsipi","B^{#pm} #rightarrow J/#psi #pi^{#pm} background", "F");
+      leg->AddEntry("nonprompt","B^{#pm} #rightarrow J/#psi + hadrons background", "L");
+      break;
+    case 2:
+      leg->AddEntry("signal","B^{0} #rightarrow J/#psi K^{*0} Signal", "F");
+      leg->AddEntry("combinatorial","Combinatorial background", "L");
+      leg->AddEntry("kpiswap","Swapped K^{#pm} #pi^{#mp} background", "F");
+      break;
+    case 3:
+      break;
+    case 4:
+      break;
+    case 5:
+      break;
+    case 6:
+      break;      
+    }
+
+  leg->Draw();
+  //////////////////////////////////////////
+  
   p2->cd();
   pull_plot->Draw();
   
@@ -613,7 +639,9 @@ void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string cho
   RooAddPdf* pdf_m_signal;
       
   // use single Gaussian for J/psi Ks and J/psi Lambda due to low statistics
-  if (channel==3 || channel==6 || data->sumEntries()<250) {
+  //if (channel==1 || channel==2 || channel==3 || channel==6 || data->sumEntries()<250)
+  if(data->sumEntries()<250)
+  {
     m_sigma2.setConstant(kTRUE);
     m_sigma3.setConstant(kTRUE);
     m_fraction.setVal(1.);
@@ -736,8 +764,8 @@ void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string cho
   //erfc component on channel 1 and 3
   //RooFormulaVar pdf_m_jpsix("pdf_m_jpsix","2.7*erfc((mass-5.14)/(0.5*0.08))",{mass});
   
-  RooRealVar m_nonprompt_scale("m_nonprompt_scale","m_nonprompt_scale",1.93204e-02,0.001,0.03);
-  RooRealVar m_nonprompt_shift("m_nonprompt_shift","m_nonprompt_shift",5.14357e+00,5.12,5.16);
+  RooRealVar m_nonprompt_scale("m_nonprompt_scale","m_nonprompt_scale",4.74168e-02); //1.93204e-02, 0.001, 0.3);
+  RooRealVar m_nonprompt_shift("m_nonprompt_shift","m_nonprompt_shift",5.14425); //5.14357e+00,5.12,5.16);
   RooGenericPdf pdf_m_nonprompt_erf("pdf_m_nonprompt_erf","pdf_m_nonprompt_erf","TMath::Erfc((mass-m_nonprompt_shift)/m_nonprompt_scale)", RooArgList(mass,m_nonprompt_scale,m_nonprompt_shift));
   
   m_nonprompt_scale.setConstant(kTRUE);
