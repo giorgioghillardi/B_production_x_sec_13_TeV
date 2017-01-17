@@ -71,8 +71,8 @@ void read_data(RooWorkspace& w, TString filename,int channel);
 void read_data_cut(RooWorkspace& w, RooAbsData* data);
 void build_pdf(RooWorkspace& w, int channel, std::string choice = "", std::string choice2 = "");
 
-double pt_bin_mean(RooWorkspace& w, double pt_min, double pt_max);
-void plot_pt_dist(RooWorkspace& w, int channel, TString directory);
+double var_mean_value(RooWorkspace& w, std::string var_name, double var_min, double var_max);
+void plot_var_dist(RooWorkspace& w, std::string var_name, int channel, TString directory);
 void plot_mass_fit(RooWorkspace& w, int channel, TString directory,int pt_high, int pt_low, double y_min, double y_max);
 
 RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, std::string choice = "", std::string choice2 = "", double mass_min = 0.0, double mass_max = 0.0);
@@ -213,8 +213,20 @@ double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_m
   std::vector<std::string> mass_min_str(2);
   std::vector<std::string> mass_max_str(2);
 
-  if(channel==2) 
+  switch(channel)
     {
+    case 1:
+      mass_min[0] = 5.1;
+      mass_min[1] = 5.0;
+      mass_max[0] = 5.6;
+      mass_max[1] = 6.0;
+
+      mass_min_str[0] = "5.1";
+      mass_min_str[1] = "5.0";
+      mass_max_str[0] = "5.6";
+      mass_max_str[1] = "6.0";
+      break;
+    case 2:
       mass_min[0] = 4.65;
       mass_min[1] = 5.05;
       mass_max[0] = 5.5;
@@ -224,9 +236,9 @@ double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_m
       mass_min_str[1] = "5.05";
       mass_max_str[0] = "5.5";
       mass_max_str[1] = "6.0";
-    }
-  else if(channel==4) 
-    {
+      break;
+
+    case 4:
       mass_min[0] = 4.65;
       mass_min[1] = 5.11;
       mass_max[0] = 5.75;
@@ -236,6 +248,7 @@ double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_m
       mass_min_str[1] = "5.11";
       mass_max_str[0] = "5.75";
       mass_max_str[1] = "6.2";
+      break;
     }
 
   std::vector<double> signal_syst;
@@ -311,23 +324,28 @@ double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_m
   return overall_syst;
 }
 
-double pt_bin_mean(RooWorkspace& w, double pt_min, double pt_max)
+double var_mean_value(RooWorkspace& w, std::string var_name, double var_min, double var_max)
 {
-  RooRealVar pt = *(w.var("pt"));
-  RooRealVar pt_low("pt_low","pt_low",pt_min);
-  RooRealVar pt_high("pt_high","pt_high",pt_max);
+  const char* var_name_str = var_name.c_str();
+
+  RooRealVar var = *(w.var(var_name_str));
+  RooRealVar var_low("var_low","var_low",var_min);
+  RooRealVar var_high("var_high","var_high",var_max);
   RooAbsData* data_original;
   RooAbsData* data_cut;
-  double centre;
+  double mean_value;
 
   data_original = w.data("data");
 
-  RooFormulaVar ptcut("pt_cut","pt>pt_low && pt<pt_high",RooArgList(pt,pt_low,pt_high));
-  data_cut = data_original->reduce(ptcut);
-
-  centre = (double) data_cut->meanVar(pt)->getVal();
+  TString cut_formula = var_name + ">var_low && " + var_name + "<var_high";
   
-  return centre;
+  RooFormulaVar var_cut("var_cut", cut_formula, RooArgList(var,var_low,var_high));
+  
+  data_cut = data_original->reduce(var_cut);
+
+  mean_value = (double) data_cut->meanVar(var)->getVal();
+  
+  return mean_value;
 }
 
 void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high, int pt_low, double y_low, double y_high)
@@ -559,17 +577,19 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high,
   c1->SaveAs(directory + ".png");
 }
 
-void plot_pt_dist(RooWorkspace& w, int channel, TString directory)
+void plot_var_dist(RooWorkspace& w, std::string var_name, int channel, TString directory)
 {
-  //full dataset pt distribution
-  RooRealVar pt = *(w.var("pt"));
+  const char* var_name_str = var_name.c_str();
+
+  RooRealVar var = *(w.var(var_name_str));
   RooAbsData* data = w.data("data");
 
   TCanvas c2;
-  TH1D* pt_dist = (TH1D*)data->createHistogram("pt_dist",pt);
-  pt_dist->Draw();
-  c2.SetLogy();
+  TString hist_name = var_name + "_dist";
+  TH1D* var_dist = (TH1D*)data->createHistogram(hist_name,var);
   
+  var_dist->Draw();
+  c2.SetLogy();
   c2.SaveAs(directory + ".png");
 }
 
@@ -582,7 +602,6 @@ void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string cho
   double mass_peak;
 
   RooRealVar mass = *(w.var("mass"));
-  RooRealVar pt = *(w.var("pt"));  
   RooAbsData* data = w.data("data");
 
   switch (channel) {
@@ -638,8 +657,7 @@ void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string cho
 
   RooAddPdf* pdf_m_signal;
       
-  // use single Gaussian for J/psi Ks and J/psi Lambda due to low statistics
-  //if (channel==1 || channel==2 || channel==3 || channel==6 || data->sumEntries()<250)
+  // use single Gaussian for low statistics
   if(data->sumEntries()<250)
   {
     m_sigma2.setConstant(kTRUE);
@@ -696,26 +714,22 @@ void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string cho
   RooAddPdf* pdf_m_combinatorial;
 
   if(choice2=="background" && choice=="2exp")
-    pdf_m_combinatorial=new RooAddPdf("pdf_m_combinatorial","pdf_m_combinatorial",RooArgList(pdf_m_combinatorial_exp,pdf_m_combinatorial_exp2),
-				      RooArgList(m_fraction_exp));
+    pdf_m_combinatorial=new RooAddPdf("pdf_m_combinatorial","pdf_m_combinatorial",RooArgList(pdf_m_combinatorial_exp,pdf_m_combinatorial_exp2),RooArgList(m_fraction_exp));
   else if(choice2=="background" && choice=="bern")
     {
-      pdf_m_combinatorial=new RooAddPdf("pdf_m_combinatorial","pdf_m_combinatorial",RooArgList(pdf_m_combinatorial_bern,pdf_m_combinatorial_exp),
-					RooArgList(m_fraction_exp));
+      pdf_m_combinatorial=new RooAddPdf("pdf_m_combinatorial","pdf_m_combinatorial",RooArgList(pdf_m_combinatorial_bern,pdf_m_combinatorial_exp),RooArgList(m_fraction_exp));
       m_exp.setConstant(kTRUE);
       m_fraction_exp.setVal(1.);    
     }
   else if(choice2=="background" && choice=="power")
     {
-      pdf_m_combinatorial=new RooAddPdf("pdf_m_combinatorial","pdf_m_combinatorial",RooArgList(pdf_m_power,pdf_m_combinatorial_exp),
-					RooArgList(m_fraction_exp));
+      pdf_m_combinatorial=new RooAddPdf("pdf_m_combinatorial","pdf_m_combinatorial",RooArgList(pdf_m_power,pdf_m_combinatorial_exp),RooArgList(m_fraction_exp));
       m_exp.setConstant(kTRUE);
       m_fraction_exp.setVal(1.);    
     }
   else //this is the nominal bkg
     {
-      pdf_m_combinatorial=new RooAddPdf("pdf_m_combinatorial","pdf_m_combinatorial",RooArgList(pdf_m_combinatorial_exp,pdf_m_combinatorial_exp2),
-					RooArgList(m_fraction_exp));
+      pdf_m_combinatorial=new RooAddPdf("pdf_m_combinatorial","pdf_m_combinatorial",RooArgList(pdf_m_combinatorial_exp,pdf_m_combinatorial_exp2),RooArgList(m_fraction_exp));
       m_exp2.setConstant(kTRUE);
       m_fraction_exp.setVal(1.);    
     }
@@ -1155,16 +1169,16 @@ RooRealVar* branching_fraction(int channel)
     {
     default:
     case 1:
-      b_fraction->setVal(bu_to_jpsi_ku->getVal());
-      err = b_fraction->getVal()*sqrt( pow(bu_to_jpsi_ku->getError()/bu_to_jpsi_ku->getVal(),2) );
+      b_fraction->setVal(bu_to_jpsi_ku->getVal() * jpsi_to_mu_mu->getVal());
+      err = b_fraction->getVal()*sqrt( pow(bu_to_jpsi_ku->getError()/bu_to_jpsi_ku->getVal(),2) + pow(jpsi_to_mu_mu->getError()/jpsi_to_mu_mu->getVal(),2) );
       break;      
     case 2:
-      b_fraction->setVal( bd_to_jpsi_kstar->getVal() * kstar_to_k_pi->getVal() );
-      err = b_fraction->getVal() * sqrt( pow(bd_to_jpsi_kstar->getError()/bd_to_jpsi_kstar->getVal(),2) + pow(kstar_to_k_pi->getError()/kstar_to_k_pi->getVal(),2) );
+      b_fraction->setVal( bd_to_jpsi_kstar->getVal() * kstar_to_k_pi->getVal() * jpsi_to_mu_mu->getVal());
+      err = b_fraction->getVal() * sqrt( pow(bd_to_jpsi_kstar->getError()/bd_to_jpsi_kstar->getVal(),2) + pow(kstar_to_k_pi->getError()/kstar_to_k_pi->getVal(),2) + pow(jpsi_to_mu_mu->getError()/jpsi_to_mu_mu->getVal(),2) );
       break;
     case 4:
-      b_fraction->setVal( bs_to_jpsi_phi->getVal() * phi_to_k_k->getVal() );
-      err = b_fraction->getVal() * sqrt(pow(bs_to_jpsi_phi->getError()/bs_to_jpsi_phi->getVal(),2) + pow(phi_to_k_k->getError()/phi_to_k_k->getVal(),2) );
+      b_fraction->setVal( bs_to_jpsi_phi->getVal() * phi_to_k_k->getVal() * jpsi_to_mu_mu->getVal());
+      err = b_fraction->getVal() * sqrt(pow(bs_to_jpsi_phi->getError()/bs_to_jpsi_phi->getVal(),2) + pow(phi_to_k_k->getError()/phi_to_k_k->getVal(),2) + pow(jpsi_to_mu_mu->getError()/jpsi_to_mu_mu->getVal(),2));
       break;
     }
 

@@ -256,7 +256,7 @@ int main(int argc, char** argv)
 	  pt_bin_size[i] = pt_bin_edges[i+1]-pt_bin_edges[i];
 	      
 	  //calculate the mean of the pt bin, to plot the cross section at this point
-	  pt_bin_means[i] = pt_bin_mean(*ws,pt_bin_edges[i],pt_bin_edges[i+1]);
+	  pt_bin_means[i] = var_mean_value(*ws,"pt",pt_bin_edges[i],pt_bin_edges[i+1]);
  
 	  //calculate the new edges of the bin, since the centre is the mean. This is just for plotting.
 	  pt_bin_edges_Lo[i] = pt_bin_means[i] - pt_bin_edges[i];
@@ -469,7 +469,7 @@ int main(int argc, char** argv)
 	  graph->GetXaxis()->SetTitle("p_{T}(B) [GeV]");
 	  graph->GetYaxis()->SetTitle("d#sigma/dp_{T} [#mub/GeV]");
 	  //to set the range of the plot, it takes the min and max value of cross section.
-	  graph->GetYaxis()->SetRangeUser(1e-5/*0.1*x_sec_array[0][0]*/,10*x_sec_array[nybins-1][0]);
+	  graph->GetYaxis()->SetRangeUser(1e-6/*0.1*x_sec_array[0][0]*/,10*x_sec_array[nybins-1][0]);
 	  graph->Draw("ap same");
 	  //print the rapidity bin
 	  leg->AddEntry(graph, TString::Format("%.1f < |y| < %.1f",y_bin_edges[i],y_bin_edges[i+1]), "lp");

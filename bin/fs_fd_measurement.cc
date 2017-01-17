@@ -58,7 +58,7 @@ int main(int argc, char** argv)
     }
 
   //pt bins
-  double pt_bins[]= {9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90}; //{10, 15, 20, 25, 30, 35, 40, 60, 100};
+  double pt_bins[]= {9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90};
   double total_pt_bin_edges[]={0, 400};
   int nptbins=1;
   double* pt_bin_edges=total_pt_bin_edges;
@@ -76,7 +76,7 @@ int main(int argc, char** argv)
 	nptbins = (sizeof(pt_bins) / sizeof(double)) - 1; //if pt_bin_edges is an empty array, then nptbins is equal to 0
     }
   if(yield_sub_samples=="y")
-    {    
+    {
 	y_bin_edges = y_bins;
 	nybins = (sizeof(y_bins) / sizeof(double)) - 1;
     }
@@ -161,13 +161,10 @@ int main(int argc, char** argv)
 	  channel = 2*(ch+1); //fs_fd: if ch=0 -> channel=2, if ch=1 -> channel=4
 	else
 	  if(ratio == "fd_fu")
-	    {
-	      channel= ch+1;
-	      printf("THIS IS STILL NOT TESTED: TAKE IT WITH A GRAIN OF SALT...");
-	    }
+	    channel= ch+1;
 	  else
 	    {
-	      printf("ERROR: The ratio you asked for is not deffined. Please check in the code.");
+	      printf("ERROR: The ratio you asked for is not deffined. Only fs_fu, fs_fd, fd_fu are deffined. Please check in the code.");
 	      return 0;
 	    }
       
@@ -251,7 +248,7 @@ int main(int argc, char** argv)
 		  graph_pre_eff->SetMarkerStyle(21);
 		  graph_pre_eff->Draw("AP");
 		  TString eff1_name = "";
-		  eff1_name = "efficiencies/pre_filter_efficiency_" + channel_to_ntuple_name(channel) + "_" + TString::Format("y_from_%.1f_to_%.1f",y_bin_edges[c],y_bin_edges[c+1]) + ".png";
+		  eff1_name = "efficiencies/pre_filter_efficiency_" + channel_to_ntuple_name(channel) + "_" + TString::Format("y_from_%.2f_to_%.2f",y_bin_edges[c],y_bin_edges[c+1]) + ".png";
 		  ce.SaveAs(eff1_name);
 		}
 	      if(yield_sub_samples=="y")
