@@ -51,7 +51,7 @@ using namespace RooFit;
 
 // General fitting options
 #define NUMBER_OF_CPU       1
-#define VERSION             "v4"
+#define VERSION             "v5"
 #define BASE_DIR            "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/"
 
 //////////////////////////////////////////////
@@ -991,8 +991,8 @@ RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max, doub
   TH1D* hist_passed = new TH1D("hist_passed","hist_passed",1,pt_min,pt_max);
 
   //DEBUG: count using numbers and calculate the error with low statistics formula
-  double total = 0;
-  double passed = 0;
+  //double total = 0;
+  //double passed = 0;
 
   for (int evt=0;evt<tin->GetEntries();evt++)
     {
@@ -1003,7 +1003,7 @@ RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max, doub
       if (pt_b<pt_min || pt_b>pt_max) continue; //within the pt bin
       
       hist_tot->Fill(pt_b);
-      total ++;
+      //total ++;
       
       bool muon1Filter = fabs(eta_mu1) < 2.4 && pt_mu1>2.8;
       bool muon2Filter = fabs(eta_mu2) < 2.4 && pt_mu2>2.8;
@@ -1011,15 +1011,15 @@ RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max, doub
       if (muon1Filter && muon2Filter) 
 	{
 	  hist_passed->Fill(pt_b);//count only the events with the muon selection above
-	  passed ++;
+	  //passed ++;
 	}
     }
   
   //debug
-  std::cout << "debug: passed: " << hist_passed->GetBinContent(1) << std::endl;
-  std::cout << "debug: total: " << hist_tot->GetBinContent(1) << std::endl;
-  std::cout << "debug: total number: " << total << std::endl;
-  std::cout << "debug: passed number: " << passed << std::endl;
+  //std::cout << "debug: passed: " << hist_passed->GetBinContent(1) << std::endl;
+  //std::cout << "debug: total: " << hist_tot->GetBinContent(1) << std::endl;
+  //std::cout << "debug: total number: " << total << std::endl;
+  //std::cout << "debug: passed number: " << passed << std::endl;
   //----------------------------------
   
   //calculates the efficiency by dividing the histograms

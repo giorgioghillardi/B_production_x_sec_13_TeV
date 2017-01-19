@@ -10,7 +10,7 @@ using namespace RooFit;
 // channel = 2: B0 -> J/psi K*
 // channel = 4: Bs -> J/psi phi
 
-//input example: fs_fd_ratio --ratio fs_fd --bins pt/y --preeff 1 --recoeff 1 --mcstudy 0 --syst 0
+//input example: fs_fd_ratio --ratio fs_fu --bins pt_y --preeff 1 --recoeff 1 --mcstudy 0 --syst 0
 int main(int argc, char** argv)
 {
   std::string ratio = "fs_fu";
@@ -60,99 +60,130 @@ int main(int argc, char** argv)
   //pt bins
   double pt_bins[]= {9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90};
   double total_pt_bin_edges[]={0, 400};
-  int nptbins=1;
-  double* pt_bin_edges=total_pt_bin_edges;
-
+  int number_of_pt_bins = (sizeof(pt_bins) / sizeof(double)) - 1; //if pt_bins is an empty array, then number_of_pt_bins is equal to 0
+  
   //y bins
-  double y_bins[]={0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2, 2.25};
+  double y_bins[]= {0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2, 2.25};
   double total_y_bin_edges[]={0.0, 2.25};
-  int nybins=1;
-  double* y_bin_edges=total_y_bin_edges;
+  int number_of_y_bins = (sizeof(y_bins) / sizeof(double)) - 1;
 
-  //set the pt and y bin edges
-  if(yield_sub_samples=="pt")
+  //var1 and var2 are associated to pt or y below, as needed
+  int n_var1_bins =1;
+  int n_var2_bins =1;
+  std::string var1_name = "";
+  std::string var2_name = "";
+  double* var1_bin_edges = total_pt_bin_edges;
+  double* var2_bin_edges = total_y_bin_edges;
+  
+  //set up of var1 and var2
+  if(yield_sub_samples == "full")
     {
-	pt_bin_edges = pt_bins;
-	nptbins = (sizeof(pt_bins) / sizeof(double)) - 1; //if pt_bin_edges is an empty array, then nptbins is equal to 0
+      n_var1_bins= 1;
+      var1_name = "pt";
+      var1_bin_edges = total_pt_bin_edges;
+      
+      n_var2_bins= 1;
+      var2_name = "y";
+      var2_bin_edges = total_y_bin_edges;
     }
-  if(yield_sub_samples=="y")
-    {
-	y_bin_edges = y_bins;
-	nybins = (sizeof(y_bins) / sizeof(double)) - 1;
-    }
-  if(yield_sub_samples=="pt_y" || yield_sub_samples=="y_pt")
-    {
-	pt_bin_edges = pt_bins;
-	nptbins = (sizeof(pt_bins) / sizeof(double)) - 1;
-	
-	y_bin_edges = y_bins;
-	nybins = (sizeof(y_bins) / sizeof(double)) - 1;
-    }
-
-  double yield_array[2][nybins][nptbins];
-  double errLo_array[2][nybins][nptbins];
-  double errHi_array[2][nybins][nptbins];
-  double yield_syst_array[2][nybins][nptbins];
+  else
+    if(yield_sub_samples == "pt")
+      {
+	n_var1_bins = number_of_pt_bins;
+	var1_name = "pt";
+	var1_bin_edges = pt_bins;
+      
+	n_var2_bins = 1;
+	var2_name = "y";
+	var2_bin_edges = total_y_bin_edges;
+      }
+    else
+      if(yield_sub_samples == "pt_y")
+	{
+	  n_var1_bins = number_of_pt_bins;
+	  var1_name = "pt";
+	  var1_bin_edges = pt_bins;
+      
+	  n_var2_bins = number_of_y_bins;
+	  var2_name = "y";
+	  var2_bin_edges = y_bins;
+	}
+      else
+	if(yield_sub_samples == "y")
+	  {
+	    n_var1_bins = number_of_y_bins;
+	    var1_name = "y";
+	    var1_bin_edges = y_bins;
+      
+	    n_var2_bins = 1;
+	    var2_name = "pt";
+	    var2_bin_edges = total_pt_bin_edges;
+	  }
+	else
+	  if(yield_sub_samples == "y_pt")
+	    {
+	      n_var1_bins = number_of_y_bins;
+	      var1_name = "y";
+	      var1_bin_edges = y_bins;
+      
+	      n_var2_bins = number_of_pt_bins;
+	      var2_name = "pt";
+	      var2_bin_edges = pt_bins;
+	    }
+	  else
+	    {
+	      printf("ERROR: The variables you asked for are not deffined. Only full, pt, y, pt_y, y_pt are deffined. Please check in the code.\n");
+	      return 0;
+	    }
+  
+  double yield_array[2][n_var2_bins][n_var1_bins];
+  double errLo_array[2][n_var2_bins][n_var1_bins];
+  double errHi_array[2][n_var2_bins][n_var1_bins];
+  double yield_syst_array[2][n_var2_bins][n_var1_bins];
  
-  double pt_bin_centre[nptbins];
-  double pt_bin_centre_Lo[nptbins];
-  double pt_bin_centre_Hi[nptbins];
-
-  double y_bin_centre[nybins-1];
-  double y_bin_centre_Lo[nybins-1];
-  double y_bin_centre_Hi[nybins-1];
+  double var1_bin_centre[n_var1_bins];
+  double var1_bin_centre_Lo[n_var1_bins];
+  double var1_bin_centre_Hi[n_var1_bins];
       
   RooRealVar* pre_filter_eff;
       
-  double pre_eff_array[2][nybins][nptbins];
-  double pre_eff_err_lo_array[2][nybins][nptbins];
-  double pre_eff_err_hi_array[2][nybins][nptbins];
+  double pre_eff_array[2][n_var2_bins][n_var1_bins];
+  double pre_eff_err_lo_array[2][n_var2_bins][n_var1_bins];
+  double pre_eff_err_hi_array[2][n_var2_bins][n_var1_bins];
 
-  double y_pre_eff_array[2][nybins];
-  double y_pre_eff_err_lo_array[2][nybins];
-  double y_pre_eff_err_hi_array[2][nybins];
-      
   RooRealVar* reco_eff;
       
-  double reco_eff_array[2][nybins][nptbins];
-  double reco_eff_err_lo_array[2][nybins][nptbins];
-  double reco_eff_err_hi_array[2][nybins][nptbins];
+  double reco_eff_array[2][n_var2_bins][n_var1_bins];
+  double reco_eff_err_lo_array[2][n_var2_bins][n_var1_bins];
+  double reco_eff_err_hi_array[2][n_var2_bins][n_var1_bins];
  
-  double y_reco_eff_array[2][nybins];
-  double y_reco_eff_err_lo_array[2][nybins];
-  double y_reco_eff_err_hi_array[2][nybins];
+  double total_eff_array[2][n_var2_bins][n_var1_bins];
+  double total_eff_err_lo_array[2][n_var2_bins][n_var1_bins];
+  double total_eff_err_hi_array[2][n_var2_bins][n_var1_bins];
+  
+  double ratio_eff_array[n_var2_bins][n_var1_bins];
+  double ratio_eff_err_lo_array[n_var2_bins][n_var1_bins];
+  double ratio_eff_err_hi_array[n_var2_bins][n_var1_bins];
 
-  double eff_ratio_array[nybins][nptbins];
-  double eff_ratio_err_lo_array[nybins][nptbins];
-  double eff_ratio_err_hi_array[nybins][nptbins];
-
-  double fs_fd_array[nybins][nptbins];
-  double fs_fd_errLo_array[nybins][nptbins];
-  double fs_fd_errHi_array[nybins][nptbins];
-  double fs_fd_syst_lo_array[nybins][nptbins];
-  double fs_fd_syst_hi_array[nybins][nptbins];
+  double fs_fd_array[n_var2_bins][n_var1_bins];
+  double fs_fd_errLo_array[n_var2_bins][n_var1_bins];
+  double fs_fd_errHi_array[n_var2_bins][n_var1_bins];
+  double fs_fd_syst_lo_array[n_var2_bins][n_var1_bins];
+  double fs_fd_syst_hi_array[n_var2_bins][n_var1_bins];
   
   double b_fraction[2];
   double b_fraction_err[2];
 
-  for(int i=0; i<nptbins; i++)
+  for(int i=0; i<n_var1_bins; i++)
     {
-      pt_bin_centre[i] = pt_bin_edges[i] + (pt_bin_edges[i+1]-pt_bin_edges[i])/2;
-      pt_bin_centre_Lo[i] = pt_bin_centre[i] - pt_bin_edges[i];
-      pt_bin_centre_Hi[i] = pt_bin_edges[i+1] - pt_bin_centre[i];
-    }
-  
-  for(int i=0; i<nybins; i++)
-    {
-      y_bin_centre[i] = y_bin_edges[i] + (y_bin_edges[i+1]-y_bin_edges[i])/2;
-      y_bin_centre_Lo[i] = y_bin_centre[i] - y_bin_edges[i];
-      y_bin_centre_Hi[i] = y_bin_edges[i+1] - y_bin_centre[i];	  
+      var1_bin_centre[i] = var1_bin_edges[i] + (var1_bin_edges[i+1]-var1_bin_edges[i])/2;
+      var1_bin_centre_Lo[i] = var1_bin_centre[i] - var1_bin_edges[i];
+      var1_bin_centre_Hi[i] = var1_bin_edges[i+1] - var1_bin_centre[i];
     }
   
   for(int ch=0; ch<2; ch++)
     { 
-      //CHOOSE THE CHANNEL HERE!!
-      int channel= 1; //just the default value for the channel, it should be assigned below.
+      int channel = 1; //just the default value for the channel, it should be assigned below.
       
       if(ratio == "fs_fu")
 	channel = 3*ch+1; //fs_fu: if ch=0 -> channel=1, if ch=1 -> channel=4
@@ -161,7 +192,7 @@ int main(int argc, char** argv)
 	  channel = 2*(ch+1); //fs_fd: if ch=0 -> channel=2, if ch=1 -> channel=4
 	else
 	  if(ratio == "fd_fu")
-	    channel= ch+1;
+	    channel= ch+1; //fd_fu: if ch=0 -> channel=1, if ch=1 -> channel=2
 	  else
 	    {
 	      printf("ERROR: The ratio you asked for is not deffined. Only fs_fu, fs_fd, fd_fu are deffined. Please check in the code.");
@@ -190,268 +221,242 @@ int main(int argc, char** argv)
       ws->Print();
       //------------------------------------------
             
-      RooRealVar* branch = branching_fraction(channel); //need to correct the function  
+      RooRealVar* branch = branching_fraction(channel);
       b_fraction[ch] = branch->getVal();
       b_fraction_err[ch] = branch->getError();
 
-      for(int j=0; j<nybins; j++)
+      for(int j=0; j<n_var2_bins; j++)
 	{ 
-	  std::cout << "processing subsample: " << y_bin_edges[j] << " < |y| < " << y_bin_edges[j+1] << std::endl;
+	  std::cout << "processing subsample: " << var2_bin_edges[j] << " < " << var2_name << " < " << var2_bin_edges[j+1] << std::endl;
 
-	  for(int i=0; i<nptbins; i++)
+	  for(int i=0; i<n_var1_bins; i++)
 	    {
-	      std::cout << "processing subsample: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
+	      std::cout << "processing subsample: " << var1_bin_edges[i] << " < " << var1_name << " < " << var1_bin_edges[i+1] << std::endl;
 	      
 	      //calculate the signal yield for a bin of pt and y.
-	      signal_res = bin_mass_fit(*ws,channel,pt_bin_edges[i],pt_bin_edges[i+1], y_bin_edges[j], y_bin_edges[j+1]);
-	      
-	      //MC study
-	      if(mcstudy)
+	      if(var1_name == "pt")
 		{
-		  std::cout << "MC study of bin: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
-
-		  mc_study(*ws,channel,pt_bin_edges[i],pt_bin_edges[i+1], y_bin_edges[j], y_bin_edges[j+1]);
+		  signal_res = bin_mass_fit(*ws,channel,var1_bin_edges[i],var1_bin_edges[i+1], var2_bin_edges[j], var2_bin_edges[j+1]);
+		  yield_syst_array[ch][j][i] = bin_systematics(*ws, channel, var1_bin_edges[i], var1_bin_edges[i+1], var2_bin_edges[j], var2_bin_edges[j+1],signal_res->getVal(), data_selection_input_file, syst);
 		}
-
+	      else
+		{
+		  signal_res = bin_mass_fit(*ws,channel,var2_bin_edges[j],var2_bin_edges[j+1], var1_bin_edges[i], var1_bin_edges[i+1]);
+		  yield_syst_array[ch][j][i] = bin_systematics(*ws, channel, var2_bin_edges[j], var2_bin_edges[j+1], var1_bin_edges[i], var1_bin_edges[i+1],signal_res->getVal(), data_selection_input_file, syst);
+		}
+	      
 	      yield_array[ch][j][i] = signal_res->getVal();
 	      errLo_array[ch][j][i] = -(signal_res->getAsymErrorLo());
 	      errHi_array[ch][j][i] = signal_res->getAsymErrorHi();
-	      yield_syst_array[ch][j][i] = bin_systematics(*ws, channel, pt_bin_edges[i], pt_bin_edges[i+1], y_bin_edges[j], y_bin_edges[j+1],signal_res->getVal(), data_selection_input_file, syst);
+	      
+	      //MC study. only for --ratio full or pt or pt_y
+	      if(mcstudy)
+		{
+		  std::cout << "MC study of bin: " << (int)var1_bin_edges[i] << " < pt < " << (int)var1_bin_edges[i+1] << std::endl;
+
+		  mc_study(*ws,channel,var1_bin_edges[i],var1_bin_edges[i+1], var2_bin_edges[j], var2_bin_edges[j+1]);
+		}
 	    }
 	}
       
       //to calculate pre-filter efficiency
       if(calculate_pre_filter_eff)
 	{
-	  for(int c=0; c<nybins; c++)
+	  for(int j=0; j<n_var2_bins; j++)
 	    { 
-	      std::cout << "processing subsample: " << y_bin_edges[c] << " < |y| < " << y_bin_edges[c+1] << std::endl;
-	      for(int i=0; i<nptbins; i++)
+	      std::cout << "processing subsample: " << var2_bin_edges[j] << " < " << var2_name << " < " << var2_bin_edges[j+1] << std::endl;
+	      for(int i=0; i<n_var1_bins; i++)
 		{
-		  std::cout <<"calculating pre-filter efficiency: "<< (int)pt_bin_edges[i] <<" < pt < "<< (int)pt_bin_edges[i+1] << std::endl;
+		  std::cout <<"calculating pre-filter efficiency: " << var1_bin_edges[i] << " < " << var1_name << " < " << var1_bin_edges[i+1] << std::endl;
 		  		  	  
-		  //pre-filter efficiency
-		  pre_filter_eff = prefilter_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1],y_bin_edges[c],y_bin_edges[c+1]);
+		  if(var1_name == "pt")
+		    pre_filter_eff = prefilter_efficiency(channel,var1_bin_edges[i],var1_bin_edges[i+1],var2_bin_edges[j],var2_bin_edges[j+1]);
+		  else
+		    pre_filter_eff = prefilter_efficiency(channel,var2_bin_edges[j],var2_bin_edges[j+1],var1_bin_edges[i],var1_bin_edges[i+1]);
 		  
-		  pre_eff_array[ch][c][i] = pre_filter_eff->getVal();
-		  pre_eff_err_lo_array[ch][c][i] = -(pre_filter_eff->getAsymErrorLo());
-		  pre_eff_err_hi_array[ch][c][i] = pre_filter_eff->getAsymErrorHi();
+		  pre_eff_array[ch][j][i] = pre_filter_eff->getVal();
+		  pre_eff_err_lo_array[ch][j][i] = -(pre_filter_eff->getAsymErrorLo());
+		  pre_eff_err_hi_array[ch][j][i] = pre_filter_eff->getAsymErrorHi();
 		}
 
-	      if(yield_sub_samples=="pt_y" || yield_sub_samples=="pt")
-		{
-		  //plot of the pre-filter efficiency as a function of pT for each y bin
-		  TCanvas ce;
-		  TGraphAsymmErrors* graph_pre_eff = new TGraphAsymmErrors(nptbins, pt_bin_centre, pre_eff_array[ch][c], pt_bin_centre_Lo, pt_bin_centre_Hi, pre_eff_err_lo_array[ch][c], pre_eff_err_hi_array[ch][c]);
-		  graph_pre_eff->SetTitle("pre-filter efficiency");
-		  graph_pre_eff->SetMarkerColor(4);
-		  graph_pre_eff->SetMarkerStyle(21);
-		  graph_pre_eff->Draw("AP");
-		  TString eff1_name = "";
-		  eff1_name = "efficiencies/pre_filter_efficiency_" + channel_to_ntuple_name(channel) + "_" + TString::Format("y_from_%.2f_to_%.2f",y_bin_edges[c],y_bin_edges[c+1]) + ".png";
-		  ce.SaveAs(eff1_name);
-		}
-	      if(yield_sub_samples=="y")
-		{
-		  //transpose the arrays to plot as function of y
-		  y_pre_eff_array[ch][c] = pre_eff_array[ch][c][0];
-		  y_pre_eff_err_lo_array[ch][c] = pre_eff_err_lo_array[ch][c][0];
-		  y_pre_eff_err_hi_array[ch][c] = pre_eff_err_hi_array[ch][c][0];
-		}
-	    }
-	  if(yield_sub_samples=="y")
-	    {
-	      //plot of the pre-filter efficiency as a function of y
-	      TCanvas cj;
-	      TGraphAsymmErrors* y_graph_pre_eff = new TGraphAsymmErrors(nybins, y_bin_centre, y_pre_eff_array[ch], y_bin_centre_Lo, y_bin_centre_Hi, y_pre_eff_err_lo_array[ch], y_pre_eff_err_hi_array[ch]);
-	      y_graph_pre_eff->SetTitle("pre-filter efficiency");
-	      y_graph_pre_eff->SetMarkerColor(4);
-	      y_graph_pre_eff->SetMarkerStyle(21);
-	      y_graph_pre_eff->Draw("AP");
+	      //plot of the pre-filter efficiency as a function of var1
+	      TCanvas ce;
+	      TGraphAsymmErrors* graph_pre_eff = new TGraphAsymmErrors(n_var1_bins, var1_bin_centre, pre_eff_array[ch][j], var1_bin_centre_Lo, var1_bin_centre_Hi, pre_eff_err_lo_array[ch][j], pre_eff_err_hi_array[ch][j]);
+	      graph_pre_eff->SetTitle("Pre-filter efficiency");
+	      graph_pre_eff->SetMarkerColor(4);
+	      graph_pre_eff->SetMarkerStyle(21);
+	      
+	      TString x_axis_name = "";
+	      if(var1_name =="pt")
+	        x_axis_name = "p_{T}(B) [GeV]";
+	      else
+		x_axis_name = "|y|(B)";
+	      
+	      graph_pre_eff->GetXaxis()->SetTitle(x_axis_name);
+	      graph_pre_eff->Draw("AP");
+	      
 	      TString eff1_name = "";
-	      eff1_name = "efficiencies/y_pre_filter_efficiency_" + channel_to_ntuple_name(channel) + ".png";
-	      cj.SaveAs(eff1_name);
+	      eff1_name = "efficiencies/pre_filter_efficiency_" + channel_to_ntuple_name(channel) + "_" + var2_name + TString::Format("_from_%.2f_to_%.2f",var2_bin_edges[j],var2_bin_edges[j+1]) + ".png";
+	      ce.SaveAs(eff1_name);
 	    }
 	}
 
       //to calculate reconstruction efficiency
       if(calculate_reco_eff)
 	{
-	  for(int c=0; c<nybins; c++)
+	  for(int j=0; j<n_var2_bins; j++)
 	    { 
-	      std::cout << "processing subsample: " << y_bin_edges[c] << " < |y| < " << y_bin_edges[c+1] << std::endl;
-	      for(int i=0; i<nptbins; i++)
+	      std::cout << "processing subsample: " << var2_bin_edges[j] << " < " << var2_name << " < " << var2_bin_edges[j+1] << std::endl;
+	      for(int i=0; i<n_var1_bins; i++)
 		{
-		  std::cout << "calculating reconstruction efficiency: " << (int)pt_bin_edges[i] << " < pt < " << (int)pt_bin_edges[i+1] << std::endl;
+		  std::cout << "calculating reconstruction efficiency: " << var1_bin_edges[i] << " < " << var1_name << " < " << var1_bin_edges[i+1] << std::endl;
 		   
-		  //reco efficiency
-		  reco_eff = reco_efficiency(channel,pt_bin_edges[i],pt_bin_edges[i+1],y_bin_edges[c],y_bin_edges[c+1]);
-		 
-		  reco_eff_array[ch][c][i] = reco_eff->getVal();
-		  reco_eff_err_lo_array[ch][c][i] = -(reco_eff->getAsymErrorLo());
-		  reco_eff_err_hi_array[ch][c][i] = reco_eff->getAsymErrorHi();
+		  if(var1_name =="pt")
+		    reco_eff = reco_efficiency(channel,var1_bin_edges[i],var1_bin_edges[i+1],var2_bin_edges[j],var2_bin_edges[j+1]);
+		  else
+		    reco_eff = reco_efficiency(channel,var2_bin_edges[j],var2_bin_edges[j+1],var1_bin_edges[i],var1_bin_edges[i+1]);
+		  
+		  reco_eff_array[ch][j][i] = reco_eff->getVal();
+		  reco_eff_err_lo_array[ch][j][i] = -(reco_eff->getAsymErrorLo());
+		  reco_eff_err_hi_array[ch][j][i] = reco_eff->getAsymErrorHi();
 		}
 
-	      if(yield_sub_samples=="pt_y" || yield_sub_samples=="pt")
-		{
-		  //plot of the reco efficiency as a function of pT for each y bin
+		  //plot of the reco efficiency as a function of var1
 		  TCanvas cp;
-		  TGraphAsymmErrors* graph_reco_eff = new TGraphAsymmErrors(nptbins, pt_bin_centre, reco_eff_array[ch][c], pt_bin_centre_Lo, pt_bin_centre_Hi, reco_eff_err_lo_array[ch][c], reco_eff_err_hi_array[ch][c]);
-		  graph_reco_eff->SetTitle("reconstruction efficiency");
+		  TGraphAsymmErrors* graph_reco_eff = new TGraphAsymmErrors(n_var1_bins, var1_bin_centre, reco_eff_array[ch][j], var1_bin_centre_Lo, var1_bin_centre_Hi, reco_eff_err_lo_array[ch][j], reco_eff_err_hi_array[ch][j]);
+		  graph_reco_eff->SetTitle("Reconstruction efficiency");
 		  graph_reco_eff->SetMarkerColor(4);
 		  graph_reco_eff->SetMarkerStyle(21);
+
+		  TString x_axis_name = "";
+		  if(var1_name =="pt")
+		    x_axis_name = "p_{T}(B) [GeV]";
+		  else
+		    x_axis_name = "|y|(B)";
+		  
+		  graph_reco_eff->GetXaxis()->SetTitle(x_axis_name);
 		  graph_reco_eff->Draw("AP");
+		  
 		  TString eff2_name = "";
-		  eff2_name = "efficiencies/reco_efficiency_" + channel_to_ntuple_name(channel) + "_" + TString::Format("y_from_%.1f_to_%.1f",y_bin_edges[c],y_bin_edges[c+1]) + ".png";
+		  eff2_name = "efficiencies/reco_efficiency_" + channel_to_ntuple_name(channel) + "_" + var2_name + TString::Format("_from_%.2f_to_%.2f",var2_bin_edges[j],var2_bin_edges[j+1]) + ".png";
 		  cp.SaveAs(eff2_name);
-		}
-	      if(yield_sub_samples=="y")
-		{
-		  //transpose the arrays to plot as function of y
-		  y_reco_eff_array[ch][c] = reco_eff_array[ch][c][0];
-		  y_reco_eff_err_lo_array[ch][c] = reco_eff_err_lo_array[ch][c][0];
-		  y_reco_eff_err_hi_array[ch][c] = reco_eff_err_hi_array[ch][c][0];
-		}
-	    }
-	  if(yield_sub_samples=="y")
-	    {
-	      //plot of the reco efficiency as a function of y
-	      TCanvas cq;
-	      TGraphAsymmErrors* y_graph_reco_eff = new TGraphAsymmErrors(nybins, y_bin_centre, y_reco_eff_array[ch], y_bin_centre_Lo, y_bin_centre_Hi, y_reco_eff_err_lo_array[ch], y_reco_eff_err_hi_array[ch]);
-	      y_graph_reco_eff->SetTitle("reconstruction efficiency");
-	      y_graph_reco_eff->SetMarkerColor(4);
-	      y_graph_reco_eff->SetMarkerStyle(21);
-	      y_graph_reco_eff->Draw("AP");
-	      TString eff2_name = "";
-	      eff2_name = "efficiencies/y_reco_efficiency_" + channel_to_ntuple_name(channel) + ".png";
-	      cq.SaveAs(eff2_name);
 	    }
 	}
+      
+      if(calculate_pre_filter_eff && calculate_reco_eff)
+	{
+	  for(int j=0; j<n_var2_bins; j++)
+	    { 
+	      std::cout << "processing subsample: " << var2_bin_edges[j] << " < " << var2_name << " < " << var2_bin_edges[j+1] << std::endl;
+	      for(int i=0; i<n_var1_bins; i++)
+		{
+		  std::cout << "calculating total efficiency: " << var1_bin_edges[i] << " < " << var1_name << " < " << var1_bin_edges[i+1] << std::endl;
+		   
+		  total_eff_array[ch][j][i] = pre_eff_array[ch][j][i] * reco_eff_array[ch][j][i];
+		  total_eff_err_lo_array[ch][j][i] = total_eff_array[ch][j][i] * sqrt(pow(pre_eff_err_lo_array[ch][j][i]/pre_eff_array[ch][j][i],2) + pow(reco_eff_err_lo_array[ch][j][i]/reco_eff_array[ch][j][i],2));
+		  total_eff_err_hi_array[ch][j][i] = total_eff_array[ch][j][i] * sqrt(pow(pre_eff_err_hi_array[ch][j][i]/pre_eff_array[ch][j][i],2) + pow(reco_eff_err_hi_array[ch][j][i]/reco_eff_array[ch][j][i],2));
+		}
+
+		  //plot of the total efficiency as a function of var1
+		  TCanvas cp;
+		  TGraphAsymmErrors* graph_total_eff = new TGraphAsymmErrors(n_var1_bins, var1_bin_centre, total_eff_array[ch][j], var1_bin_centre_Lo, var1_bin_centre_Hi, total_eff_err_lo_array[ch][j], total_eff_err_hi_array[ch][j]);
+		  graph_total_eff->SetTitle("Overall efficiency");
+		  graph_total_eff->SetMarkerColor(4);
+		  graph_total_eff->SetMarkerStyle(21);
+
+		  TString x_axis_name = "";
+		  if(var1_name =="pt")
+		    x_axis_name = "p_{T}(B) [GeV]";
+		  else
+		    x_axis_name = "|y|(B)";
+		  
+		  graph_total_eff->GetXaxis()->SetTitle(x_axis_name);
+		  graph_total_eff->Draw("AP");
+		  
+		  TString eff3_name = "";
+		  eff3_name = "efficiencies/total_efficiency_" + channel_to_ntuple_name(channel) + "_" + var2_name + TString::Format("_from_%.2f_to_%.2f",var2_bin_edges[j],var2_bin_edges[j+1]) + ".png";
+		  cp.SaveAs(eff3_name);
+	    }
+	}
+      
+      if(calculate_pre_filter_eff && calculate_reco_eff)
+	{
+	  for(int j=0; j<n_var2_bins; j++)
+	    { 
+	      std::cout << "processing subsample: " << var2_bin_edges[j] << " < " << var2_name << " < " << var2_bin_edges[j+1] << std::endl;
+	      for(int i=0; i<n_var1_bins; i++)
+		{
+		  std::cout << "calculating efficiency ratio: " << var1_bin_edges[i] << " < " << var1_name << " < " << var1_bin_edges[i+1] << std::endl;
+		   
+		  ratio_eff_array[j][i] = total_eff_array[0][j][i] * total_eff_array[1][j][i];
+		  ratio_eff_err_lo_array[j][i] = ratio_eff_array[j][i] * sqrt(pow(total_eff_err_lo_array[0][j][i]/total_eff_array[0][j][i],2) + pow(total_eff_err_lo_array[1][j][i]/total_eff_array[1][j][i],2));
+		  ratio_eff_err_hi_array[j][i] = ratio_eff_array[j][i] * sqrt(pow(total_eff_err_hi_array[0][j][i]/total_eff_array[0][j][i],2) + pow(total_eff_err_hi_array[1][j][i]/total_eff_array[1][j][i],2));
+		}
+
+		  //plot of the total efficiency as a function of var1
+		  TCanvas cp;
+		  TGraphAsymmErrors* graph_ratio_eff = new TGraphAsymmErrors(n_var1_bins, var1_bin_centre, ratio_eff_array[j], var1_bin_centre_Lo, var1_bin_centre_Hi, ratio_eff_err_lo_array[j], ratio_eff_err_hi_array[j]);
+		  graph_ratio_eff->SetTitle("Efficiency ratio");
+		  graph_ratio_eff->SetMarkerColor(4);
+		  graph_ratio_eff->SetMarkerStyle(21);
+
+		  TString x_axis_name = "";
+		  if(var1_name =="pt")
+		    x_axis_name = "p_{T}(B) [GeV]";
+		  else
+		    x_axis_name = "|y|(B)";
+		  
+		  graph_ratio_eff->GetXaxis()->SetTitle(x_axis_name);
+		  graph_ratio_eff->Draw("AP");
+		  
+		  TString eff4_name = "";
+		  eff4_name = "efficiencies/ratio_efficiency_" + ratio + "_" + var2_name + TString::Format("_from_%.2f_to_%.2f",var2_bin_edges[j],var2_bin_edges[j+1]) + ".png";
+		  cp.SaveAs(eff4_name);
+	    }
+	}
+      
       delete ws;
     }//end of channel cicle
   
-  //To show the values of signal yield and the errors at the end, like a table
-  for(int ch=0; ch<2; ch++)
+  //to calculate the fragmentation fraction ratio
+  for(int j=0; j<n_var2_bins; j++)
     {
-      std::cout << std::endl;
-      std::cout << "CHANNEL: " << 2*(ch+1) << std::endl;
-      
-      for(int j=0; j<nybins; j++)
-	{
-	  std::cout << "BIN y: " << y_bin_edges[j] << " to " << y_bin_edges[j+1] << " : " << std::endl;
-	  
-	  for(int i=0; i<nptbins; i++)
-	    {
-	      std::cout << "BIN pt: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " <<  yield_array[ch][j][i] << " +" << errHi_array[ch][j][i] << " -"<< errLo_array[ch][j][i] << " +-" << yield_syst_array[ch][j][i] << std::endl;
-	    }
-	  
-	  std::cout << std::endl;
-	}
-    }//end of channel cicle
-  
-  //to calculate the fd/fs
-  for(int j=0; j<nybins; j++)
-    {
-      for(int i=0; i<nptbins; i++)
+      for(int i=0; i<n_var1_bins; i++)
 	{
 	  if(calculate_reco_eff && calculate_pre_filter_eff)
 	    {
-	      if(yield_sub_samples=="y")
-		fs_fd_array[j][i] =(yield_array[1][j][i]/yield_array[0][j][i])* ((pre_eff_array[0][j][i]*reco_eff_array[0][j][i])/(pre_eff_array[1][j][i]*reco_eff_array[1][j][i])) * (b_fraction[0]/b_fraction[1]);
-	      else
-		fs_fd_array[j][i] = (yield_array[1][j][i]/yield_array[0][j][i])* ((pre_eff_array[0][j][i]*reco_eff_array[0][j][i])/(pre_eff_array[1][j][i]*reco_eff_array[1][j][i])) * (b_fraction[0]/b_fraction[1]) * pow(10,j);
-
-	      //calculate eff ratio, only implemented here, to extract the value and the stat error.	      
-	      eff_ratio_array[j][i] = (pre_eff_array[0][j][i]*reco_eff_array[0][j][i])/(pre_eff_array[1][j][i]*reco_eff_array[1][j][i]);
-
-	      eff_ratio_err_lo_array[j][i] = eff_ratio_array[j][i] * sqrt( pow(pre_eff_err_lo_array[0][j][i]/pre_eff_array[0][j][i],2) + pow(reco_eff_err_lo_array[0][j][i]/reco_eff_array[0][j][i],2) + pow(pre_eff_err_lo_array[1][j][i]/pre_eff_array[1][j][i],2) + pow(reco_eff_err_lo_array[1][j][i]/reco_eff_array[1][j][i],2));
-
-	      eff_ratio_err_hi_array[j][i] = eff_ratio_array[j][i] * sqrt(pow(pre_eff_err_hi_array[0][j][i]/pre_eff_array[0][j][i],2) + pow(reco_eff_err_hi_array[0][j][i]/reco_eff_array[0][j][i],2) + pow(pre_eff_err_hi_array[1][j][i]/pre_eff_array[1][j][i],2) + pow(reco_eff_err_hi_array[1][j][i]/reco_eff_array[1][j][i],2));
-	      //----------------------------------------------------------------------------------------------------
-
-	      fs_fd_syst_lo_array[j][i]  = fs_fd_array[j][i] * sqrt(pow(yield_syst_array[0][j][i]/yield_array[0][j][i],2) + pow(yield_syst_array[1][j][i]/yield_array[1][j][i],2) + pow(pre_eff_err_lo_array[0][j][i]/pre_eff_array[0][j][i],2) + pow(reco_eff_err_lo_array[0][j][i]/reco_eff_array[0][j][i],2) + pow(pre_eff_err_lo_array[1][j][i]/pre_eff_array[1][j][i],2) + pow(reco_eff_err_lo_array[1][j][i]/reco_eff_array[1][j][i],2) + pow(b_fraction_err[0]/b_fraction[0],2) + pow(b_fraction_err[1]/b_fraction[0],2));
-
-	      fs_fd_syst_hi_array[j][i]  = fs_fd_array[j][i] * sqrt(pow(yield_syst_array[0][j][i]/yield_array[0][j][i],2) + pow(yield_syst_array[1][j][i]/yield_array[1][j][i],2) + pow(pre_eff_err_hi_array[0][j][i]/pre_eff_array[0][j][i],2) + pow(reco_eff_err_hi_array[0][j][i]/reco_eff_array[0][j][i],2) + pow(pre_eff_err_hi_array[1][j][i]/pre_eff_array[1][j][i],2) + pow(reco_eff_err_hi_array[1][j][i]/reco_eff_array[1][j][i],2) + pow(b_fraction_err[0]/b_fraction[0],2) + pow(b_fraction_err[1]/b_fraction[0],2));
+	      fs_fd_array[j][i] = (yield_array[1][j][i]/yield_array[0][j][i])* ((pre_eff_array[0][j][i]*reco_eff_array[0][j][i])/(pre_eff_array[1][j][i]*reco_eff_array[1][j][i])) * (b_fraction[0]/b_fraction[1]) * pow(10,j);
+	      fs_fd_syst_lo_array[j][i]  = fs_fd_array[j][i] * sqrt(pow(yield_syst_array[0][j][i]/yield_array[0][j][i],2) + pow(yield_syst_array[1][j][i]/yield_array[1][j][i],2) + pow(pre_eff_err_lo_array[0][j][i]/pre_eff_array[0][j][i],2) + pow(reco_eff_err_lo_array[0][j][i]/reco_eff_array[0][j][i],2) + pow(pre_eff_err_lo_array[1][j][i]/pre_eff_array[1][j][i],2) + pow(reco_eff_err_lo_array[1][j][i]/reco_eff_array[1][j][i],2) + pow(b_fraction_err[0]/b_fraction[0],2) + pow(b_fraction_err[1]/b_fraction[1],2));
+	      
+	      fs_fd_syst_hi_array[j][i]  = fs_fd_array[j][i] * sqrt(pow(yield_syst_array[0][j][i]/yield_array[0][j][i],2) + pow(yield_syst_array[1][j][i]/yield_array[1][j][i],2) + pow(pre_eff_err_hi_array[0][j][i]/pre_eff_array[0][j][i],2) + pow(reco_eff_err_hi_array[0][j][i]/reco_eff_array[0][j][i],2) + pow(pre_eff_err_hi_array[1][j][i]/pre_eff_array[1][j][i],2) + pow(reco_eff_err_hi_array[1][j][i]/reco_eff_array[1][j][i],2) + pow(b_fraction_err[0]/b_fraction[0],2) + pow(b_fraction_err[1]/b_fraction[1],2));
 	    }
 	  else
 	    {
-	      if(yield_sub_samples=="y")
-		fs_fd_array[j][i] = (yield_array[1][j][i]/yield_array[0][j][i]);
-	      else
-		{
-		  printf("debug: signal yield ratio %d \n", j);
-		  fs_fd_array[j][i] = (yield_array[1][j][i]/yield_array[0][j][i]) * pow(10,j);
-		}
-
-	      fs_fd_syst_lo_array[j][i]  = fs_fd_array[j][i] * sqrt( pow(yield_syst_array[0][j][i]/yield_array[0][j][i],2) + pow(yield_syst_array[1][j][i]/yield_array[1][j][i],2) );
-	      fs_fd_syst_hi_array[j][i]  = fs_fd_syst_lo_array[j][i];
+	      fs_fd_array[j][i] = (yield_array[1][j][i]/yield_array[0][j][i]) * pow(10,j);
+	
+	      fs_fd_syst_lo_array[j][i]  = fs_fd_array[j][i] * sqrt( pow(yield_syst_array[0][j][i]/yield_array[0][j][i],2) + pow(yield_syst_array[1][j][i]/yield_array[1][j][i],2) + pow(b_fraction_err[0]/b_fraction[0],2) + pow(b_fraction_err[1]/b_fraction[1],2));
+	      fs_fd_syst_hi_array[j][i]  = fs_fd_syst_lo_array[j][i]; //the syst errors without the efficiencies are symmetrical
 	    }
+	  
 	  fs_fd_errLo_array[j][i] = fs_fd_array[j][i] * sqrt( pow(errLo_array[0][j][i]/yield_array[0][j][i],2) + pow(errLo_array[1][j][i]/yield_array[1][j][i],2) );
 	  fs_fd_errHi_array[j][i] = fs_fd_array[j][i] * sqrt( pow(errHi_array[0][j][i]/yield_array[0][j][i],2) + pow(errHi_array[1][j][i]/yield_array[1][j][i],2) );
 	}
     }
-
-  //To show the values of fs/fd and the errors at the end, like a table
-  for(int j=0; j<nybins; j++)
-    {
-      std::cout << "BIN y: " << y_bin_edges[j] << " to " << y_bin_edges[j+1] << " : " << std::endl;
-      
-      for(int i=0; i<nptbins; i++)
-	{
-	  std::cout << "BIN pt: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " <<  fs_fd_array[j][i] << " +" << fs_fd_errHi_array[j][i] << " -"<< fs_fd_errLo_array[j][i] << " +" << fs_fd_syst_hi_array[j][i] << " -" << fs_fd_syst_lo_array[j][i] << std::endl;
-	}
-      
-      std::cout << std::endl;
-    }
-
-    //To show the values of pre eff at the end, like a table
-  Printf("=====================DEBUG: Bs pre eff values==========================");
-  for(int j=0; j<nybins; j++)
-    {
-      std::cout << "BIN y: " << y_bin_edges[j] << " to " << y_bin_edges[j+1] << " : " << std::endl;
-      
-      for(int i=0; i<nptbins; i++)
-	{
-	  std::cout << "BIN pt: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " <<  pre_eff_array[1][j][i] << " +" << pre_eff_err_hi_array[1][j][i] << " -"<< pre_eff_err_lo_array[1][j][i] << std::endl;
-	}
-      
-      std::cout << std::endl;
-    }
-
-  //To show the values of reco eff at the end, like a table
-  Printf("=====================DEBUG: Bs reco eff values==========================");
-  for(int j=0; j<nybins; j++)
-    {
-      std::cout << "BIN y: " << y_bin_edges[j] << " to " << y_bin_edges[j+1] << " : " << std::endl;
-      
-      for(int i=0; i<nptbins; i++)
-	{
-	  std::cout << "BIN pt: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " <<  reco_eff_array[1][j][i] << " +" << reco_eff_err_hi_array[1][j][i] << " -"<< reco_eff_err_lo_array[1][j][i] << std::endl;
-	}
-      
-      std::cout << std::endl;
-    }
-
-  //To show the values of eff ratio at the end, like a table
-  Printf("=====================DEBUG: eff ratio values==========================");
-  for(int j=0; j<nybins; j++)
-    {
-      std::cout << "BIN y: " << y_bin_edges[j] << " to " << y_bin_edges[j+1] << " : " << std::endl;
-      
-      for(int i=0; i<nptbins; i++)
-	{
-	  std::cout << "BIN pt: "<< (int) pt_bin_edges[i] << " to " << (int) pt_bin_edges[i+1] << " : " <<  eff_ratio_array[j][i] << " +" << eff_ratio_err_hi_array[j][i] << " -"<< eff_ratio_err_lo_array[j][i] << std::endl;
-	}
-      
-      std::cout << std::endl;
-    }
   
-  //plot fs/fd
+  ////////////////////////////////
+  //plot fragmentation fraction//
+  //////////////////////////////
   TCanvas cz;
   TPad *pad = new TPad("pad", "pad", 0.05, 0.05, 0.99, 0.99);
-  pad->Draw();      
-  TLegend *leg = new TLegend (0.70, 0.70, 0.90, 0.90);
-      
+  pad->Draw();
+  
+  double leg_x2 = 0.98;
+  double leg_x1 = leg_x2 - 0.25;
+  double leg_y2 = 0.98;
+  double leg_y1 = leg_y2 - (0.05 * n_var2_bins);  
+
+  TLegend *leg = new TLegend (leg_x1, leg_y1, leg_x2, leg_y2);
+  
   TLatex * tex = new TLatex(0.69,0.91,TString::Format("%.2f fb^{-1} (13 TeV)",LUMINOSITY));
   tex->SetNDC(kTRUE);
   tex->SetLineWidth(2);
@@ -464,89 +469,66 @@ int main(int argc, char** argv)
   tex->SetLineWidth(2);
   tex->Draw();
   
-  if(yield_sub_samples=="pt_y" || yield_sub_samples=="pt") //plot as a funtion of pt, with one or more y bins
+  for(int j=0; j<n_var2_bins; j++)
     {
-  for(int i=0; i<nybins; i++)
-    {
-      TGraphAsymmErrors* graph = new TGraphAsymmErrors(nptbins, pt_bin_centre, fs_fd_array[i], pt_bin_centre_Lo, pt_bin_centre_Hi, fs_fd_errLo_array[i], fs_fd_errHi_array[i]);
+      TGraphAsymmErrors* graph = new TGraphAsymmErrors(n_var1_bins, var1_bin_centre, fs_fd_array[j], var1_bin_centre_Lo, var1_bin_centre_Hi, fs_fd_errLo_array[j], fs_fd_errHi_array[j]);
       graph->SetTitle("Fragmentation fraction");
-      graph->SetMarkerColor(i+2);
+      graph->SetMarkerColor(2+j);
       graph->SetMarkerSize(0.5);
-      graph->SetMarkerStyle(20+i);
-	  
-      //draw this for the first rapidity bin, or in case there is only one rapidity bin.
-      if(i==0) 
+      graph->SetMarkerStyle(20+j);
+      
+      //draw this for the first bin of var2, or in case there is only one bin.
+      if(j==0)
 	{
-	  graph->GetXaxis()->SetTitle("p_{T}(B) [GeV]");
+	  TString x_axis_name = "";
+	  if(var1_name == "pt")
+	    x_axis_name = "p_{T}(B) [GeV]";
+	  else
+	    x_axis_name = "|y|(B)";
+	  
+	  graph->GetXaxis()->SetTitle(x_axis_name);
+	  
 	  //to set the range of the plot.
-	  graph->GetYaxis()->SetRangeUser(0,2*fs_fd_array[nybins-1][0]);
+	  if(n_var2_bins > 1)
+	    graph->GetYaxis()->SetRangeUser(1e-2, 10*fs_fd_array[n_var2_bins-1][0]);
+	  else
+	    graph->GetYaxis()->SetRangeUser(0, 2*fs_fd_array[n_var2_bins-1][0]);
+	    
 	  graph->Draw("ap same");
-	  //print the rapidity bin
-	  leg->AddEntry(graph, TString::Format("%.1f < |y| < %.1f",y_bin_edges[i],y_bin_edges[i+1]), "lp");
 	}
-      else //for the rest of the rapidity bins.
-	{     
+      else //for the rest of the var2 bins.
+	{
 	  graph->Draw("p same");
-	  leg->AddEntry(graph, TString::Format("(#times 10^{%d}) %.1f < |y| < %.1f",i,y_bin_edges[i],y_bin_edges[i+1]), "lp");
 	}
-
+      
+      //print the var2 bin label
+      TString label = "";
+      
+      if(j!=0)
+	label += TString::Format("(#times 10^{%d}) ",j);
+      
+      if(var1_name == "pt")
+	label += TString::Format("%.2f",var2_bin_edges[j]) + " < |y| < " + TString::Format("%.2f",var2_bin_edges[j+1]);
+      else
+	label += TString::Format("%d",(int)var2_bin_edges[j]) + " < pt < " + TString::Format("%d",(int)var2_bin_edges[j+1]);
+      
+      leg->AddEntry(graph, label, "lp");
+      
       //systematic errors, show the statistical err of eff as syst always
       if(calculate_pre_filter_eff && calculate_reco_eff)
 	{
-	  TGraphAsymmErrors* graph_syst = new TGraphAsymmErrors(nptbins, pt_bin_centre, fs_fd_array[i], pt_bin_centre_Lo, pt_bin_centre_Hi, fs_fd_syst_lo_array[i], fs_fd_syst_hi_array[i]);
-	  graph_syst->SetFillColor(i+2);
+	  TGraphAsymmErrors* graph_syst = new TGraphAsymmErrors(n_var1_bins, var1_bin_centre, fs_fd_array[j], var1_bin_centre_Lo, var1_bin_centre_Hi, fs_fd_syst_lo_array[j], fs_fd_syst_hi_array[j]);
+	  graph_syst->SetFillColor(j+2);
 	  graph_syst->SetFillStyle(3001);
 	  graph_syst->Draw("2 same");
 	}
-    }//end of the ybins for
-
+    }//end of the var2 for
+  
   leg->Draw("same");
   cz.Update();
-  //cz.SetLogy();
-    }
   
-  if(yield_sub_samples=="y") //plot as a function of y, only one pt bin for now
-    {
-      //to transpose the arrays fd_fd_
-      double y_fs_fd_array[nybins];
-      double y_fs_fd_errLo_array[nybins];
-      double y_fs_fd_errHi_array[nybins];
-      double y_fs_fd_syst_lo_array[nybins];
-      double y_fs_fd_syst_hi_array[nybins];
-
-      for(int i=0; i<nybins; i++)
-	{
-	  y_fs_fd_array[i] = fs_fd_array[i][0];
-	  y_fs_fd_errLo_array[i] = fs_fd_errLo_array[i][0];
-	  y_fs_fd_errHi_array[i] = fs_fd_errHi_array[i][0];
-	  y_fs_fd_syst_lo_array[i] = fs_fd_syst_lo_array[i][0];
-	  y_fs_fd_syst_hi_array[i] = fs_fd_syst_hi_array[i][0];
-	}
-
-      TGraphAsymmErrors* graph = new TGraphAsymmErrors(nybins, y_bin_centre, y_fs_fd_array, y_bin_centre_Lo, y_bin_centre_Hi, y_fs_fd_errLo_array, y_fs_fd_errHi_array);
-      graph->SetTitle("Fragmentation fraction");
-      graph->SetMarkerColor(2);
-      graph->SetMarkerSize(0.5);
-      graph->SetMarkerStyle(20);
-      
-      //draw this for the first rapidity bin, or in case there is only one rapidity bin.
-      graph->GetXaxis()->SetTitle("y(B)");
-      //to set the range of the plot.
-      graph->GetYaxis()->SetRangeUser(0.1*y_fs_fd_array[0],2*y_fs_fd_array[0]);
-      graph->Draw("ap same");
-      
-      //systematic errors, show the statistical err of eff as syst always
-      if(calculate_pre_filter_eff && calculate_reco_eff)
-	{
-	  TGraphAsymmErrors* graph_syst = new TGraphAsymmErrors(nybins, y_bin_centre, y_fs_fd_array, y_bin_centre_Lo, y_bin_centre_Hi, y_fs_fd_syst_lo_array, y_fs_fd_syst_hi_array);
-	  graph_syst->SetFillColor(2);
-	  graph_syst->SetFillStyle(3001);
-	  graph_syst->Draw("2 same");
-	}
-      
-      cz.Update();
-      //cz.SetLogy();
-    }
+  if(n_var2_bins > 1)
+    cz.SetLogy();
       
   TString systematic = "";
       
@@ -554,32 +536,60 @@ int main(int argc, char** argv)
     systematic = "_syst";
       
   if(calculate_pre_filter_eff && calculate_reco_eff)
-    {
-      cz.SaveAs("fs_fd/" + ratio + "_" + yield_sub_samples + "_bins" + systematic + "_" + TString::Format(VERSION) + ".png");
-    }
+    cz.SaveAs("fs_fd/" + ratio + "_" + yield_sub_samples + "_bins" + systematic + "_" + TString::Format(VERSION) + ".png");
   else
+    cz.SaveAs("fs_fd/" + ratio + "_yield_ratio_" + yield_sub_samples + "_bins" + systematic + "_" + TString::Format(VERSION) + ".png");
+  
+  /////////////////////////////////////////////
+  //To show the values at the end like tables//
+  /////////////////////////////////////////////
+  
+  //signal yield
+  std::cout << "SIGNAL YIELD:" << std::endl;
+  for(int ch=0; ch<2; ch++)
     {
-      cz.SaveAs("fs_fd/" + ratio + "_yield_ratio_" + yield_sub_samples + "_bins" + systematic + "_" + TString::Format(VERSION) + ".png");
+      std::cout << std::endl;
+      std::cout << "CHANNEL: " << 2*(ch+1) << std::endl;
+      
+      for(int j=0; j<n_var2_bins; j++)
+	{
+	  std::cout << "BIN: " << var2_name << " " << var2_bin_edges[j] << " to " << var2_bin_edges[j+1] << " : " << std::endl;
+	  
+	  for(int i=0; i<n_var1_bins; i++)
+	    {
+	      std::cout << "BIN: " << var1_name << " " << var1_bin_edges[i] << " to " << var1_bin_edges[i+1] << " : " <<  yield_array[ch][j][i] << " +" << errHi_array[ch][j][i] << " -"<< errLo_array[ch][j][i] << " +-" << yield_syst_array[ch][j][i] << std::endl;
+	    }
+	  
+	  std::cout << std::endl;
+	}
+    }//end of channel cicle
+
+  //RATIO EFFICIENCY
+  std::cout << "EFFICIENCY RATIO:" << std::endl;
+  for(int j=0; j<n_var2_bins; j++)
+    {
+      std::cout << "BIN: " << var2_name << " " << var2_bin_edges[j] << " to " << var2_bin_edges[j+1] << " : " << std::endl;
+      
+      for(int i=0; i<n_var1_bins; i++)
+	{
+	  std::cout << "BIN: " << var1_name << " " << var1_bin_edges[i] << " to " << var1_bin_edges[i+1] << " : " <<  ratio_eff_array[j][i] << " +" << ratio_eff_err_hi_array[j][i] << " -"<< ratio_eff_err_lo_array[j][i] << std::endl;
+	}
+      
+      std::cout << std::endl;
     }
 
-  /* 
-  Printf("+++++++++++++++Debug: table++++++++++++++++++");
-
-  std::string table = "table_test";
-
-  std::vector<std::string> col_name;
-  col_name.push_back("col1");
-  col_name.push_back("col2");
-
-  std::vector<std::string> labels;
-  labels.push_back("line1");
-  labels.push_back("line2");
-  labels.push_back("line3");
-
-  std::vector<std::vector<double> > numbers = {{1,2} , {3,4} , {5,6}};
-  std::string caption = "caption_test";
-
-  latex_table(table, 2, 3, col_name, labels, numbers, caption);
-  */
+  //Fracmentation fraction
+  std::cout << "FRAGMENTATION FRACTION:" << ratio << std::endl;
+  for(int j=0; j<n_var2_bins; j++)
+    {
+      std::cout << "BIN: " << var2_name << " " << var2_bin_edges[j] << " to " << var2_bin_edges[j+1] << " : " << std::endl;
+      
+      for(int i=0; i<n_var1_bins; i++)
+	{
+	  std::cout << "BIN: " << var1_name << " " << var1_bin_edges[i] << " to " << var1_bin_edges[i+1] << " : " <<  fs_fd_array[j][i] << " +" << fs_fd_errHi_array[j][i] << " -"<< fs_fd_errLo_array[j][i] << " +" << fs_fd_syst_hi_array[j][i] << " -" << fs_fd_syst_lo_array[j][i] << std::endl;
+	}
+      
+      std::cout << std::endl;
+    }
 
 }//end of main
