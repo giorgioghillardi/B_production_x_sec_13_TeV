@@ -738,12 +738,12 @@ void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string cho
   ////////////////////////////////////////////////////////////////////////////////////////////
 
   //K pi swap component, for channel 2. B0->jpsi K*0  
-  RooRealVar sigma_swapped1("sigma_swapped1","sigma_swapped1", 0.178);
-  RooRealVar sigma_swapped2("sigma_swapped2","sigma_swapped2", 0.047);
+  RooRealVar sigma_swapped1("sigma_swapped1","sigma_swapped1", 0.0419);//0.178);
+  RooRealVar sigma_swapped2("sigma_swapped2","sigma_swapped2", 0.1138);//0.047);
   RooRealVar mean("mean","mean", B0_MASS);
   RooGaussian swapped1("swapped1","swapped1",mass, mean, sigma_swapped1);
   RooGaussian swapped2("swapped2","swapped2",mass, mean, sigma_swapped2);
-  RooRealVar r12("r12","r12", 0.223);
+  RooRealVar r12("r12","r12", 0.655);//0.223);
   RooAddPdf k_pi_swap("k_pi_swap","k_pi_swap",RooArgSet(swapped1,swapped2),r12);
   //--------------------------------------------------------------------
 
@@ -800,7 +800,7 @@ void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string cho
 
   //RooRealVar n_jpsix("n_jpsix","n_jpsix",data->sumEntries(TString::Format("mass>4.9&&mass<5.14")),data->sumEntries(TString::Format("mass>4.9&&mass<5.14")),data->sumEntries());
 
-  RooRealVar f_swap("f_swap","f_swap", 0.182273); //,0.140618); //for the k pi swap component of channel 2
+  RooRealVar f_swap("f_swap","f_swap", 0.136765); //0.182273); //,0.140618); //for the k pi swap component of channel 2
   RooProduct n_swap("n_swap","n_swap",RooArgList(n_signal,f_swap));
 
   RooRealVar f_jpsipi("f_jpsipi","f_jpsipi",4.1E-5/1.026E-3,0.,0.1); //BF(jpsi_pi) = (4.1+-0.4)*10^-5 / BF(jpsi K) = (1.026+-0.031)*10^-3
@@ -991,8 +991,8 @@ RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max, doub
   TH1D* hist_passed = new TH1D("hist_passed","hist_passed",1,pt_min,pt_max);
 
   //DEBUG: count using numbers and calculate the error with low statistics formula
-  //double total = 0;
-  //double passed = 0;
+  double total = 0;
+  double passed = 0;
 
   for (int evt=0;evt<tin->GetEntries();evt++)
     {
@@ -1003,7 +1003,7 @@ RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max, doub
       if (pt_b<pt_min || pt_b>pt_max) continue; //within the pt bin
       
       hist_tot->Fill(pt_b);
-      //total ++;
+      total ++;
       
       bool muon1Filter = fabs(eta_mu1) < 2.4 && pt_mu1>2.8;
       bool muon2Filter = fabs(eta_mu2) < 2.4 && pt_mu2>2.8;
@@ -1011,7 +1011,7 @@ RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max, doub
       if (muon1Filter && muon2Filter) 
 	{
 	  hist_passed->Fill(pt_b);//count only the events with the muon selection above
-	  //passed ++;
+	  passed ++;
 	}
     }
   
@@ -1035,11 +1035,11 @@ RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max, doub
   eff_lo = -(efficiency->GetEfficiencyErrorLow(1));
   eff_hi = efficiency->GetEfficiencyErrorUp(1);
   
-  /*
-  eff = passed/total;
-  eff_lo = -eff * sqrt(((passed+1)*(total-passed+1))/((total+3)*(total+2)*(total+2)));
-  eff_hi =  eff * sqrt(((passed+1)*(total-passed+1))/((total+3)*(total+2)*(total+2)));
-  */
+  
+  //eff = passed/total;
+  //eff_lo = -eff * sqrt(((passed+1)*(total-passed+1))/((total+3)*(total+2)*(total+2)));
+  //eff_hi =  eff * sqrt(((passed+1)*(total-passed+1))/((total+3)*(total+2)*(total+2)));
+  
 
   RooRealVar* eff1 = new RooRealVar("eff1","eff1",eff);
   eff1->setAsymError(eff_lo,eff_hi);
@@ -1088,11 +1088,11 @@ RooRealVar* reco_efficiency(int channel, double pt_min, double pt_max, double y_
     }
       
     //--------------------------------read monte carlo with cuts------------------------
-    TString mc_input_with_cuts = TString::Format(BASE_DIR) + "selected_mc_" + channel_to_ntuple_name(channel) + "_bmuonfilter_with_cuts.root";
+    TString mc_input_with_cuts = TString::Format(BASE_DIR) + "reduced_myloop_new_mc_truth_" + channel_to_ntuple_name(channel) + "_with_cuts.root";
     TFile *fin_with_cuts = new TFile(mc_input_with_cuts);
     TTree *tin_with_cuts = (TTree*)fin_with_cuts->Get(channel_to_ntuple_name(channel));
    
-    //read the ntuple from selected_data
+    //read the ntuple
     tin_with_cuts->SetBranchAddress("eta", &eta_b);
     tin_with_cuts->SetBranchAddress("y", &y_b);
     tin_with_cuts->SetBranchAddress("pt", &pt_b);

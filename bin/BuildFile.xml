@@ -5,8 +5,10 @@
 <use name="roostats"/>
 #<use name="UserCode/B_production_x_sec_13_TeV"/>
 <environment>
-  <bin name="signal_yield_new"   file="signal_yield_new.cc"></bin>
+  <bin name="myloop_gen"   file="myloop_gen.cc"></bin>
   <bin name="myloop_new"   file="myloop_new.cc"></bin>
+  <bin name="reduce_mc"   file="reduce_mc_tree.cc"></bin>
+  <bin name="signal_yield_new"   file="signal_yield_new.cc"></bin>
   <bin name="fs_fd_ratio"   file="fs_fd_measurement.cc"></bin>
   <bin name="swap"   file="k_pi_swap.cc"></bin>
 </environment>

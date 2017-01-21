@@ -12,12 +12,12 @@
 #include "UserCode/B_production_x_sec_13_TeV/interface/myloop.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/channel.h"
 
-//myloop_gen --channel 2 --bfilter 1 --dir some/place
+//myloop_gen --channel 2 --bfilter 1 --output some/place
 int main(int argc, char** argv)
 {
   int channel = 1;
   int bfilter = 1;
-  std::string dir ="";
+  std::string output_dir ="";
 
   for(int i=1 ; i<argc ; ++i)
     {
@@ -34,10 +34,10 @@ int main(int argc, char** argv)
           convert << argv[++i];
           convert >> bfilter;
         }
-      if(argument == "--dir")
+      if(argument == "--output")
         {
           convert << argv[++i];
-          convert >> dir;
+          convert >> output_dir;
         }
     }
   
@@ -60,8 +60,7 @@ int main(int argc, char** argv)
       else
 	{
 	  //for BMuonfilter processed with Bfinder_mc.cc
-	  root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_test_v2/BuToJpsiKV2_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinde\
-r_test_v2/160811_210322/0000/Bfinder_mc_*.root");
+	  root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_test_v2/BuToJpsiKV2_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_test_v2/160811_210322/0000/Bfinder_mc_*.root");
 	}
       break;
     case 2:
@@ -73,8 +72,7 @@ r_test_v2/160811_210322/0000/Bfinder_mc_*.root");
       else
 	{
 	  //for BMuonfilter processed with Bfinder_mc.cc
-	  root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_mc_Bd_muonfilter_v1/BdToJpsiKstarV2_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-ev\
-tgen/crab_Bfinder_mc_Bd_muonfilter_v1/160812_135133/0000/Bfinder_mc_*.root");
+	  root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_mc_Bd_muonfilter_v1/BdToJpsiKstarV2_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_mc_Bd_muonfilter_v1/160812_135133/0000/Bfinder_mc_*.root");
 	}
       break;
     case 3:
@@ -115,7 +113,7 @@ tgen/crab_Bfinder_mc_Bd_muonfilter_v1/160812_135133/0000/Bfinder_mc_*.root");
   else
     bf = "bmuonfilter";
   
-  TString file_name = "myloop_gen_" + channel_to_ntuple_name(channel) + "_" + bf + "_test.root";
+  TString file_name = output_dir + "myloop_gen_" + channel_to_ntuple_name(channel) + "_" + bf + ".root";
   TFile *fout = new TFile(file_name,"recreate");
   
   ReducedGenBranches *br = new ReducedGenBranches();
@@ -178,7 +176,7 @@ tgen/crab_Bfinder_mc_Bd_muonfilter_v1/160812_135133/0000/Bfinder_mc_*.root");
      	      if (abs(GenInfo->pdgId[idx_mu1])!=13) continue; // not mu+-
 	      if (abs(GenInfo->pdgId[idx_mu2])!=13) continue; // not mu+-
 	      
-	      //debug: count the number of Bee in each event
+	      //debug: count the number of Bees in each event
 	      b_counter ++;
 	      
 	      break;
@@ -255,7 +253,7 @@ tgen/crab_Bfinder_mc_Bd_muonfilter_v1/160812_135133/0000/Bfinder_mc_*.root");
 
       //debug: print the number of signal bees, in each event. For channel 2.
       if(channel == 2 && b_counter > 1)
-	printf("Number of signal B: %d \n", b_counter);
+	printf("Number of signal B0->jpsi K*0: %d \n", b_counter);
 
     } // end of evt loop
   

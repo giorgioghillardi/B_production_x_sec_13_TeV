@@ -104,8 +104,7 @@ int main(int argc, char** argv)
   double total_y_bin_edges[]={0.0, 2.25};
   double* y_bin_edges=total_y_bin_edges;
     
-  //TString data_selection_input_file = TString::Format(BASE_DIR) + "selected_data_" + channel_to_ntuple_name(channel) + ".root";
-  TString data_selection_input_file = TString::Format(BASE_DIR) + "selected_data_with_cuts.root";
+  TString data_selection_input_file = TString::Format(BASE_DIR) + "myloop_new_data_with_cuts.root";
   RooWorkspace* ws = new RooWorkspace("ws","Bmass");
   RooRealVar* signal_res; 
 

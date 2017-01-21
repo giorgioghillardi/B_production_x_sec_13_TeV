@@ -22,7 +22,6 @@
 #include <RooAddPdf.h>
 #include <RooPlot.h>
 #include "UserCode/B_production_x_sec_13_TeV/interface/myloop.h"
-#include "UserCode/B_production_x_sec_13_TeV/interface/plotDressing.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/channel.h"
 #include "TMath.h"
 using namespace RooFit;
@@ -38,11 +37,11 @@ using namespace RooFit;
 // channel = 5: Jpsi + pipi
 // channel = 6: Lambda_b -> Jpsi + Lambda
 
-//input example: data_selection --channel 1 --input /some/place/
+//input example: reduce_mc --channel 1 --gen 1 --input /some/place/
 int main(int argc, char** argv)
 {
   int channel = 1;
-  int bfilter = 0;
+  int gen = 1;
   TString input_file = "";
 
   for(int i=1 ; i<argc ; ++i)
@@ -56,10 +55,10 @@ int main(int argc, char** argv)
           convert >> channel;
         }
       
-      if(argument == "--bfilter")
+      if(argument == "--gen")
 	{
 	  convert << argv[++i];
-          convert >> bfilter;
+          convert >> gen;
 	}
       
       if(argument == "--input")
@@ -71,18 +70,10 @@ int main(int argc, char** argv)
   
   if(input_file == "")
     {
-      if(bfilter)
-	input_file = TString::Format(BASE_DIR) + "myloop_gen_" + channel_to_ntuple_name(channel) + "_bfilter.root";
-      else
-	input_file = TString::Format(BASE_DIR) + "myloop_gen_" + channel_to_ntuple_name(channel) + "_bmuonfilter.root";
+      printf("ERROR: no input file was indicated. Please use --input /some/file \n");
     }
     
-  TString data_selection_output_file="";
-  
-  if(bfilter)
-    data_selection_output_file= TString::Format(BASE_DIR) + "reduced_myloop_gen_" + channel_to_ntuple_name(channel) + "_bfilter.root";
-  else
-    data_selection_output_file= TString::Format(BASE_DIR) + "reduced_myloop_gen_" + channel_to_ntuple_name(channel) + "_bmuonfilter.root";
+  TString data_selection_output_file = "reduced_" + input_file;
   
   TFile *fout = new TFile(data_selection_output_file,"recreate");
   
@@ -96,10 +87,12 @@ int main(int argc, char** argv)
   ReducedGenBranches br;
   TChain* tin;
 
-  std::cout << "reducing the size of channel " << channel << std::endl;
+  std::cout << "Reducing the size of channel " << channel << std::endl;
 
-  TString ntuple_name = "";
-  ntuple_name = channel_to_ntuple_name(channel) + "_gen";
+  TString ntuple_name = channel_to_ntuple_name(channel);
+  
+  if(gen)
+    ntuple_name += "_gen";
 
   tin = new TChain(ntuple_name);
 
@@ -107,8 +100,12 @@ int main(int argc, char** argv)
 
   br.setbranchadd(tin);
 
-  for (int evt=0;evt<tin->GetEntries();evt++)
+  int n_entries = tin->GetEntries();
+
+  for (int evt=0; evt<n_entries; evt++)
     {
+      if (evt%1000==0 || evt==n_entries-1) printf("processing %d/%d (%.2f%%).\n",evt,n_entries-1,(double)evt/(double)(n_entries-1)*100.);
+
       tin->GetEntry(evt);
     
       switch(channel)

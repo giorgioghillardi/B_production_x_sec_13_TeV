@@ -168,6 +168,8 @@ int main(int argc, char** argv)
   double fs_fd_array[n_var2_bins][n_var1_bins];
   double fs_fd_errLo_array[n_var2_bins][n_var1_bins];
   double fs_fd_errHi_array[n_var2_bins][n_var1_bins];
+  double fs_fd_syst_lo_sqrt[n_var2_bins][n_var1_bins];
+  double fs_fd_syst_hi_sqrt[n_var2_bins][n_var1_bins];
   double fs_fd_syst_lo_array[n_var2_bins][n_var1_bins];
   double fs_fd_syst_hi_array[n_var2_bins][n_var1_bins];
   
@@ -208,8 +210,7 @@ int main(int argc, char** argv)
       create_dir(dir_list);
       
       //------------data input---------------------
-      //TString data_selection_input_file = TString::Format(BASE_DIR) + "selected_data_" + channel_to_ntuple_name(channel) + ".root";
-      TString data_selection_input_file = TString::Format(BASE_DIR) + "selected_data_with_cuts.root";
+      TString data_selection_input_file = TString::Format(BASE_DIR) + "myloop_new_data_with_cuts.root";
       RooWorkspace* ws = new RooWorkspace("ws","Bmass");
       RooRealVar* signal_res; 
   
@@ -234,7 +235,7 @@ int main(int argc, char** argv)
 	      std::cout << "processing subsample: " << var1_bin_edges[i] << " < " << var1_name << " < " << var1_bin_edges[i+1] << std::endl;
 	      
 	      //calculate the signal yield for a bin of pt and y.
-	      if(var1_name == "pt")
+	      if(var1_name == "pt") //to make sure that the functio bin_mass_fit gets the right input.
 		{
 		  signal_res = bin_mass_fit(*ws,channel,var1_bin_edges[i],var1_bin_edges[i+1], var2_bin_edges[j], var2_bin_edges[j+1]);
 		  yield_syst_array[ch][j][i] = bin_systematics(*ws, channel, var1_bin_edges[i], var1_bin_edges[i+1], var2_bin_edges[j], var2_bin_edges[j+1],signal_res->getVal(), data_selection_input_file, syst);
@@ -343,6 +344,7 @@ int main(int argc, char** argv)
 	    }
 	}
       
+      //to calculate total efficiency
       if(calculate_pre_filter_eff && calculate_reco_eff)
 	{
 	  for(int j=0; j<n_var2_bins; j++)
@@ -379,6 +381,7 @@ int main(int argc, char** argv)
 	    }
 	}
       
+      //to calculate efficiency ratio
       if(calculate_pre_filter_eff && calculate_reco_eff)
 	{
 	  for(int j=0; j<n_var2_bins; j++)
@@ -388,12 +391,12 @@ int main(int argc, char** argv)
 		{
 		  std::cout << "calculating efficiency ratio: " << var1_bin_edges[i] << " < " << var1_name << " < " << var1_bin_edges[i+1] << std::endl;
 		   
-		  ratio_eff_array[j][i] = total_eff_array[0][j][i] * total_eff_array[1][j][i];
+		  ratio_eff_array[j][i] = total_eff_array[0][j][i] / total_eff_array[1][j][i];
 		  ratio_eff_err_lo_array[j][i] = ratio_eff_array[j][i] * sqrt(pow(total_eff_err_lo_array[0][j][i]/total_eff_array[0][j][i],2) + pow(total_eff_err_lo_array[1][j][i]/total_eff_array[1][j][i],2));
 		  ratio_eff_err_hi_array[j][i] = ratio_eff_array[j][i] * sqrt(pow(total_eff_err_hi_array[0][j][i]/total_eff_array[0][j][i],2) + pow(total_eff_err_hi_array[1][j][i]/total_eff_array[1][j][i],2));
 		}
 
-		  //plot of the total efficiency as a function of var1
+		  //plot of the efficiency ratio as a function of var1
 		  TCanvas cp;
 		  TGraphAsymmErrors* graph_ratio_eff = new TGraphAsymmErrors(n_var1_bins, var1_bin_centre, ratio_eff_array[j], var1_bin_centre_Lo, var1_bin_centre_Hi, ratio_eff_err_lo_array[j], ratio_eff_err_hi_array[j]);
 		  graph_ratio_eff->SetTitle("Efficiency ratio");
@@ -423,29 +426,31 @@ int main(int argc, char** argv)
     {
       for(int i=0; i<n_var1_bins; i++)
 	{
-	  if(calculate_reco_eff && calculate_pre_filter_eff)
+	  fs_fd_array[j][i] = (yield_array[1][j][i]/yield_array[0][j][i]) * pow(10,j);
+	  
+	  fs_fd_syst_lo_sqrt[j][i] = pow(yield_syst_array[0][j][i]/yield_array[0][j][i],2) + pow(yield_syst_array[1][j][i]/yield_array[1][j][i],2);
+	  fs_fd_syst_hi_sqrt[j][i] = fs_fd_syst_lo_sqrt[j][i]; //the syst errors without the efficiencies are symmetrical.
+	  
+	  if(calculate_reco_eff && calculate_pre_filter_eff) //yield ratio and syst corrected by efficiency ratio and BF ratio.
 	    {
-	      fs_fd_array[j][i] = (yield_array[1][j][i]/yield_array[0][j][i])* ((pre_eff_array[0][j][i]*reco_eff_array[0][j][i])/(pre_eff_array[1][j][i]*reco_eff_array[1][j][i])) * (b_fraction[0]/b_fraction[1]) * pow(10,j);
-	      fs_fd_syst_lo_array[j][i]  = fs_fd_array[j][i] * sqrt(pow(yield_syst_array[0][j][i]/yield_array[0][j][i],2) + pow(yield_syst_array[1][j][i]/yield_array[1][j][i],2) + pow(pre_eff_err_lo_array[0][j][i]/pre_eff_array[0][j][i],2) + pow(reco_eff_err_lo_array[0][j][i]/reco_eff_array[0][j][i],2) + pow(pre_eff_err_lo_array[1][j][i]/pre_eff_array[1][j][i],2) + pow(reco_eff_err_lo_array[1][j][i]/reco_eff_array[1][j][i],2) + pow(b_fraction_err[0]/b_fraction[0],2) + pow(b_fraction_err[1]/b_fraction[1],2));
+	      fs_fd_array[j][i] *= ratio_eff_array[j][i] * (b_fraction[0]/b_fraction[1]);
+
+	      fs_fd_syst_lo_sqrt[j][i]  += pow(ratio_eff_err_lo_array[j][i]/ratio_eff_array[j][i],2) + pow(b_fraction_err[0]/b_fraction[0],2) + pow(b_fraction_err[1]/b_fraction[1],2);
 	      
-	      fs_fd_syst_hi_array[j][i]  = fs_fd_array[j][i] * sqrt(pow(yield_syst_array[0][j][i]/yield_array[0][j][i],2) + pow(yield_syst_array[1][j][i]/yield_array[1][j][i],2) + pow(pre_eff_err_hi_array[0][j][i]/pre_eff_array[0][j][i],2) + pow(reco_eff_err_hi_array[0][j][i]/reco_eff_array[0][j][i],2) + pow(pre_eff_err_hi_array[1][j][i]/pre_eff_array[1][j][i],2) + pow(reco_eff_err_hi_array[1][j][i]/reco_eff_array[1][j][i],2) + pow(b_fraction_err[0]/b_fraction[0],2) + pow(b_fraction_err[1]/b_fraction[1],2));
-	    }
-	  else
-	    {
-	      fs_fd_array[j][i] = (yield_array[1][j][i]/yield_array[0][j][i]) * pow(10,j);
-	
-	      fs_fd_syst_lo_array[j][i]  = fs_fd_array[j][i] * sqrt( pow(yield_syst_array[0][j][i]/yield_array[0][j][i],2) + pow(yield_syst_array[1][j][i]/yield_array[1][j][i],2) + pow(b_fraction_err[0]/b_fraction[0],2) + pow(b_fraction_err[1]/b_fraction[1],2));
-	      fs_fd_syst_hi_array[j][i]  = fs_fd_syst_lo_array[j][i]; //the syst errors without the efficiencies are symmetrical
+	      fs_fd_syst_hi_sqrt[j][i] += pow(ratio_eff_err_hi_array[j][i]/ratio_eff_array[j][i],2) + pow(b_fraction_err[0]/b_fraction[0],2) + pow(b_fraction_err[1]/b_fraction[1],2);
 	    }
 	  
+	  fs_fd_syst_lo_array[j][i]  = fs_fd_array[j][i] * sqrt(fs_fd_syst_lo_sqrt[j][i]);
+	  fs_fd_syst_hi_array[j][i]  = fs_fd_array[j][i] * sqrt(fs_fd_syst_hi_sqrt[j][i]);
+
 	  fs_fd_errLo_array[j][i] = fs_fd_array[j][i] * sqrt( pow(errLo_array[0][j][i]/yield_array[0][j][i],2) + pow(errLo_array[1][j][i]/yield_array[1][j][i],2) );
 	  fs_fd_errHi_array[j][i] = fs_fd_array[j][i] * sqrt( pow(errHi_array[0][j][i]/yield_array[0][j][i],2) + pow(errHi_array[1][j][i]/yield_array[1][j][i],2) );
 	}
     }
   
-  ////////////////////////////////
-  //plot fragmentation fraction//
-  //////////////////////////////
+  /////////////////////////////////////
+  //plot fragmentation fraction ratio//
+  ////////////////////////////////////
   TCanvas cz;
   TPad *pad = new TPad("pad", "pad", 0.05, 0.05, 0.99, 0.99);
   pad->Draw();
@@ -472,7 +477,8 @@ int main(int argc, char** argv)
   for(int j=0; j<n_var2_bins; j++)
     {
       TGraphAsymmErrors* graph = new TGraphAsymmErrors(n_var1_bins, var1_bin_centre, fs_fd_array[j], var1_bin_centre_Lo, var1_bin_centre_Hi, fs_fd_errLo_array[j], fs_fd_errHi_array[j]);
-      graph->SetTitle("Fragmentation fraction");
+      TString fragmentation_title = "Fragmentation fraction " + ratio;
+      graph->SetTitle(fragmentation_title);
       graph->SetMarkerColor(2+j);
       graph->SetMarkerSize(0.5);
       graph->SetMarkerStyle(20+j);
