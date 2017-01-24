@@ -163,7 +163,7 @@ RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_
 
   data_original = w.data("data");
   
-  //if mass_min and mass_max are provided as input, it sets that mass windos in the workspace ws_cut.
+  //if mass_min and mass_max are provided as input, it sets that mass window in the workspace ws_cut.
   //if mass_min or mass_max are not provided it uses mass window from workspace w.
   if(mass_min!=0.0 && mass_max!=0.0)
     set_up_workspace_variables(ws_cut,channel,mass_min,mass_max);
@@ -205,8 +205,8 @@ double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_m
 
   RooRealVar* fit_res;
 
-  std::vector<std::string> background = {"2exp", "bern", "power"};
-  std::vector<std::string> signal = {"crystal", "1gauss", "3gauss"};
+  std::vector<std::string> background = {"2exp", "bern"}; //, "power"};
+  std::vector<std::string> signal = {"crystal", "1gauss"}; //, "3gauss"};
 
   std::vector<double> mass_min(2);
   std::vector<double> mass_max(2);
@@ -254,9 +254,11 @@ double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_m
   std::vector<double> signal_syst;
   std::vector<double> back_syst;
   std::vector<double> range_syst;
-  signal_syst.reserve(4);
-  back_syst.reserve(4);
-  range_syst.reserve(3);
+
+  //signal_syst.reserve(4);
+  //back_syst.reserve(4);
+  range_syst.reserve((int)mass_min.size() + 1);
+
   signal_syst.push_back(signal_res);
   back_syst.push_back(signal_res);
   range_syst.push_back(signal_res);
@@ -264,7 +266,7 @@ double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_m
   std::cout << std::endl << std::endl << std::endl << " signal_syst[0]: " << signal_syst[0] << std::endl << std::endl << std::endl;
 
   //Background Systematics
-  for(int i=0; i<3; i++)
+  for(int i=0; i<(int)background.size(); i++)
     {
       fit_res = bin_mass_fit(ws, channel, pt_min, pt_max, y_min, y_max, background[i], "background");
       back_syst.push_back((double)fit_res->getVal());
@@ -272,7 +274,7 @@ double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_m
     }
 
   //Signal Systematics
-  for(int i=0; i<3; i++)
+  for(int i=0; i<(int)signal.size(); i++)
     {
       fit_res = bin_mass_fit(ws, channel, pt_min, pt_max, y_min, y_max, signal[i], "signal");
       signal_syst.push_back((double)fit_res->getVal());
@@ -280,7 +282,7 @@ double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_m
     }
 
   //Mass Range Systematics
-  for(int i=0; i<2; i++)
+  for(int i=0; i<(int)mass_min.size(); i++)
     {
       RooWorkspace* ws1 = new RooWorkspace("ws1","Bmass");
 
@@ -292,25 +294,26 @@ double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_m
       std::cout << std::endl << std::endl << std::endl << " range_syst[" << i+1 << "]: " << range_syst[i+1] << std::endl << std::endl << std::endl;
     }
 
-  for(unsigned int i=0; i<signal_syst.size(); i++)
+  for(int i=0; i<(int)signal_syst.size(); i++)
     std::cout << "signal_syst[" << i << "]: " << signal_syst[i] << std::endl;
 
-  for(unsigned int i=0; i<back_syst.size(); i++)
+  for(int i=0; i<(int)back_syst.size(); i++)
     std::cout << "back_syst[" << i << "]: " << back_syst[i] << std::endl;
-  for(unsigned int i=0; i<range_syst.size(); i++)
+
+  for(int i=0; i<(int)range_syst.size(); i++)
     std::cout << "range_syst[" << i << "]: " << range_syst[i] << std::endl;
 
   std::vector<double> deviation_signal;
   std::vector<double> deviation_back;
   std::vector<double> deviation_range;
 
-  for(unsigned int i=0; i<signal_syst.size(); i++)
+  for(int i=0; i<(int)signal_syst.size(); i++)
     deviation_signal.push_back(abs(signal_syst[i] - signal_syst[0]));   
 
-  for(unsigned int i=0; i<back_syst.size(); i++)
+  for(int i=0; i<(int)back_syst.size(); i++)
     deviation_back.push_back(abs(back_syst[i] - back_syst[0]));   
  
-  for(unsigned int i=0; i<range_syst.size(); i++)
+  for(int i=0; i<(int)range_syst.size(); i++)
     deviation_range.push_back(abs(range_syst[i] - range_syst[0]));    
   
   //find the max difference from the initial result, for each systematic error
@@ -375,12 +378,12 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high,
   
   model->plotOn(frame_m,Name("thePdf"),Precision(2E-4));
   
-  model->paramOn(frame_m,Layout(0.505,0.89,0.57)); // Layout(0.45,0.85,0.57) //show all the parameters of the fit in the plot.
+  model->paramOn(frame_m,Layout(0.505,0.89,0.57));
   
   model->plotOn(frame_m,Name("signal"),Precision(2E-4),Components("pdf_m_signal"),LineColor(8),LineWidth(2),LineStyle(kSolid),FillStyle(3008),FillColor(8), VLines(), DrawOption("F"));
   
   if(channel==1 || channel==2 || channel==3 || channel==4 || channel==6)
-    model->plotOn(frame_m,Name("combinatorial"),Precision(2E-4),Components("pdf_m_combinatorial_exp"),LineColor(9),LineWidth(2),LineStyle(2));
+    model->plotOn(frame_m,Name("combinatorial"),Precision(2E-4),Components("pdf_m_combinatorial"),LineColor(9),LineWidth(2),LineStyle(2));
   else
     model->plotOn(frame_m,Name("combinatorial"),Precision(2E-4),Components("pdf_m_combinatorial_bern"),LineColor(kCyan+1),LineWidth(2),LineStyle(2));
 
@@ -596,7 +599,7 @@ void plot_var_dist(RooWorkspace& w, std::string var_name, int channel, TString d
 void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string choice2)
 {
   //choice is either signal or background
-  //choice2 is the funntion to describe signal or background
+  //choice2 is the function to describe signal or background
   //if choice and choice 2 are not provided, the nominal fit is used.
 
   double mass_peak;
@@ -626,8 +629,7 @@ void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string cho
     break;
   }
   
-  double n_signal_initial = data->sumEntries(TString::Format("abs(mass-%g)<0.015",mass_peak))
-    - data->sumEntries(TString::Format("abs(mass-%g)<0.030&&abs(mass-%g)>0.015",mass_peak,mass_peak));
+  double n_signal_initial = data->sumEntries(TString::Format("abs(mass-%g)<0.015",mass_peak)) - data->sumEntries(TString::Format("abs(mass-%g)<0.030&&abs(mass-%g)>0.015",mass_peak,mass_peak));
   
   if(n_signal_initial<0)
     n_signal_initial=1;
@@ -672,17 +674,19 @@ void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string cho
       m_sigma2.setConstant(kTRUE);
       m_fraction.setVal(1.);
     }
-  else if(choice2=="signal" && choice=="1gauss")
-    {
-      pdf_m_signal = new RooAddPdf("pdf_m_signal","pdf_m_signal",RooArgList(m_gaussian1,m_gaussian2),RooArgList(m_fraction));
-      m_sigma2.setConstant(kTRUE);
-      m_fraction.setVal(1.);
-    }
-  else if(choice2=="signal" && choice=="3gauss")
-    pdf_m_signal = new RooAddPdf("pdf_m_signal","pdf_m_signal",RooArgList(m_gaussian1,m_gaussian2,m_gaussian3),RooArgList(m_fraction,m_fraction2));
-  else //this is the nominal signal
-    pdf_m_signal = new RooAddPdf("pdf_m_signal","pdf_m_signal",RooArgList(m_gaussian1,m_gaussian2),RooArgList(m_fraction));
-
+  else 
+    if(choice2=="signal" && choice=="1gauss")
+      {
+	pdf_m_signal = new RooAddPdf("pdf_m_signal","pdf_m_signal",RooArgList(m_gaussian1,m_gaussian2),RooArgList(m_fraction));
+	m_sigma2.setConstant(kTRUE);
+	m_fraction.setVal(1.);
+      }
+    else
+      if(choice2=="signal" && choice=="3gauss")
+	pdf_m_signal = new RooAddPdf("pdf_m_signal","pdf_m_signal",RooArgList(m_gaussian1,m_gaussian2,m_gaussian3),RooArgList(m_fraction,m_fraction2));
+      else //this is the nominal signal
+	pdf_m_signal = new RooAddPdf("pdf_m_signal","pdf_m_signal",RooArgList(m_gaussian1,m_gaussian2),RooArgList(m_fraction));
+  
   //-----------------------------------------------------------------
   // combinatorial background PDF
   
@@ -715,24 +719,26 @@ void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string cho
 
   if(choice2=="background" && choice=="2exp")
     pdf_m_combinatorial=new RooAddPdf("pdf_m_combinatorial","pdf_m_combinatorial",RooArgList(pdf_m_combinatorial_exp,pdf_m_combinatorial_exp2),RooArgList(m_fraction_exp));
-  else if(choice2=="background" && choice=="bern")
-    {
-      pdf_m_combinatorial=new RooAddPdf("pdf_m_combinatorial","pdf_m_combinatorial",RooArgList(pdf_m_combinatorial_bern,pdf_m_combinatorial_exp),RooArgList(m_fraction_exp));
-      m_exp.setConstant(kTRUE);
-      m_fraction_exp.setVal(1.);    
-    }
-  else if(choice2=="background" && choice=="power")
-    {
-      pdf_m_combinatorial=new RooAddPdf("pdf_m_combinatorial","pdf_m_combinatorial",RooArgList(pdf_m_power,pdf_m_combinatorial_exp),RooArgList(m_fraction_exp));
-      m_exp.setConstant(kTRUE);
-      m_fraction_exp.setVal(1.);    
-    }
-  else //this is the nominal bkg
-    {
-      pdf_m_combinatorial=new RooAddPdf("pdf_m_combinatorial","pdf_m_combinatorial",RooArgList(pdf_m_combinatorial_exp,pdf_m_combinatorial_exp2),RooArgList(m_fraction_exp));
-      m_exp2.setConstant(kTRUE);
-      m_fraction_exp.setVal(1.);    
-    }
+  else
+    if(choice2=="background" && choice=="bern")
+      {
+	pdf_m_combinatorial=new RooAddPdf("pdf_m_combinatorial","pdf_m_combinatorial",RooArgList(pdf_m_combinatorial_bern,pdf_m_combinatorial_exp),RooArgList(m_fraction_exp));
+	m_exp.setConstant(kTRUE);
+	m_fraction_exp.setVal(1.);    
+      }
+    else 
+      if(choice2=="background" && choice=="power")
+	{
+	  pdf_m_combinatorial=new RooAddPdf("pdf_m_combinatorial","pdf_m_combinatorial",RooArgList(pdf_m_power,pdf_m_combinatorial_exp),RooArgList(m_fraction_exp));
+	  m_exp.setConstant(kTRUE);
+	  m_fraction_exp.setVal(1.);    
+	}
+      else //this is the nominal bkg
+	{
+	  pdf_m_combinatorial=new RooAddPdf("pdf_m_combinatorial","pdf_m_combinatorial",RooArgList(pdf_m_combinatorial_exp,pdf_m_combinatorial_exp2),RooArgList(m_fraction_exp));
+	  m_exp2.setConstant(kTRUE);
+	  m_fraction_exp.setVal(1.);    
+	}
   ////////////////////////////////////////////////////////////////////////////////////////////
   //The components below have no systematic variation yet, they are part of the nominal fit.//
   ////////////////////////////////////////////////////////////////////////////////////////////
@@ -740,9 +746,9 @@ void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string cho
   //K pi swap component, for channel 2. B0->jpsi K*0  
   RooRealVar sigma_swapped1("sigma_swapped1","sigma_swapped1", 0.0419);//0.178);
   RooRealVar sigma_swapped2("sigma_swapped2","sigma_swapped2", 0.1138);//0.047);
-  RooRealVar mean("mean","mean", B0_MASS);
-  RooGaussian swapped1("swapped1","swapped1",mass, mean, sigma_swapped1);
-  RooGaussian swapped2("swapped2","swapped2",mass, mean, sigma_swapped2);
+  
+  RooGaussian swapped1("swapped1","swapped1",mass, m_mean, sigma_swapped1);
+  RooGaussian swapped2("swapped2","swapped2",mass, m_mean, sigma_swapped2);
   RooRealVar r12("r12","r12", 0.655);//0.223);
   RooAddPdf k_pi_swap("k_pi_swap","k_pi_swap",RooArgSet(swapped1,swapped2),r12);
   //--------------------------------------------------------------------
@@ -819,13 +825,13 @@ void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string cho
     {
     default:
     case 1:// B+ -> J/psi K+
-      model = new RooAddPdf("model","model", RooArgList(*pdf_m_signal, pdf_m_combinatorial_exp, pdf_m_nonprompt_erf, pdf_m_jpsipi),RooArgList(n_signal, n_combinatorial, n_nonprompt, n_jpsipi));
+      model = new RooAddPdf("model","model", RooArgList(*pdf_m_signal, *pdf_m_combinatorial, pdf_m_nonprompt_erf, pdf_m_jpsipi),RooArgList(n_signal, n_combinatorial, n_nonprompt, n_jpsipi));
       break;
     case 2:// B0 -> J/psi K*
-      model = new RooAddPdf("model","model", RooArgList(*pdf_m_signal, k_pi_swap, *pdf_m_combinatorial), RooArgList(n_signal, n_swap, n_combinatorial));
+      model = new RooAddPdf("model","model", RooArgList(*pdf_m_signal, *pdf_m_combinatorial, k_pi_swap), RooArgList(n_signal, n_combinatorial, n_swap));
       break;
     case 3://B0 -> J/psi Ks
-      model = new RooAddPdf("model","model", RooArgList(*pdf_m_signal, pdf_m_combinatorial_exp, pdf_m_nonprompt_erf),RooArgList(n_signal, n_combinatorial, n_nonprompt));
+      model = new RooAddPdf("model","model", RooArgList(*pdf_m_signal, *pdf_m_combinatorial, pdf_m_nonprompt_erf),RooArgList(n_signal, n_combinatorial, n_nonprompt));
       break;
     case 4://Bs -> J/psi phi
     case 6://Lambda_b -> J/psi Lambda
@@ -873,7 +879,7 @@ void set_up_workspace_variables(RooWorkspace& w, int channel, double mass_min, d
 	mass_min = 5.0; mass_max = 6.0;
 	break;
       case 2:
-	mass_min = 5.0; mass_max = 5.6;
+	mass_min = 5.0; mass_max = 6.0;
 	break;
       case 3:
 	mass_min = 5.0; mass_max = 6.0;
@@ -1090,6 +1096,7 @@ RooRealVar* reco_efficiency(int channel, double pt_min, double pt_max, double y_
     //--------------------------------read monte carlo with cuts------------------------
     TString mc_input_with_cuts = TString::Format(BASE_DIR) + "reduced_myloop_new_mc_truth_" + channel_to_ntuple_name(channel) + "_with_cuts.root";
     TFile *fin_with_cuts = new TFile(mc_input_with_cuts);
+
     TTree *tin_with_cuts = (TTree*)fin_with_cuts->Get(channel_to_ntuple_name(channel));
    
     //read the ntuple

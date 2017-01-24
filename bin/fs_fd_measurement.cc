@@ -235,7 +235,7 @@ int main(int argc, char** argv)
 	      std::cout << "processing subsample: " << var1_bin_edges[i] << " < " << var1_name << " < " << var1_bin_edges[i+1] << std::endl;
 	      
 	      //calculate the signal yield for a bin of pt and y.
-	      if(var1_name == "pt") //to make sure that the functio bin_mass_fit gets the right input.
+	      if(var1_name == "pt") //to make sure that the function bin_mass_fit gets the right input.
 		{
 		  signal_res = bin_mass_fit(*ws,channel,var1_bin_edges[i],var1_bin_edges[i+1], var2_bin_edges[j], var2_bin_edges[j+1]);
 		  yield_syst_array[ch][j][i] = bin_systematics(*ws, channel, var1_bin_edges[i], var1_bin_edges[i+1], var2_bin_edges[j], var2_bin_edges[j+1],signal_res->getVal(), data_selection_input_file, syst);

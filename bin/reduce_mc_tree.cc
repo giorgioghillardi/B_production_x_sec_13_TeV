@@ -90,10 +90,13 @@ int main(int argc, char** argv)
   std::cout << "Reducing the size of channel " << channel << std::endl;
 
   TString ntuple_name = channel_to_ntuple_name(channel);
-  
+    
   if(gen)
     ntuple_name += "_gen";
-
+  
+  if(channel == 2 && !gen)
+    ntuple_name += "_true";
+  
   tin = new TChain(ntuple_name);
 
   tin->Add(input_file);
