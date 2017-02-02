@@ -142,8 +142,6 @@ int main(int argc, char** argv)
       
       root->GetEntry(evt);
 
-      b_counter = 0;
-
       // Look for indices of the whole decay tree
       for (int idx = 0; idx < GenInfo->size; idx++) 
 	{
@@ -158,7 +156,7 @@ int main(int argc, char** argv)
 	      idx_mu2  = GenInfo->da2[idx_jpsi];
 	      
 	      if (abs(GenInfo->pdgId[idx_b])!=521) continue; // not B+
-	      if (GenInfo->pdgId[idx_jpsi]!=443) continue; // not J/psi
+	      if (abs(GenInfo->pdgId[idx_jpsi])!=443) continue; // not J/psi
 	      if (abs(GenInfo->pdgId[idx_tk1])!=321) continue; // not K+-
 	      if (abs(GenInfo->pdgId[idx_mu1])!=13) continue; // not mu+-
 	      if (abs(GenInfo->pdgId[idx_mu2])!=13) continue; // not mu+-
@@ -174,15 +172,14 @@ int main(int argc, char** argv)
 	      idx_mu2  = GenInfo->da2[idx_jpsi];
 	     	           
 	      if (abs(GenInfo->pdgId[idx_b])!=511) continue; // not B0
-	      if (GenInfo->pdgId[idx_jpsi]!=443) continue; // not J/psi
+	      if (abs(GenInfo->pdgId[idx_jpsi])!=443) continue; // not J/psi
 	      if (abs(GenInfo->pdgId[idx_tktk])!=313) continue; // not K*0
-	      if ((GenInfo->pdgId[idx_tk1]!=321 || GenInfo->pdgId[idx_tk2]!=-211) && (GenInfo->pdgId[idx_tk1]!=-321 || GenInfo->pdgId[idx_tk2]!=211)) continue; //not k+pi- and k-pi+
+	      if ((GenInfo->pdgId[idx_tk1]!=321 || GenInfo->pdgId[idx_tk2]!=-211) && //not k+pi-
+		  (GenInfo->pdgId[idx_tk1]!=-321 || GenInfo->pdgId[idx_tk2]!=211) && //not k-pi+
+		  (GenInfo->pdgId[idx_tk1]!=211 || GenInfo->pdgId[idx_tk2]!=-321) && //not pi+k-
+		  (GenInfo->pdgId[idx_tk1]!=-211 || GenInfo->pdgId[idx_tk2]!=321)) continue; //not k+pi-
      	      if (abs(GenInfo->pdgId[idx_mu1])!=13) continue; // not mu+-
 	      if (abs(GenInfo->pdgId[idx_mu2])!=13) continue; // not mu+-
-	      
-	      //debug: count the number of Bees in each event
-	      b_counter ++;
-	      
 	      break;
 	      
 	    case 3:
@@ -195,13 +192,13 @@ int main(int argc, char** argv)
 	      idx_tk2  = GenInfo->da2[idx_tktk];
 	      idx_mu1  = GenInfo->da1[idx_jpsi];
 	      idx_mu2  = GenInfo->da2[idx_jpsi];
-	     	           
-	      if (abs(GenInfo->pdgId[idx_b])!=531) continue; // not Bs
-	      if (GenInfo->pdgId[idx_jpsi]!=443) continue; // not J/psi
-	      if (abs(GenInfo->pdgId[idx_tktk])!=333) continue; // not phi
-	      if ((GenInfo->pdgId[idx_tk1]!=321 || GenInfo->pdgId[idx_tk2]!=-321) && (GenInfo->pdgId[idx_tk1]!=-321 || GenInfo->pdgId[idx_tk2]!=321)) continue; //not k+k- and k-k+
-     	      if (abs(GenInfo->pdgId[idx_mu1])!=13) continue; // not mu+-
-	      if (abs(GenInfo->pdgId[idx_mu2])!=13) continue; // not mu+
+	      
+	      if(abs(GenInfo->pdgId[idx_b])!=531) continue; // not Bs
+	      if(abs(GenInfo->pdgId[idx_jpsi])!=443) continue; // not J/psi
+	      if(abs(GenInfo->pdgId[idx_tktk])!=333) continue; // not phi
+	      if((GenInfo->pdgId[idx_tk1]!=321 || GenInfo->pdgId[idx_tk2]!=-321) && (GenInfo->pdgId[idx_tk1]!=-321 || GenInfo->pdgId[idx_tk2]!=321)) continue; //not k+k- and k-k+
+	      if(abs(GenInfo->pdgId[idx_mu1])!=13) continue; // not mu+-
+	      if(abs(GenInfo->pdgId[idx_mu2])!=13) continue; // not mu+
 	      break;
 
 	    case 5:
@@ -209,6 +206,8 @@ int main(int argc, char** argv)
 	    case 6:
 	      break;
 	    }
+	  
+	  b_counter++;
 
 	  TLorentzVector v4_b, v4_uj;
 	  v4_b.SetPtEtaPhiM(GenInfo->pt[idx_b],GenInfo->eta[idx_b],GenInfo->phi[idx_b],GenInfo->mass[idx_b]);
@@ -254,13 +253,12 @@ int main(int argc, char** argv)
 
 	  nt->Fill();
 	} //end of GenInfo loop
-
-      //debug: print the number of signal bees, in each event. For channel 2.
-      if(channel == 2 && b_counter > 1)
-	printf("Number of signal B0->jpsi K*0: %d \n", b_counter);
-
     } // end of evt loop
   
+  //debug: print the number of signal.
+  std::cout << "Channel : " << channel << " Number of signal : " << b_counter << std::endl;
+    
+    
   fout->Write();
   fout->Close();
   

@@ -10,7 +10,7 @@
 #include "UserCode/B_production_x_sec_13_TeV/interface/myloop.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/channel.h"
 
-//myloop_new --channel 1 --mc 0 -- truth 0 --cuts 1 --debug 0 --output /some/place
+//myloop_new --channel 1 --mc 0 --truth 0 --cuts 1 --debug 0 --output /some/place
 int main(int argc, char** argv)
 {
   int channel = 1;
@@ -171,14 +171,14 @@ int main(int argc, char** argv)
     if(run_on_mc)
       {
 	if(mc_truth)
-	  data = "mc_truth_" + channel_to_ntuple_name(channel);
+	  data = "mc_truth";
 	else
-	  data = "mc_" + channel_to_ntuple_name(channel);
+	  data = "mc";
       }
     else
       data = "data";
     
-    directory = "myloop_new_" + data + "_" + filter + ".root";
+    directory = "myloop_new_" + data + "_" + channel_to_ntuple_name(channel) + "_" + filter + ".root";
 
     if(dir != "")
       directory = dir + directory;
@@ -217,6 +217,12 @@ int main(int argc, char** argv)
 
     std::vector<ReducedBranches> selected_bees;
 
+    //debug:
+    std::vector<std::string> particle_flow_string = {"event","signal","muon_selection","jpsi_selection","track_selection","ditrack_mass_window","ditrack_veto","HLT_selection","vtx_prob","lxy","cos2D","ntkstar_true"};
+    std::vector<int> particle_flow_number = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    
+    particle_flow_number[0]= n_entries;
+    
     for (int evt=0; evt<n_entries; evt++)
       {
 	if (evt%1000==0 || evt==n_entries-1) printf("processing %d/%d (%.2f%%).\n",evt,n_entries-1,(double)evt/(double)(n_entries-1)*100.);
@@ -251,76 +257,76 @@ int main(int argc, char** argv)
 	    tk2idx = BInfo->rftk2_index[bidx];
 	    mu1idx = BInfo->uj_rfmu1_index[ujidx];
 	    mu2idx = BInfo->uj_rfmu2_index[ujidx];
-
-	    //if running on MC, we want to save only the signal. So we need to make sure that the muons and tracks come from the right decay chain.
-	    if(run_on_mc)
-	      {		
-		switch(channel)
+		
+	    switch(channel) //to translate the channel to the type. type is defined in Bfinder to destinguish the Bees
+	      {
+	      default:
+	      case 1:
+		if (b_type != 1) continue; // skip any non K+
+		//to select the reconstructed Bees that we save. This way we only save signal.
+		if (run_on_mc && mc_truth)
 		  {
-		  default:
-		  case 1:
-		    //to translate the channel to the type. type is defined in Bfinder to destinguish the Bees
-		    if (b_type != 1) continue; // skip any non K+
-		    //to select the reconstructed Bees that we save. This way we only save signal.
-		    if (mc_truth)
-		      {
 		    if (abs(GenInfo->pdgId[MuonInfo->geninfo_index[mu1idx]]) != 13) continue; //skip any mu that was not generated as a mu+-
 		    if (abs(GenInfo->pdgId[MuonInfo->geninfo_index[mu2idx]]) != 13) continue; //skip any mu that was not generated as a mu+-
 		    if (GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]] != GenInfo->mo1[MuonInfo->geninfo_index[mu2idx]]) continue; //skip if the two muons don't have the same index for the mother particle
-		    if (GenInfo->pdgId[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]] != 443) continue; //skip if the mother of the muons is not jpsi, this is redundant, in principle all come from jpsi
+		    if (abs(GenInfo->pdgId[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]) != 443) continue; //skip if the mother of the muons is not jpsi, this is redundant, in principle all come from jpsi
 		    if (abs(GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]) != 321) continue; //skip any tk that was not generated as a K+-
 		    if (GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]] != GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]]) continue; //skip if the index of the mother of the track is not the same as  mother of the jpsi
 		    if (abs(GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]]) != 521) continue; //skip anything that is not a B+-. probably redundant at this point in the decay chain. but it is reasonable to keep it.
-		      }
-		    break;
+		  }
+		break;
 
-		  case 2:
-		    if (b_type != 4 && b_type != 5) continue; // skip any non Kstar
-		    //to select the reconstructed Bees that we save. This way we only save signal.
-		    if (mc_truth)
-		      {
+	      case 2:
+		if (b_type != 4 && b_type != 5) continue; // skip any non Kstar
+		//to select the reconstructed Bees that we save. This way we only save signal.
+		if (run_on_mc && mc_truth)
+		  {
 		    if (abs(GenInfo->pdgId[MuonInfo->geninfo_index[mu1idx]]) != 13) continue; //skip any mu that was not generated as a mu+-
 		    if (abs(GenInfo->pdgId[MuonInfo->geninfo_index[mu2idx]]) != 13) continue; //skip any mu that was not generated as a mu+-    
 		    if (GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]] != GenInfo->mo1[MuonInfo->geninfo_index[mu2idx]]) continue; //skip if the two muons don't have the same mother particle index
-		    if (GenInfo->pdgId[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]] != 443) continue; //skip if the mother of the muons is not jpsi, this is redundant, in principle all come from jpsi	    
-		    if ((GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]!=321 || GenInfo->pdgId[TrackInfo->geninfo_index[tk2idx]]!=-211) &&
-			(GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]!=-321 || GenInfo->pdgId[TrackInfo->geninfo_index[tk2idx]]!=211)) continue;//skip anything that is not k+pi- or k-pi+
+		    if (abs(GenInfo->pdgId[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]) != 443) continue; //skip if the mother of the muons is not jpsi, this is redundant, in principle all come from jpsi	    
+		    if ((GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]!=321 || GenInfo->pdgId[TrackInfo->geninfo_index[tk2idx]]!=-211) && //not k+pi-
+			(GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]!=-321 || GenInfo->pdgId[TrackInfo->geninfo_index[tk2idx]]!=211) && //not k-pi+
+			(GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]!=211 || GenInfo->pdgId[TrackInfo->geninfo_index[tk2idx]]!=-321) && //not pi+k-
+			(GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]!=-211 || GenInfo->pdgId[TrackInfo->geninfo_index[tk2idx]]!=321)) continue;//not pi-k+
 		    if (GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]] != GenInfo->mo1[TrackInfo->geninfo_index[tk2idx]]) continue; //skip if the two tracks don't have the same mother particle index
 		    if (abs(GenInfo->pdgId[GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]]]) != 313) continue; //skip if the mother of the tracks is not K*0
 		    if (GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]] != GenInfo->mo1[GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]]]) continue; //skip if the index of the mother of the tracks is not the same as mother of the jpsi
 		    if (abs(GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]]) != 511) continue; //skip anything that is not a B0. probably redundant at this point in the decay chain. but it is reasonable to keep it.
-		      }
-		    break;
+		  }
+		break;
 		    
-		  case 3:
-		    if (b_type != 3) continue; // skip any non Kshort
-		    break;
+	      case 3:
+		if (b_type != 3) continue; // skip any non Kshort
+		break;
 
-		  case 4:
-		    if (b_type != 6) continue; // skip any non phi
-		    //to select the reconstructed Bees that we save. This way we only save signal.
-		    if (mc_truth)
-		      {	    
+	      case 4:
+		if (b_type != 6) continue; // skip any non phi
+		//to select the reconstructed Bees that we save. This way we only save signal.
+		if (run_on_mc && mc_truth)
+		  {	    
 		    if (abs(GenInfo->pdgId[MuonInfo->geninfo_index[mu1idx]]) != 13) continue; //skip any mu that was not generated as a mu+-
 		    if (abs(GenInfo->pdgId[MuonInfo->geninfo_index[mu2idx]]) != 13) continue; //skip any mu that was not generated as a mu+-    
 		    if (GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]] != GenInfo->mo1[MuonInfo->geninfo_index[mu2idx]]) continue; //skip if the two muons don't have the same mother particle index
-		    if (GenInfo->pdgId[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]] != 443) continue; //skip if the mother of the muons is not jpsi, this is redundant, in principle all come from jpsi	    
+		    if (abs(GenInfo->pdgId[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]) != 443) continue; //skip if the mother of the muons is not jpsi, this is redundant, in principle all come from jpsi	    
 		    if ((GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]!=321 || GenInfo->pdgId[TrackInfo->geninfo_index[tk2idx]]!=-321) &&
 			(GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]!=-321 || GenInfo->pdgId[TrackInfo->geninfo_index[tk2idx]]!=321)) continue; //skip anything that is not k+k- or k-k+
 		    if (GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]] != GenInfo->mo1[TrackInfo->geninfo_index[tk2idx]]) continue; //skip if the two tracks don't have the same mother particle index
 		    if (abs(GenInfo->pdgId[GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]]]) != 333) continue; //skip if the mother of the tracks is not phi
 		    if (GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]] != GenInfo->mo1[GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]]]) continue; //skip if the index of the mother of the tracks is not the same as mother of the jpsi
 		    if (abs(GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]]) != 531) continue; //skip anything that is not a Bs. probably redundant at this point in the decay chain. but it is reasonable to keep it.
-		      }
-		    break;
-		  case 5:
-		    if (b_type != 7) continue; // skip any non pipi
-		    break;
-		  case 6:
-		    if (b_type != 8 && b_type!=9) continue; // skip any non lambda
-		    break;
-		  }		
-	      }//end of if(run_on_mc)
+		  }
+		break;
+	      case 5:
+		if (b_type != 7) continue; // skip any non pipi
+		break;
+	      case 6:
+		if (b_type != 8 && b_type!=9) continue; // skip any non lambda
+		break;
+	      }
+	    
+	    if(run_on_mc)
+	      particle_flow_number[1]++;
 	    
 	    // Find the target branching/ntuple to fill
 	    ReducedBranches *br = NULL;
@@ -361,11 +367,10 @@ int main(int argc, char** argv)
 	    br->nhltbook = hlt_size;
 	    for (int i=0;i<hlt_size;i++)
 	      br->hltbook[i] = HLT_book[i];
-            
+              
 	    //the user chooses to preforme the cuts or not. this is useful to calculate efficiencies. this affects both data and MC.
 	    if(cuts)
 	      {
-		//-----------------------------------------------------------------
 		// Basic muon selections
 		if (MuonInfo->pt[mu1idx]<=4.) continue;
 		if (MuonInfo->pt[mu2idx]<=4.) continue;
@@ -374,6 +379,19 @@ int main(int argc, char** argv)
 		if (!MuonInfo->SoftMuID[mu1idx]) continue;
 		if (!MuonInfo->SoftMuID[mu2idx]) continue;
 		
+		if(run_on_mc)
+		  particle_flow_number[2]++;
+		
+		//-----------------------------------------------------------------
+		// J/psi cut
+		// KFC: May need to consider an y dependent cut?
+		if (fabs(BInfo->uj_mass[ujidx]-JPSI_MASS)>=0.150) continue;
+		if (BInfo->uj_pt[ujidx]<=10.0) continue; //was 8.0 before
+		//add the jpsi vertex prob!?
+		
+		if(run_on_mc)
+		  particle_flow_number[3]++;
+
 		//-----------------------------------------------------------------
 		// Basic track selections
 		if (b_type==1 || b_type==2) // k, pi
@@ -395,58 +413,78 @@ int main(int argc, char** argv)
 		    if (TrackInfo->striphit[tk2idx]+TrackInfo->pixelhit[tk2idx]<5) continue;
 		  }
 		
-		//-----------------------------------------------------------------
-		// J/psi cut
-		// KFC: May need to consider an y dependent cut?
-		if (fabs(BInfo->uj_mass[ujidx]-JPSI_MASS)>=0.150) continue;
-		//if (BInfo->uj_pt[ujidx]<=8.0) continue;
-		
-		//-----------------------------------------------------------------
-		// ditrack selections
+		if(run_on_mc)
+		  particle_flow_number[4]++;
 
-		if (b_type==3) // Ks mode
-		  {if (fabs(BInfo->tktk_mass[bidx]-KSHORT_MASS)>=0.015) continue;} //this was 0.060
+		//---------------------------------------------------------------------
+		// ditrack mass window selection
+		double k_short_window = 0.015;
+		double lambda_window = 0.015;
+		double k_star_window = 0.200;
+		double phi_window = 0.020;
 
-		if (b_type==4 || b_type==5) // Kstar mode
+		switch(b_type)
 		  {
-		    if (fabs(BInfo->tktk_mass[bidx]-KSTAR_MASS)>=0.050) continue; // this was 0.100 before
+		  case 3: // Ks mode
+		   if (fabs(BInfo->tktk_mass[bidx]-KSHORT_MASS)>=k_short_window) continue; //this was 0.060
+		   break;
+
+		  case 4: // Kstar mode
+		  case 5: // Kstar mode
+		    if (fabs(BInfo->tktk_mass[bidx]-KSTAR_MASS)>=k_star_window) continue; // this was 0.050 before
+		    break;
 		    
-		    TLorentzVector v4_tk1, v4_tk2;
-		    v4_tk1.SetPtEtaPhiM(TrackInfo->pt[tk1idx],TrackInfo->eta[tk1idx],TrackInfo->phi[tk1idx],KAON_MASS);
-		    v4_tk2.SetPtEtaPhiM(TrackInfo->pt[tk2idx],TrackInfo->eta[tk2idx],TrackInfo->phi[tk2idx],KAON_MASS);
-		    if (fabs((v4_tk1+v4_tk2).Mag()-PHI_MASS)<=0.010) continue;
-		  }
-
-		if (b_type==6) // phi mode
-		  {
-		    if (fabs(BInfo->tktk_mass[bidx]-PHI_MASS)>=0.010) continue; //this was 0.060
-
-		    TLorentzVector v4_tk1, v4_tk2;
-		    v4_tk1.SetPtEtaPhiM(TrackInfo->pt[tk1idx],TrackInfo->eta[tk1idx],TrackInfo->phi[tk1idx],KAON_MASS);
-		    v4_tk2.SetPtEtaPhiM(TrackInfo->pt[tk2idx],TrackInfo->eta[tk2idx],TrackInfo->phi[tk2idx],PION_MASS);
-		    if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=0.050) continue;
-
-		    v4_tk1.SetPtEtaPhiM(TrackInfo->pt[tk1idx],TrackInfo->eta[tk1idx],TrackInfo->phi[tk1idx],PION_MASS);
-		    v4_tk2.SetPtEtaPhiM(TrackInfo->pt[tk2idx],TrackInfo->eta[tk2idx],TrackInfo->phi[tk2idx],KAON_MASS);
-		    if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=0.050) continue;
-		  }
-
-		if (b_type==8 || b_type==9) // Lambda mode
-		  {
-		    if (fabs(BInfo->tktk_mass[bidx]-LAMBDA_MASS)>=0.015) continue; //was 0.060
+		  case 6: // phi mode
+		    if (fabs(BInfo->tktk_mass[bidx]-PHI_MASS)>=phi_window) continue; //this was 0.010
+		    break;
 		    
-		    TLorentzVector v4_tk1, v4_tk2;
+		  case 8: // Lambda mode
+		  case 9: // Lambda mode
+		    if (fabs(BInfo->tktk_mass[bidx]-LAMBDA_MASS)>=lambda_window) continue; //was 0.060
+		    break;
+		  }
+
+		if(run_on_mc)
+		  particle_flow_number[5]++;
+		
+		//------------------------------------------------------------------------------------
+		// ditrack vetos
+		TLorentzVector v4_tk1, v4_tk2;
+		
+		switch(b_type)
+		  {
+		  case 4: // Kstar mode
+		  case 5: // Kstar mode
+		    //v4_tk1.SetPtEtaPhiM(TrackInfo->pt[tk1idx],TrackInfo->eta[tk1idx],TrackInfo->phi[tk1idx],KAON_MASS);
+		    //v4_tk2.SetPtEtaPhiM(TrackInfo->pt[tk2idx],TrackInfo->eta[tk2idx],TrackInfo->phi[tk2idx],KAON_MASS);
+		    //if (fabs((v4_tk1+v4_tk2).Mag()-PHI_MASS)<=phi_window) continue;
+		    break;
+		    
+		  case 6: // phi mode
+		    //v4_tk1.SetPtEtaPhiM(TrackInfo->pt[tk1idx],TrackInfo->eta[tk1idx],TrackInfo->phi[tk1idx],KAON_MASS);
+		    //v4_tk2.SetPtEtaPhiM(TrackInfo->pt[tk2idx],TrackInfo->eta[tk2idx],TrackInfo->phi[tk2idx],PION_MASS);
+		    //if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=k_star_window) continue;
+		    
+		    //v4_tk1.SetPtEtaPhiM(TrackInfo->pt[tk1idx],TrackInfo->eta[tk1idx],TrackInfo->phi[tk1idx],PION_MASS);
+		    //v4_tk2.SetPtEtaPhiM(TrackInfo->pt[tk2idx],TrackInfo->eta[tk2idx],TrackInfo->phi[tk2idx],KAON_MASS);
+		    //if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=k_star_window) continue;
+		    break;
+		    
+		  case 8: // Lambda mode
+		  case 9: // Lambda mode
 		    v4_tk1.SetPtEtaPhiM(TrackInfo->pt[tk1idx],TrackInfo->eta[tk1idx],TrackInfo->phi[tk1idx],PION_MASS);
 		    v4_tk2.SetPtEtaPhiM(TrackInfo->pt[tk2idx],TrackInfo->eta[tk2idx],TrackInfo->phi[tk2idx],PION_MASS);
-		    if (fabs((v4_tk1+v4_tk2).Mag()-KSHORT_MASS)<=0.015) continue;
+		    if (fabs((v4_tk1+v4_tk2).Mag()-KSHORT_MASS)<=k_short_window) continue;
+		    break;
 		  }
-		//-----------------------------------------------------------------
 		
+		if(run_on_mc)
+		  particle_flow_number[6]++;
+
 	      } //end of cuts, there are more cuts later in the code
 	    
-            //-----------------------------------------------------------------
+            //--------------------------------------------------------------------------------------
             // Find the best pointing PV
-            //
             // KFC@20150713: keep the selecton code but PV is replaced with BS in the end.
             
 	    TVector3 bvtx(BInfo->vtxX[bidx],BInfo->vtxY[bidx],BInfo->vtxZ[bidx]);
@@ -625,22 +663,33 @@ int main(int argc, char** argv)
 	      {
 		// cuts that depend on complex variables defined above.
 		
-		//----------------------------------------------------------------
 		//HLT selection
+		//----------------------------------------------------------------
 		if(b_type != 7) //not to use HLT filter in the jpsi pipi channel
 		  {
 		    if(run_on_mc)
 		      {if (br->hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1) continue;}
 		    else
 		      {if (br->hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1 && br->hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;}
+		    
+		    if(run_on_mc)
+		      particle_flow_number[7]++;
+
 		  }
-		//-----------------------------------------------------------------
-		
+				
 		if(b_type==1 || b_type==2 || b_type==4 || b_type==5 || b_type==6) //for K+, pi+, K*0, phi
 		  {
-		    if (br->vtxprob<=0.2) continue; //original cut 0.1
-		    if (br->lxy/br->errxy<=4.5) continue; //original cut 3.0
-		    if (br->cosalpha2d<=0.996) continue; //original cut 0.99
+		    if(br->vtxprob<=0.1) continue; //original cut 0.2
+		    if(run_on_mc)
+		      particle_flow_number[8]++;
+
+		    if(br->lxy/br->errxy<=3.0) continue; //original cut 4.5
+		    if(run_on_mc)
+		      particle_flow_number[9]++;
+
+		    if(br->cosalpha2d<=0.99) continue; //original cut 0.996
+		    if(run_on_mc)
+		      particle_flow_number[10]++;
 		  }
 		
 		if(b_type==3 || b_type==8 || b_type==9) // Ks and lambda
@@ -682,7 +731,7 @@ int main(int argc, char** argv)
 	for(std::vector<int>::size_type i = 0; i != selected_bees.size(); i++)
 	  {
 	    if(selected_bees[i].type != 4 && selected_bees[i].type != 5)
-	      printf("ERROR: the vector with the k pi candidates contains other channels!! \n");  
+	      printf("ERROR: the vector with the B0 candidates contains other channels!! \n");  
 	    
 	    bool isbestkstar = true; //start by assuming the i-th is the best mass.
 	    
@@ -704,7 +753,7 @@ int main(int argc, char** argv)
 		*br_cand = selected_bees[i]; //put the values of the selected B into br_cand
 		nt_cand->Fill();
 		
-		if(run_on_mc && channel==2)//run this part for --truth 0 or 1. if --truth 0: this separates the true and swapped signal. if --truth 1: this should fill only the true signal ntuple.
+		if(run_on_mc && channel==2)//this runs for --truth 0 or --thuth 1.
 		  {
 		    if(debug) printf("debug: evt %d \n", evt);
 		    
@@ -717,6 +766,8 @@ int main(int argc, char** argv)
 			nt_cand = ntkstar_true;
 			*br_cand = selected_bees[i]; //put the values of the selected B into br_cand
 			nt_cand->Fill();
+
+			particle_flow_number[11]++;
 			
 			if(debug) printf("debug signal: type: %d B_pdgId: %d tk1_pdgId: %d tk2_pdgId: %d \n", selected_bees[i].type, GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[selected_bees[i].mu1idx]]]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]);
 		      }
@@ -736,9 +787,15 @@ int main(int argc, char** argv)
 		      else //some of the reconstructed muons and tracks are not associated with any gen particle.
 			if(debug) printf("debug unidentified: type: %d B_pdgId: %d tk1_pdgId: %d tk2_pdgId: %d \n", selected_bees[i].type, GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[selected_bees[i].mu1idx]]]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]);
 		  }
-	      }//end of is best kstar	    
+	      }//end of is best kstar
 	  }//end of the selected_bees loop	
       } // end of evt loop
+    
+    if(run_on_mc)
+      for(int i=0; i < (int)particle_flow_number.size(); i++)
+	{
+	  std::cout << particle_flow_string[i] << " : " << particle_flow_number[i] << std::endl;
+	}
     
     fout->Write();
     fout->Close();

@@ -999,33 +999,53 @@ RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max, doub
   //DEBUG: count using numbers and calculate the error with low statistics formula
   double total = 0;
   double passed = 0;
+  double passed_pt = 0;
+  double passed_y = 0;
+  double passed_mu1 = 0;
+  double passed_mu2 = 0;
 
   for (int evt=0;evt<tin->GetEntries();evt++)
     {
       tin->GetEntry(evt);
       
       if (fabs(eta_b) > 2.4) continue; //B mesons inside the detector region eta < 2.4
+
       if (fabs(y_b)<y_min || fabs(y_b)>y_max) continue; // within the y binning
+      passed_y ++;
+
       if (pt_b<pt_min || pt_b>pt_max) continue; //within the pt bin
-      
+      passed_pt ++;
+
       hist_tot->Fill(pt_b);
       total ++;
+
+      bool muon1Filter = fabs(eta_mu1)<2.4 && pt_mu1>2.8;
+      bool muon2Filter = fabs(eta_mu2)<2.4 && pt_mu2>2.8;
       
-      bool muon1Filter = fabs(eta_mu1) < 2.4 && pt_mu1>2.8;
-      bool muon2Filter = fabs(eta_mu2) < 2.4 && pt_mu2>2.8;
-      
-      if (muon1Filter && muon2Filter) 
+      if (muon1Filter)
 	{
-	  hist_passed->Fill(pt_b);//count only the events with the muon selection above
-	  passed ++;
+	passed_mu1 ++;
+	if(muon2Filter)
+	  {
+	    hist_passed->Fill(pt_b);//count only the events with the muon selection above
+	    passed_mu2 ++;
+	    passed ++;
+	  }
 	}
     }
   
   //debug
-  //std::cout << "debug: passed: " << hist_passed->GetBinContent(1) << std::endl;
-  //std::cout << "debug: total: " << hist_tot->GetBinContent(1) << std::endl;
-  //std::cout << "debug: total number: " << total << std::endl;
-  //std::cout << "debug: passed number: " << passed << std::endl;
+  /*
+  std::cout << "debug: evt number: " << tin->GetEntries() << std::endl;
+  std::cout << "debug: passed_y number: " << passed_y << std::endl;
+  std::cout << "debug: passed_pt number: " << passed_pt << std::endl;
+  std::cout << "debug: total number: " << total << std::endl;
+  std::cout << "debug: passed_mu1 number: " << passed_mu1 << std::endl;
+  std::cout << "debug: passed_mu2 number: " << passed_mu2 << std::endl;
+  std::cout << "debug: passed number: " << passed << std::endl;
+  std::cout << "debug: passed: " << hist_passed->GetBinContent(1) << std::endl;
+  std::cout << "debug: total: " << hist_tot->GetBinContent(1) << std::endl;
+  */
   //----------------------------------
   
   //calculates the efficiency by dividing the histograms
@@ -1041,11 +1061,9 @@ RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max, doub
   eff_lo = -(efficiency->GetEfficiencyErrorLow(1));
   eff_hi = efficiency->GetEfficiencyErrorUp(1);
   
-  
   //eff = passed/total;
   //eff_lo = -eff * sqrt(((passed+1)*(total-passed+1))/((total+3)*(total+2)*(total+2)));
   //eff_hi =  eff * sqrt(((passed+1)*(total-passed+1))/((total+3)*(total+2)*(total+2)));
-  
 
   RooRealVar* eff1 = new RooRealVar("eff1","eff1",eff);
   eff1->setAsymError(eff_lo,eff_hi);
@@ -1083,10 +1101,10 @@ RooRealVar* reco_efficiency(int channel, double pt_min, double pt_max, double y_
     {
       tin_no_cuts->GetEntry(evt);
       
-      if (fabs(y_b)<y_min || fabs(y_b)>y_max) continue; // within the y binning
-      
       if (fabs(eta_b) > 2.4) continue; //B mesons inside the detector region eta < 2.4
-                 
+      if (fabs(y_b)<y_min || fabs(y_b)>y_max) continue; // within the y binning
+      if (pt_b<pt_min || pt_b>pt_max) continue; //within the pt bin
+
       bool muon1Filter = fabs(eta_mu1) < 2.4 && pt_mu1 > 2.8;
       bool muon2Filter = fabs(eta_mu2) < 2.4 && pt_mu2 > 2.8;
  
@@ -1114,10 +1132,10 @@ RooRealVar* reco_efficiency(int channel, double pt_min, double pt_max, double y_
       {
 	tin_with_cuts->GetEntry(evt);
 	
-	if (fabs(y_b)<y_min || fabs(y_b)>y_max) continue; // within the y binning
-	
 	if (fabs(eta_b) > 2.4) continue; //B mesons inside the detector region eta < 2.4
-	
+	if (fabs(y_b)<y_min || fabs(y_b)>y_max) continue; // within the y binning
+	if (pt_b<pt_min || pt_b>pt_max) continue; //within the pt bin
+		
 	bool muon1Filter = fabs(eta_mu1) < 2.4 && pt_mu1 > 2.8;
 	bool muon2Filter = fabs(eta_mu2) < 2.4 && pt_mu2 > 2.8;
 	

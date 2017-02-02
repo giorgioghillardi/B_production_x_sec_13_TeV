@@ -1,3 +1,5 @@
+#include "TF1.h"
+#include "TPaveStats.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/functions.h"
 
 using namespace RooFit;
@@ -7,8 +9,8 @@ using namespace RooFit;
 //-----------------------------------------------------------------
 // Definition of channel #
 // channel = 1: B+ -> J/psi K+
-// channel = 2: B0 -> J/psi K*
-// channel = 4: Bs -> J/psi phi
+// channel = 2: B0 -> J/psi K* -> J/psi K+pi-
+// channel = 4: Bs -> J/psi phi -> J/psi K+K-
 
 //input example: fs_fd_ratio --ratio fs_fu --bins pt_y --preeff 1 --recoeff 1 --mcstudy 0 --syst 0
 int main(int argc, char** argv)
@@ -59,7 +61,7 @@ int main(int argc, char** argv)
 
   //pt bins
   double pt_bins[]= {9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90};
-  double total_pt_bin_edges[]={0, 400};
+  double total_pt_bin_edges[]={10, 150};
   int number_of_pt_bins = (sizeof(pt_bins) / sizeof(double)) - 1; //if pt_bins is an empty array, then number_of_pt_bins is equal to 0
   
   //y bins
@@ -201,6 +203,21 @@ int main(int argc, char** argv)
 	      return 0;
 	    }
       
+      TString b_title= "";
+      switch(channel)
+	{
+	default:
+	case 1:
+	  b_title = "B+";
+	  break;
+	case 2:
+	  b_title = "B0";
+	  break;
+	case 4:
+	  b_title = "Bs";
+	  break;
+	}
+
       //to create the directories to save the .png files
       std::vector<std::string> dir_list;
       dir_list.push_back(static_cast<const char*>("mass_fits/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION)));
@@ -260,6 +277,8 @@ int main(int argc, char** argv)
 	    }
 	}
       
+      TString eff_title = ""; //used later on to set the title of the eff plots
+      
       //to calculate pre-filter efficiency
       if(calculate_pre_filter_eff)
 	{
@@ -283,7 +302,8 @@ int main(int argc, char** argv)
 	      //plot of the pre-filter efficiency as a function of var1
 	      TCanvas ce;
 	      TGraphAsymmErrors* graph_pre_eff = new TGraphAsymmErrors(n_var1_bins, var1_bin_centre, pre_eff_array[ch][j], var1_bin_centre_Lo, var1_bin_centre_Hi, pre_eff_err_lo_array[ch][j], pre_eff_err_hi_array[ch][j]);
-	      graph_pre_eff->SetTitle("Pre-filter efficiency");
+	      eff_title = b_title + " Pre-filter efficiency";
+	      graph_pre_eff->SetTitle(eff_title);
 	      graph_pre_eff->SetMarkerColor(4);
 	      graph_pre_eff->SetMarkerStyle(21);
 	      
@@ -325,7 +345,8 @@ int main(int argc, char** argv)
 		  //plot of the reco efficiency as a function of var1
 		  TCanvas cp;
 		  TGraphAsymmErrors* graph_reco_eff = new TGraphAsymmErrors(n_var1_bins, var1_bin_centre, reco_eff_array[ch][j], var1_bin_centre_Lo, var1_bin_centre_Hi, reco_eff_err_lo_array[ch][j], reco_eff_err_hi_array[ch][j]);
-		  graph_reco_eff->SetTitle("Reconstruction efficiency");
+		  eff_title = b_title + " Reconstruction efficiency";
+		  graph_reco_eff->SetTitle(eff_title);
 		  graph_reco_eff->SetMarkerColor(4);
 		  graph_reco_eff->SetMarkerStyle(21);
 
@@ -362,7 +383,8 @@ int main(int argc, char** argv)
 		  //plot of the total efficiency as a function of var1
 		  TCanvas cp;
 		  TGraphAsymmErrors* graph_total_eff = new TGraphAsymmErrors(n_var1_bins, var1_bin_centre, total_eff_array[ch][j], var1_bin_centre_Lo, var1_bin_centre_Hi, total_eff_err_lo_array[ch][j], total_eff_err_hi_array[ch][j]);
-		  graph_total_eff->SetTitle("Overall efficiency");
+		  eff_title = b_title + " Overall efficiency";
+		  graph_total_eff->SetTitle(eff_title);
 		  graph_total_eff->SetMarkerColor(4);
 		  graph_total_eff->SetMarkerStyle(21);
 
@@ -399,7 +421,8 @@ int main(int argc, char** argv)
 		  //plot of the efficiency ratio as a function of var1
 		  TCanvas cp;
 		  TGraphAsymmErrors* graph_ratio_eff = new TGraphAsymmErrors(n_var1_bins, var1_bin_centre, ratio_eff_array[j], var1_bin_centre_Lo, var1_bin_centre_Hi, ratio_eff_err_lo_array[j], ratio_eff_err_hi_array[j]);
-		  graph_ratio_eff->SetTitle("Efficiency ratio");
+		  eff_title = ratio + " Efficiency ratio";
+		  graph_ratio_eff->SetTitle(eff_title);
 		  graph_ratio_eff->SetMarkerColor(4);
 		  graph_ratio_eff->SetMarkerStyle(21);
 
@@ -452,8 +475,8 @@ int main(int argc, char** argv)
   //plot fragmentation fraction ratio//
   ////////////////////////////////////
   TCanvas cz;
-  TPad *pad = new TPad("pad", "pad", 0.05, 0.05, 0.99, 0.99);
-  pad->Draw();
+  //TPad *pad = new TPad("pad", "pad", 0.05, 0.05, 0.99, 0.99);
+  //pad->Draw();
   
   double leg_x2 = 0.98;
   double leg_x1 = leg_x2 - 0.25;
@@ -477,12 +500,18 @@ int main(int argc, char** argv)
   for(int j=0; j<n_var2_bins; j++)
     {
       TGraphAsymmErrors* graph = new TGraphAsymmErrors(n_var1_bins, var1_bin_centre, fs_fd_array[j], var1_bin_centre_Lo, var1_bin_centre_Hi, fs_fd_errLo_array[j], fs_fd_errHi_array[j]);
-      TString fragmentation_title = "Fragmentation fraction " + ratio;
+      
+      TString fragmentation_title = ratio;
+      if(calculate_pre_filter_eff && calculate_reco_eff)
+	fragmentation_title += " fragmentation fraction ratio";
+      else
+	fragmentation_title += " yield ratio";
+
       graph->SetTitle(fragmentation_title);
       graph->SetMarkerColor(2+j);
       graph->SetMarkerSize(0.5);
-      graph->SetMarkerStyle(20+j);
-      
+      graph->SetMarkerStyle(20+j);      
+ 
       //draw this for the first bin of var2, or in case there is only one bin.
       if(j==0)
 	{
@@ -499,8 +528,21 @@ int main(int argc, char** argv)
 	    graph->GetYaxis()->SetRangeUser(1e-2, 10*fs_fd_array[n_var2_bins-1][0]);
 	  else
 	    graph->GetYaxis()->SetRangeUser(0, 2*fs_fd_array[n_var2_bins-1][0]);
-	    
+	  
+	  if(n_var2_bins == 1)
+	    {
+	      graph->Fit("pol1");
+	      gStyle->SetOptStat(1111);
+	      cz.Update();
+	    }
+	  
 	  graph->Draw("ap same");
+	  
+	  //if(n_var2_bins == 1)
+	  //{
+	  //  TF1* f1 = graph->GetListOfFunctions()->FindObject("pol1");
+	  //  f1->Draw("same");
+	  // }
 	}
       else //for the rest of the var2 bins.
 	{
