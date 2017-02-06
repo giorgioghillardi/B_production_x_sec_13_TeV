@@ -11,6 +11,7 @@
   <bin name="signal_yield_new"   file="signal_yield_new.cc"></bin>
   <bin name="fs_fd_ratio"   file="fs_fd_measurement.cc"></bin>
   <bin name="swap"   file="k_pi_swap.cc"></bin>
+  <bin name="data_selection"   file="data_selection_new.cc"></bin>
 </environment>
 
 <Flags CXXFLAGS="-g"/>

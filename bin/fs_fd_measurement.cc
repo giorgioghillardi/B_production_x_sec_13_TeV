@@ -12,15 +12,16 @@ using namespace RooFit;
 // channel = 2: B0 -> J/psi K* -> J/psi K+pi-
 // channel = 4: Bs -> J/psi phi -> J/psi K+K-
 
-//input example: fs_fd_ratio --ratio fs_fu --bins pt_y --preeff 1 --recoeff 1 --mcstudy 0 --syst 0
+//input example: fs_fd_ratio --ratio fs_fu --bins pt_y --preeff 1 --recoeff 1 --poly 1 --syst 0 --mcstudy 0
 int main(int argc, char** argv)
 {
   std::string ratio = "fs_fu";
   std::string yield_sub_samples = "full";
   int calculate_pre_filter_eff = 0;
   int calculate_reco_eff = 0;
-  int mcstudy = 0;
+  int poly = 1;
   int syst = 0;
+  int mcstudy = 0;
 
   for(int i=1 ; i<argc ; ++i)
     {
@@ -227,7 +228,7 @@ int main(int argc, char** argv)
       create_dir(dir_list);
       
       //------------data input---------------------
-      TString data_selection_input_file = TString::Format(BASE_DIR) + "myloop_new_data_with_cuts.root";
+      TString data_selection_input_file = TString::Format(BASE_DIR) + "myloop_new_data_" + channel_to_ntuple_name(channel) + "_with_cuts.root";
       RooWorkspace* ws = new RooWorkspace("ws","Bmass");
       RooRealVar* signal_res; 
   
@@ -527,22 +528,26 @@ int main(int argc, char** argv)
 	  if(n_var2_bins > 1)
 	    graph->GetYaxis()->SetRangeUser(1e-2, 10*fs_fd_array[n_var2_bins-1][0]);
 	  else
-	    graph->GetYaxis()->SetRangeUser(0, 2*fs_fd_array[n_var2_bins-1][0]);
-	  
-	  if(n_var2_bins == 1)
 	    {
-	      graph->Fit("pol1");
-	      gStyle->SetOptStat(1111);
+	      graph->GetYaxis()->SetRangeUser(0, 2*fs_fd_array[n_var2_bins-1][0]);
+	      
+	      if(poly)
+		{
+		  //fit the ratio with a polynomial function
+		  graph->Fit("pol1","W","");
+		  graph->GetFunction("pol1")->SetLineColor(4);
+		  gStyle->SetOptStat(1111);
+		  gStyle->SetOptFit(11); //show p0 and p1 parameters from the pol1 fit
+		  
+		  gStyle->SetStatX(0.9);
+		  gStyle->SetStatY(0.9);
+		}
+	      
 	      cz.Update();
 	    }
 	  
 	  graph->Draw("ap same");
 	  
-	  //if(n_var2_bins == 1)
-	  //{
-	  //  TF1* f1 = graph->GetListOfFunctions()->FindObject("pol1");
-	  //  f1->Draw("same");
-	  // }
 	}
       else //for the rest of the var2 bins.
 	{

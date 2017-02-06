@@ -121,6 +121,8 @@ int main(int argc, char** argv)
     // some basic integrity checks
     
     int n_entries = root->GetEntries();
+    int percent = n_entries/100;
+
     if (n_entries!=HltTree->GetEntries())
       {
 	printf("Error: # of entries are different in two main trees.\n");
@@ -225,7 +227,7 @@ int main(int argc, char** argv)
     
     for (int evt=0; evt<n_entries; evt++)
       {
-	if (evt%1000==0 || evt==n_entries-1) printf("processing %d/%d (%.2f%%).\n",evt,n_entries-1,(double)evt/(double)(n_entries-1)*100.);
+	if (evt%percent==0 || evt==n_entries-1) printf("processing %d/%d (%.2f%%).\n",evt,n_entries-1,(double)evt/(double)(n_entries-1)*100.);
         
         root->GetEntry(evt);
         HltTree->GetEntry(evt);
@@ -418,29 +420,30 @@ int main(int argc, char** argv)
 
 		//---------------------------------------------------------------------
 		// ditrack mass window selection
-		double k_short_window = 0.015;
-		double lambda_window = 0.015;
-		double k_star_window = 0.200;
-		double phi_window = 0.020;
+		double k_short_window = 0.015; //originally was 0.060
+		double lambda_window = 0.015;  //originally was 0.010
+
+		double k_star_window = 0.200;  //try 0.060 //originally was 0.050
+		double phi_window = 0.020;     //try 0.010 //originally was 0.060
 
 		switch(b_type)
 		  {
 		  case 3: // Ks mode
-		   if (fabs(BInfo->tktk_mass[bidx]-KSHORT_MASS)>=k_short_window) continue; //this was 0.060
+		   if (fabs(BInfo->tktk_mass[bidx]-KSHORT_MASS)>=k_short_window) continue; 
 		   break;
 
 		  case 4: // Kstar mode
 		  case 5: // Kstar mode
-		    if (fabs(BInfo->tktk_mass[bidx]-KSTAR_MASS)>=k_star_window) continue; // this was 0.050 before
+		    if (fabs(BInfo->tktk_mass[bidx]-KSTAR_MASS)>=k_star_window) continue;
 		    break;
 		    
 		  case 6: // phi mode
-		    if (fabs(BInfo->tktk_mass[bidx]-PHI_MASS)>=phi_window) continue; //this was 0.010
+		    if (fabs(BInfo->tktk_mass[bidx]-PHI_MASS)>=phi_window) continue;
 		    break;
 		    
 		  case 8: // Lambda mode
 		  case 9: // Lambda mode
-		    if (fabs(BInfo->tktk_mass[bidx]-LAMBDA_MASS)>=lambda_window) continue; //was 0.060
+		    if (fabs(BInfo->tktk_mass[bidx]-LAMBDA_MASS)>=lambda_window) continue; 
 		    break;
 		  }
 
