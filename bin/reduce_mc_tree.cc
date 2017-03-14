@@ -37,10 +37,11 @@ using namespace RooFit;
 // channel = 5: Jpsi + pipi
 // channel = 6: Lambda_b -> Jpsi + Lambda
 
-//input example: reduce_mc --channel 1 --gen 1 --input /some/place/
+//input example: reduce_mc --channel 1 --mc 1 --gen 1 --input /some/place/
 int main(int argc, char** argv)
 {
   int channel = 1;
+  int mc =1;
   int gen = 1;
   TString input_file = "";
 
@@ -54,7 +55,11 @@ int main(int argc, char** argv)
           convert << argv[++i];
           convert >> channel;
         }
-      
+      if(argument == "--mc")
+	{
+	  convert << argv[++i];
+          convert >> mc;
+	}
       if(argument == "--gen")
 	{
 	  convert << argv[++i];
@@ -91,11 +96,11 @@ int main(int argc, char** argv)
 
   TString ntuple_name = channel_to_ntuple_name(channel);
     
-  if(gen)
+  if(mc && gen)
     ntuple_name += "_gen";
   
-  if(channel == 2 && !gen)
-    ntuple_name += "_true";
+  //if(channel == 2 && mc && !gen) //to get the correctly assigned signal, and not include the swapped component.
+      //ntuple_name += "_true";
   
   tin = new TChain(ntuple_name);
 

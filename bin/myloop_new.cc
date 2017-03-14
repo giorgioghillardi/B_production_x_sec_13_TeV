@@ -81,6 +81,7 @@ int main(int argc, char** argv)
 	    root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_mc_Bd_muonfilter_v1/BdToJpsiKstarV2_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_mc_Bd_muonfilter_v1/160812_135133/0000/Bfinder_mc_*.root");
 	    HltTree->Add("/gstore/t3cms/store/user/martinsg/Bfinder_mc_Bd_muonfilter_v1/BdToJpsiKstarV2_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_mc_Bd_muonfilter_v1/160812_135133/0000/Bfinder_mc_*.root");
 	    break;
+
 	  case 3:
 	    break;
 
@@ -220,8 +221,11 @@ int main(int argc, char** argv)
     std::vector<ReducedBranches> selected_bees;
 
     //debug:
-    std::vector<std::string> particle_flow_string = {"event","signal","muon_selection","jpsi_selection","track_selection","ditrack_mass_window","ditrack_veto","HLT_selection","vtx_prob","lxy","cos2D","ntkstar_true"};
-    std::vector<int> particle_flow_number = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    std::vector<std::string> particle_flow_string = {"event","signal","mu1pt","mu2pt","mu1eta","mu2eta","mu1soft","mu2soft","jpsi_mass","jpsi_pt","tk1pt","tk2pt","tk1eta","tk2eta","tk1chi_ndf","tk2chi_ndf","tk1hits","tk2hits","tktk_mass","tktk_veto","HLT_selection","vtx_prob","lxy_errlxy","cos2D"};
+    std::vector<int> particle_flow_number;
+
+    for(int i=0; i < (int)particle_flow_string.size(); i++)
+      particle_flow_number.push_back(0);
     
     particle_flow_number[0]= n_entries;
     
@@ -375,25 +379,41 @@ int main(int argc, char** argv)
 	      {
 		// Basic muon selections
 		if (MuonInfo->pt[mu1idx]<=4.) continue;
-		if (MuonInfo->pt[mu2idx]<=4.) continue;
-		if (fabs(MuonInfo->eta[mu1idx])>=2.4) continue;
-		if (fabs(MuonInfo->eta[mu2idx])>=2.4) continue;
-		if (!MuonInfo->SoftMuID[mu1idx]) continue;
-		if (!MuonInfo->SoftMuID[mu2idx]) continue;
-		
 		if(run_on_mc)
 		  particle_flow_number[2]++;
+
+		if (MuonInfo->pt[mu2idx]<=4.) continue;
+		if(run_on_mc)
+		  particle_flow_number[3]++;
+		
+		if (fabs(MuonInfo->eta[mu1idx])>=2.4) continue;
+		if(run_on_mc)
+		  particle_flow_number[4]++;
+		
+		if (fabs(MuonInfo->eta[mu2idx])>=2.4) continue;
+		if(run_on_mc)
+		  particle_flow_number[5]++;
+
+		if (!MuonInfo->SoftMuID[mu1idx]) continue;
+		if(run_on_mc)
+		  particle_flow_number[6]++;
+
+		if (!MuonInfo->SoftMuID[mu2idx]) continue;
+		if(run_on_mc)
+		  particle_flow_number[7]++;
 		
 		//-----------------------------------------------------------------
 		// J/psi cut
 		// KFC: May need to consider an y dependent cut?
-		if (fabs(BInfo->uj_mass[ujidx]-JPSI_MASS)>=0.150) continue;
-		if (BInfo->uj_pt[ujidx]<=10.0) continue; //was 8.0 before
 		//add the jpsi vertex prob!?
-		
+		if (fabs(BInfo->uj_mass[ujidx]-JPSI_MASS)>=0.150) continue;
 		if(run_on_mc)
-		  particle_flow_number[3]++;
-
+		  particle_flow_number[8]++;
+		
+		if (BInfo->uj_pt[ujidx]<=10.0) continue; //was 8.0 before
+		if(run_on_mc)
+		  particle_flow_number[9]++;
+		
 		//-----------------------------------------------------------------
 		// Basic track selections
 		if (b_type==1 || b_type==2) // k, pi
@@ -406,25 +426,48 @@ int main(int argc, char** argv)
 		else
 		  { // others (2 tracks)
 		    if (TrackInfo->pt[tk1idx]<=0.7) continue;
+		    if(run_on_mc)
+		      particle_flow_number[10]++;
+		    
 		    if (TrackInfo->pt[tk2idx]<=0.7) continue;
+		    if(run_on_mc)
+		      particle_flow_number[11]++;
+
 		    if (fabs(TrackInfo->eta[tk1idx])>=2.5) continue;
+		    if(run_on_mc)
+		      particle_flow_number[12]++;
+		    
 		    if (fabs(TrackInfo->eta[tk2idx])>=2.5) continue;
+		    if(run_on_mc)
+		      particle_flow_number[13]++;
+
 		    if (TrackInfo->chi2[tk1idx]/TrackInfo->ndf[tk1idx]>=5.) continue;
+		    if(run_on_mc)
+		      particle_flow_number[14]++;
+		    
 		    if (TrackInfo->chi2[tk2idx]/TrackInfo->ndf[tk2idx]>=5.) continue;
+		    if(run_on_mc)
+		      particle_flow_number[15]++;
+		    
 		    if (TrackInfo->striphit[tk1idx]+TrackInfo->pixelhit[tk1idx]<5) continue;
+		    if(run_on_mc)
+		      particle_flow_number[16]++;
+
 		    if (TrackInfo->striphit[tk2idx]+TrackInfo->pixelhit[tk2idx]<5) continue;
+		    if(run_on_mc)
+		      particle_flow_number[17]++;
 		  }
-		
-		if(run_on_mc)
-		  particle_flow_number[4]++;
 
 		//---------------------------------------------------------------------
 		// ditrack mass window selection
 		double k_short_window = 0.015; //originally was 0.060
 		double lambda_window = 0.015;  //originally was 0.010
 
-		double k_star_window = 0.200;  //try 0.060 //originally was 0.050
-		double phi_window = 0.020;     //try 0.010 //originally was 0.060
+		//double k_star_window = 0.200;  //try 0.060 //originally was 0.050
+		//double k_star_veto = 0.050;
+
+		//double phi_window = 0.015;    //try 0.010 //originally was 0.060
+		//double phi_veto = 0.010;
 
 		switch(b_type)
 		  {
@@ -434,11 +477,11 @@ int main(int argc, char** argv)
 
 		  case 4: // Kstar mode
 		  case 5: // Kstar mode
-		    if (fabs(BInfo->tktk_mass[bidx]-KSTAR_MASS)>=k_star_window) continue;
+		    //if (fabs(BInfo->tktk_mass[bidx]-KSTAR_MASS)>=k_star_window) continue;
 		    break;
 		    
 		  case 6: // phi mode
-		    if (fabs(BInfo->tktk_mass[bidx]-PHI_MASS)>=phi_window) continue;
+		    //if (fabs(BInfo->tktk_mass[bidx]-PHI_MASS)>=phi_window) continue;
 		    break;
 		    
 		  case 8: // Lambda mode
@@ -448,7 +491,7 @@ int main(int argc, char** argv)
 		  }
 
 		if(run_on_mc)
-		  particle_flow_number[5]++;
+		  particle_flow_number[18]++;
 		
 		//------------------------------------------------------------------------------------
 		// ditrack vetos
@@ -458,19 +501,19 @@ int main(int argc, char** argv)
 		  {
 		  case 4: // Kstar mode
 		  case 5: // Kstar mode
-		    //v4_tk1.SetPtEtaPhiM(TrackInfo->pt[tk1idx],TrackInfo->eta[tk1idx],TrackInfo->phi[tk1idx],KAON_MASS);
-		    //v4_tk2.SetPtEtaPhiM(TrackInfo->pt[tk2idx],TrackInfo->eta[tk2idx],TrackInfo->phi[tk2idx],KAON_MASS);
-		    //if (fabs((v4_tk1+v4_tk2).Mag()-PHI_MASS)<=phi_window) continue;
+		    v4_tk1.SetPtEtaPhiM(TrackInfo->pt[tk1idx],TrackInfo->eta[tk1idx],TrackInfo->phi[tk1idx],KAON_MASS);
+		    v4_tk2.SetPtEtaPhiM(TrackInfo->pt[tk2idx],TrackInfo->eta[tk2idx],TrackInfo->phi[tk2idx],KAON_MASS);
+		    //if (fabs((v4_tk1+v4_tk2).Mag()-PHI_MASS)<=phi_veto) continue;
 		    break;
 		    
 		  case 6: // phi mode
-		    //v4_tk1.SetPtEtaPhiM(TrackInfo->pt[tk1idx],TrackInfo->eta[tk1idx],TrackInfo->phi[tk1idx],KAON_MASS);
-		    //v4_tk2.SetPtEtaPhiM(TrackInfo->pt[tk2idx],TrackInfo->eta[tk2idx],TrackInfo->phi[tk2idx],PION_MASS);
-		    //if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=k_star_window) continue;
+		    v4_tk1.SetPtEtaPhiM(TrackInfo->pt[tk1idx],TrackInfo->eta[tk1idx],TrackInfo->phi[tk1idx],KAON_MASS);
+		    v4_tk2.SetPtEtaPhiM(TrackInfo->pt[tk2idx],TrackInfo->eta[tk2idx],TrackInfo->phi[tk2idx],PION_MASS);
+		    //if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=k_star_veto) continue;
 		    
-		    //v4_tk1.SetPtEtaPhiM(TrackInfo->pt[tk1idx],TrackInfo->eta[tk1idx],TrackInfo->phi[tk1idx],PION_MASS);
-		    //v4_tk2.SetPtEtaPhiM(TrackInfo->pt[tk2idx],TrackInfo->eta[tk2idx],TrackInfo->phi[tk2idx],KAON_MASS);
-		    //if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=k_star_window) continue;
+		    v4_tk1.SetPtEtaPhiM(TrackInfo->pt[tk1idx],TrackInfo->eta[tk1idx],TrackInfo->phi[tk1idx],PION_MASS);
+		    v4_tk2.SetPtEtaPhiM(TrackInfo->pt[tk2idx],TrackInfo->eta[tk2idx],TrackInfo->phi[tk2idx],KAON_MASS);
+		    //if (fabs((v4_tk1+v4_tk2).Mag()-KSTAR_MASS)<=k_star_veto) continue;
 		    break;
 		    
 		  case 8: // Lambda mode
@@ -482,7 +525,7 @@ int main(int argc, char** argv)
 		  }
 		
 		if(run_on_mc)
-		  particle_flow_number[6]++;
+		  particle_flow_number[19]++;
 
 	      } //end of cuts, there are more cuts later in the code
 	    
@@ -528,7 +571,7 @@ int main(int argc, char** argv)
 	    v4_b.SetPtEtaPhiM(BInfo->pt[bidx],BInfo->eta[bidx],BInfo->phi[bidx],BInfo->mass[bidx]);
 	    
 	    //fill the br->gen info
-	    if(run_on_mc)
+	    if(run_on_mc && mc_truth)
 	       {
 		 TLorentzVector v4_b_gen;
 		 
@@ -676,23 +719,22 @@ int main(int argc, char** argv)
 		      {if (br->hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v1]!=1 && br->hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v2]!=1) continue;}
 		    
 		    if(run_on_mc)
-		      particle_flow_number[7]++;
-
+		      particle_flow_number[20]++;
 		  }
 				
 		if(b_type==1 || b_type==2 || b_type==4 || b_type==5 || b_type==6) //for K+, pi+, K*0, phi
 		  {
 		    if(br->vtxprob<=0.1) continue; //original cut 0.2
 		    if(run_on_mc)
-		      particle_flow_number[8]++;
+		      particle_flow_number[21]++;
 
 		    if(br->lxy/br->errxy<=3.0) continue; //original cut 4.5
 		    if(run_on_mc)
-		      particle_flow_number[9]++;
+		      particle_flow_number[22]++;
 
 		    if(br->cosalpha2d<=0.99) continue; //original cut 0.996
 		    if(run_on_mc)
-		      particle_flow_number[10]++;
+		      particle_flow_number[23]++;
 		  }
 		
 		if(b_type==3 || b_type==8 || b_type==9) // Ks and lambda
@@ -770,8 +812,6 @@ int main(int argc, char** argv)
 			*br_cand = selected_bees[i]; //put the values of the selected B into br_cand
 			nt_cand->Fill();
 
-			particle_flow_number[11]++;
-			
 			if(debug) printf("debug signal: type: %d B_pdgId: %d tk1_pdgId: %d tk2_pdgId: %d \n", selected_bees[i].type, GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[selected_bees[i].mu1idx]]]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk1idx]], GenInfo->pdgId[TrackInfo->geninfo_index[selected_bees[i].tk2idx]]);
 		      }
 		    else 
@@ -795,10 +835,15 @@ int main(int argc, char** argv)
       } // end of evt loop
     
     if(run_on_mc)
-      for(int i=0; i < (int)particle_flow_number.size(); i++)
-	{
-	  std::cout << particle_flow_string[i] << " : " << particle_flow_number[i] << std::endl;
-	}
+      {
+	std::cout << "cut  :  number  :  efficiency" << std::endl;
+	std::cout << particle_flow_string[0] << " : " << particle_flow_number[0] << " : " << ((double)particle_flow_number[0]/(double)particle_flow_number[0])*100 << std::endl;
+
+	for(int i=1; i < (int)particle_flow_number.size(); i++)
+	  {
+	    std::cout << particle_flow_string[i] << " : " << particle_flow_number[i] << " : " << ((double)particle_flow_number[i]/(double)particle_flow_number[i-1])*100 << std::endl;
+	  }
+      }
     
     fout->Write();
     fout->Close();

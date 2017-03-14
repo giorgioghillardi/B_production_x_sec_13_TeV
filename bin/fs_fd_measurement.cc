@@ -61,12 +61,12 @@ int main(int argc, char** argv)
     }
 
   //pt bins
-  double pt_bins[]= {9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90};
+  double pt_bins[] = {9, 13, 16, 20, 25, 30, 35, 42, 50, 60, 70, 90};
   double total_pt_bin_edges[]={10, 150};
   int number_of_pt_bins = (sizeof(pt_bins) / sizeof(double)) - 1; //if pt_bins is an empty array, then number_of_pt_bins is equal to 0
   
   //y bins
-  double y_bins[]= {0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2, 2.25};
+  double y_bins[] = {0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2, 2.25};
   double total_y_bin_edges[]={0.0, 2.25};
   int number_of_y_bins = (sizeof(y_bins) / sizeof(double)) - 1;
 
@@ -179,6 +179,20 @@ int main(int argc, char** argv)
   double b_fraction[2];
   double b_fraction_err[2];
 
+  //used later on in the eff plots
+  TString eff_title = ""; 
+  TString eff_name = "";
+  
+  TString sample = "";
+  if(yield_sub_samples == "full")
+    sample = "_" + yield_sub_samples;
+  
+  TString x_axis_name = "";
+  if(var1_name =="pt")
+    x_axis_name = "p_{T}(B) [GeV]";
+  else
+    x_axis_name = "|y|(B)";
+  
   for(int i=0; i<n_var1_bins; i++)
     {
       var1_bin_centre[i] = var1_bin_edges[i] + (var1_bin_edges[i+1]-var1_bin_edges[i])/2;
@@ -228,7 +242,7 @@ int main(int argc, char** argv)
       create_dir(dir_list);
       
       //------------data input---------------------
-      TString data_selection_input_file = TString::Format(BASE_DIR) + "myloop_new_data_" + channel_to_ntuple_name(channel) + "_with_cuts.root";
+      TString data_selection_input_file = TString::Format(BASE_DIR) + "selected_myloop_new_data_" + channel_to_ntuple_name(channel) + "_with_cuts.root";
       RooWorkspace* ws = new RooWorkspace("ws","Bmass");
       RooRealVar* signal_res; 
   
@@ -278,8 +292,6 @@ int main(int argc, char** argv)
 	    }
 	}
       
-      TString eff_title = ""; //used later on to set the title of the eff plots
-      
       //to calculate pre-filter efficiency
       if(calculate_pre_filter_eff)
 	{
@@ -308,18 +320,13 @@ int main(int argc, char** argv)
 	      graph_pre_eff->SetMarkerColor(4);
 	      graph_pre_eff->SetMarkerStyle(21);
 	      
-	      TString x_axis_name = "";
-	      if(var1_name =="pt")
-	        x_axis_name = "p_{T}(B) [GeV]";
-	      else
-		x_axis_name = "|y|(B)";
-	      
 	      graph_pre_eff->GetXaxis()->SetTitle(x_axis_name);
 	      graph_pre_eff->Draw("AP");
 	      
-	      TString eff1_name = "";
-	      eff1_name = "efficiencies/pre_filter_efficiency_" + channel_to_ntuple_name(channel) + "_" + var2_name + TString::Format("_from_%.2f_to_%.2f",var2_bin_edges[j],var2_bin_edges[j+1]) + ".png";
-	      ce.SaveAs(eff1_name);
+	      eff_name = "";
+	      
+	      eff_name = "efficiencies/pre_filter_efficiency_" + channel_to_ntuple_name(channel) + "_" + var2_name + TString::Format("_from_%.2f_to_%.2f",var2_bin_edges[j],var2_bin_edges[j+1]) + "_" + TString::Format(VERSION) + sample + ".png";
+	      ce.SaveAs(eff_name);
 	    }
 	}
 
@@ -351,18 +358,13 @@ int main(int argc, char** argv)
 		  graph_reco_eff->SetMarkerColor(4);
 		  graph_reco_eff->SetMarkerStyle(21);
 
-		  TString x_axis_name = "";
-		  if(var1_name =="pt")
-		    x_axis_name = "p_{T}(B) [GeV]";
-		  else
-		    x_axis_name = "|y|(B)";
-		  
 		  graph_reco_eff->GetXaxis()->SetTitle(x_axis_name);
 		  graph_reco_eff->Draw("AP");
 		  
-		  TString eff2_name = "";
-		  eff2_name = "efficiencies/reco_efficiency_" + channel_to_ntuple_name(channel) + "_" + var2_name + TString::Format("_from_%.2f_to_%.2f",var2_bin_edges[j],var2_bin_edges[j+1]) + ".png";
-		  cp.SaveAs(eff2_name);
+		  eff_name = "";
+
+		  eff_name = "efficiencies/reco_efficiency_" + channel_to_ntuple_name(channel) + "_" + var2_name + TString::Format("_from_%.2f_to_%.2f",var2_bin_edges[j],var2_bin_edges[j+1]) + "_" + TString::Format(VERSION) + sample + ".png";
+		  cp.SaveAs(eff_name);
 	    }
 	}
       
@@ -389,18 +391,13 @@ int main(int argc, char** argv)
 		  graph_total_eff->SetMarkerColor(4);
 		  graph_total_eff->SetMarkerStyle(21);
 
-		  TString x_axis_name = "";
-		  if(var1_name =="pt")
-		    x_axis_name = "p_{T}(B) [GeV]";
-		  else
-		    x_axis_name = "|y|(B)";
-		  
 		  graph_total_eff->GetXaxis()->SetTitle(x_axis_name);
 		  graph_total_eff->Draw("AP");
 		  
-		  TString eff3_name = "";
-		  eff3_name = "efficiencies/total_efficiency_" + channel_to_ntuple_name(channel) + "_" + var2_name + TString::Format("_from_%.2f_to_%.2f",var2_bin_edges[j],var2_bin_edges[j+1]) + ".png";
-		  cp.SaveAs(eff3_name);
+		  eff_name = "";
+
+		  eff_name = "efficiencies/total_efficiency_" + channel_to_ntuple_name(channel) + "_" + var2_name + TString::Format("_from_%.2f_to_%.2f",var2_bin_edges[j],var2_bin_edges[j+1]) + "_" + TString::Format(VERSION) + sample + ".png";
+		  cp.SaveAs(eff_name);
 	    }
 	}
       
@@ -427,18 +424,13 @@ int main(int argc, char** argv)
 		  graph_ratio_eff->SetMarkerColor(4);
 		  graph_ratio_eff->SetMarkerStyle(21);
 
-		  TString x_axis_name = "";
-		  if(var1_name =="pt")
-		    x_axis_name = "p_{T}(B) [GeV]";
-		  else
-		    x_axis_name = "|y|(B)";
-		  
 		  graph_ratio_eff->GetXaxis()->SetTitle(x_axis_name);
 		  graph_ratio_eff->Draw("AP");
 		  
-		  TString eff4_name = "";
-		  eff4_name = "efficiencies/ratio_efficiency_" + ratio + "_" + var2_name + TString::Format("_from_%.2f_to_%.2f",var2_bin_edges[j],var2_bin_edges[j+1]) + ".png";
-		  cp.SaveAs(eff4_name);
+		  eff_name = "";
+
+		  eff_name = "efficiencies/ratio_efficiency_" + ratio + "_" + var2_name + TString::Format("_from_%.2f_to_%.2f",var2_bin_edges[j],var2_bin_edges[j+1]) + "_" + TString::Format(VERSION) + sample + ".png";
+		  cp.SaveAs(eff_name);
 	    }
 	}
       
@@ -516,12 +508,6 @@ int main(int argc, char** argv)
       //draw this for the first bin of var2, or in case there is only one bin.
       if(j==0)
 	{
-	  TString x_axis_name = "";
-	  if(var1_name == "pt")
-	    x_axis_name = "p_{T}(B) [GeV]";
-	  else
-	    x_axis_name = "|y|(B)";
-	  
 	  graph->GetXaxis()->SetTitle(x_axis_name);
 	  
 	  //to set the range of the plot.
@@ -602,7 +588,7 @@ int main(int argc, char** argv)
   for(int ch=0; ch<2; ch++)
     {
       std::cout << std::endl;
-      std::cout << "CHANNEL: " << 2*(ch+1) << std::endl;
+      std::cout << "CHANNEL: " << ch << std::endl;
       
       for(int j=0; j<n_var2_bins; j++)
 	{
@@ -611,6 +597,46 @@ int main(int argc, char** argv)
 	  for(int i=0; i<n_var1_bins; i++)
 	    {
 	      std::cout << "BIN: " << var1_name << " " << var1_bin_edges[i] << " to " << var1_bin_edges[i+1] << " : " <<  yield_array[ch][j][i] << " +" << errHi_array[ch][j][i] << " -"<< errLo_array[ch][j][i] << " +-" << yield_syst_array[ch][j][i] << std::endl;
+	    }
+	  
+	  std::cout << std::endl;
+	}
+    }//end of channel cicle
+
+  //pre-filter eff
+  std::cout << "PRE-FILTER EFFICIENCY:" << std::endl;
+  for(int ch=0; ch<2; ch++)
+    {
+      std::cout << std::endl;
+      std::cout << "CHANNEL: " << ch << std::endl;
+      
+      for(int j=0; j<n_var2_bins; j++)
+	{
+	  std::cout << "BIN: " << var2_name << " " << var2_bin_edges[j] << " to " << var2_bin_edges[j+1] << " : " << std::endl;
+	  
+	  for(int i=0; i<n_var1_bins; i++)
+	    {
+	      std::cout << "BIN: " << var1_name << " " << var1_bin_edges[i] << " to " << var1_bin_edges[i+1] << " : " <<  pre_eff_array[ch][j][i] << " +" << pre_eff_err_hi_array[ch][j][i] << " -"<< pre_eff_err_lo_array[ch][j][i] << std::endl;
+	    }
+	  
+	  std::cout << std::endl;
+	}
+    }//end of channel cicle
+
+  //reco eff
+  std::cout << "RECO EFFICIENCY:" << std::endl;
+  for(int ch=0; ch<2; ch++)
+    {
+      std::cout << std::endl;
+      std::cout << "CHANNEL: " << ch << std::endl;
+      
+      for(int j=0; j<n_var2_bins; j++)
+	{
+	  std::cout << "BIN: " << var2_name << " " << var2_bin_edges[j] << " to " << var2_bin_edges[j+1] << " : " << std::endl;
+	  
+	  for(int i=0; i<n_var1_bins; i++)
+	    {
+	      std::cout << "BIN: " << var1_name << " " << var1_bin_edges[i] << " to " << var1_bin_edges[i+1] << " : " <<  reco_eff_array[ch][j][i] << " +" << reco_eff_err_hi_array[ch][j][i] << " -"<< reco_eff_err_lo_array[ch][j][i] << std::endl;
 	    }
 	  
 	  std::cout << std::endl;
@@ -630,6 +656,16 @@ int main(int argc, char** argv)
       
       std::cout << std::endl;
     }
+
+  //b_fraction
+  std::cout << "BRANCHING FRACTION:" << std::endl;
+  for(int ch=0; ch<2; ch++)
+    {
+      std::cout << std::endl;
+      std::cout << "CHANNEL: " << ch << std::endl;
+      std::cout << "b_fraction: " << b_fraction[ch] << " +- " << b_fraction_err[ch] << std::endl;
+      std::cout << std::endl;
+    }//end of channel cicle
 
   //Fracmentation fraction
   std::cout << "FRAGMENTATION FRACTION:" << ratio << std::endl;
