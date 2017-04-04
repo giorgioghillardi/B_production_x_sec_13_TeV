@@ -12,6 +12,9 @@
   <bin name="fs_fd_ratio"   file="fs_fd_measurement.cc"></bin>
   <bin name="swap"   file="k_pi_swap.cc"></bin>
   <bin name="data_selection"   file="data_selection_new.cc"></bin>
+  <bin name="calculate_bin_yield"   file="calculate_bin_yield.cc"></bin>
+  <bin name="calculate_bin_eff"   file="calculate_bin_eff.cc"></bin>
+  <bin name="calculate_yield_eff"   file="calculate_yield_eff.cc"></bin>
 </environment>
 
 <Flags CXXFLAGS="-g"/>
