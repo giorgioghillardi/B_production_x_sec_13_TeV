@@ -80,9 +80,9 @@ int main(int argc, char** argv)
   std::cout << "processing subsample: " << pt_min << " < " << "pt" << " < " << pt_max << " and " << y_min << " < " << "|y|" << " < " << y_max << std::endl;
   
   signal_res = bin_mass_fit(*ws, channel, pt_min, pt_max, y_min, y_max);
-  
+
   //write signal_yield and statistical error to file
-  TString yield_file_name = "signal_yield_root/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "_yield_pt_from_" + TString::Format("%d_to_%d", (int)pt_min, (int)pt_max) + "_y_from_" + TString::Format("%.2f_to_%.2f", y_min, y_max) + "_" + TString::Format(VERSION) + ".root";
+  TString yield_file_name = "signal_yield_root/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/yield_" + channel_to_ntuple_name(channel) + "_pt_from_" + TString::Format("%d_to_%d", (int)pt_min, (int)pt_max) + "_y_from_" + TString::Format("%.2f_to_%.2f", y_min, y_max) + "_" + TString::Format(VERSION) + ".root";
   
   TFile* yield_file = new TFile(yield_file_name,"recreate");
   
@@ -90,13 +90,13 @@ int main(int argc, char** argv)
   TVectorD stat_err_lo(1);
   TVectorD stat_err_hi(1);
 
-  signal_yield[0] = signal_res->getVal();
-  stat_err_lo[0] = -signal_res->getAsymErrorLo();
-  stat_err_hi[0] = signal_res->getAsymErrorHi();
+  signal_yield[0] = fabs(signal_res->getVal());
+  stat_err_lo[0] = fabs(signal_res->getAsymErrorLo());
+  stat_err_hi[0] = fabs(signal_res->getAsymErrorHi());
   
-  signal_yield.Write("signal_yield");
-  stat_err_lo.Write("stat_err_lo");
-  stat_err_hi.Write("stat_err_hi");
+  signal_yield.Write("val");
+  stat_err_lo.Write("err_lo");
+  stat_err_hi.Write("err_hi");
 
   yield_file->Close();
   delete yield_file; 

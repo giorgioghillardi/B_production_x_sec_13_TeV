@@ -43,10 +43,13 @@
 #include "TMath.h"
 #include "TVectorD.h"
 #include <TLegend.h>
+#include "TF1.h"
+#include "TPaveStats.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/myloop.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/format.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/plotDressing.h"
 #include "UserCode/B_production_x_sec_13_TeV/interface/channel.h"
+#include "UserCode/B_production_x_sec_13_TeV/interface/bins.h"
 
 using namespace RooFit;
 
@@ -71,8 +74,9 @@ void set_up_workspace_variables(RooWorkspace& w, int channel, double mass_min = 
 void read_data(RooWorkspace& w, TString filename,int channel);
 void read_data_cut(RooWorkspace& w, RooAbsData* data);
 void build_pdf(RooWorkspace& w, int channel, std::string choice = "", std::string choice2 = "");
+void setup_bins(TString measure, int channel, TString bins, TString* var1_name, int* n_var1_bins, TString* var2_name, int* n_var2_bins, double** var1_bins, double** var2_bins);
 
-double var_mean_value(RooWorkspace& w, std::string var_name, double var_min, double var_max);
+double var_mean_value(RooWorkspace& w, TString var1_name, double var1_min, double var1_max, TString var2_name, double var2_min, double var2_max);
 void plot_var_dist(RooWorkspace& w, std::string var_name, int channel, TString directory);
 void plot_mass_fit(RooWorkspace& w, int channel, TString directory,int pt_high, int pt_low, double y_min, double y_max);
 
@@ -83,13 +87,15 @@ RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max, doub
 RooRealVar* reco_efficiency(int channel, double pt_min, double pt_max, double y_min, double y_max);
 RooRealVar* branching_fraction(int channel);
 
-void calculate_eff(TString eff_name, int channel, int n_var1_bins, int n_var2_bins, TString var1_name, TString var2_name, double* var1_bin_edges, double* var2_bin_edges, double* eff_array);
-void plot_eff(TString eff_name, int channel, int n_var1_bins, TString var2_name, double var2_min, double var2_max, TString x_axis_name, TString b_title, double* var1_bin_centre, double* var1_bin_centre_lo, double* var1_bin_centre_hi, double* eff_array, double* eff_err_lo_array, double* eff_err_hi_array);
+void read_vector(TString measure, int channel, TString vector, TString var1_name , TString var2_name, int n_var1_bins, int n_var2_bins,  double* var1_bins, double* var2_bins, double* array, double* err_lo, double* err_hi);
+void plot_eff(TString measure, TString eff_name, int channel, int n_var1_bins, TString var2_name, double var2_min, double var2_max, TString x_axis_name, TString b_title, double* var1_bin_centre, double* var1_bin_centre_lo, double* var1_bin_centre_hi, double* eff_array, double* eff_err_lo_array, double* eff_err_hi_array);
 
 void print_table(TString title, int n_var1_bins, int n_var2_bins, TString var1_name, TString var2_name, double* var1_bin_edges, double* var2_bin_edges, double* array, double* stat_err_lo, double* stat_err_hi, double* syst_err_lo = NULL, double* syst_err_hi = NULL);
+
 void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::string> col_name, std::vector<std::string> labels, std::vector<std::vector<double> > numbers, std::string caption);
 
 void mc_study(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max);
+//void calculate_eff(TString eff_name, int channel, int n_var1_bins, int n_var2_bins, TString var1_name, TString var2_name, double* var1_bin_edges, double* var2_bin_edges, double* eff_array);
 
 //////////////////////////////////////////FUNCIONS////////////////////////////////////////////////////
 void create_dir(std::vector<std::string> list)
@@ -118,13 +124,13 @@ void set_up_workspace_variables(RooWorkspace& w, int channel, double mass_min, d
       default: 
       case 1:
       case 2:
-	mass_min = 5.0; mass_max = 6.0; //mass_min = 5.05; mass_max = 5.5;
+	mass_min = 5.05; mass_max = 5.5;
 	break;
       case 3:
 	mass_min = 5.0; mass_max = 6.0;
 	break;
       case 4:
-	mass_min = 5.0; mass_max = 6.0; //mass_min = 5.2; mass_max = 5.5;
+	mass_min = 5.2; mass_max = 5.52;
 	break;
       case 5:
 	mass_min = 3.6; mass_max = 4.0;
@@ -408,26 +414,151 @@ void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string cho
   w.import(*model);
 }
 
-double var_mean_value(RooWorkspace& w, std::string var_name, double var_min, double var_max)
+void setup_bins(TString measure, int channel, TString bins, TString* var1_name, int* n_var1_bins, TString* var2_name, int* n_var2_bins, double** var1_bins, double** var2_bins)
 {
-  const char* var_name_str = var_name.c_str();
+  int n_pt_bins=1;
+  double* pt_bins = total_pt_bin_edges;
+  
+  int n_y_bins=1;
+  double* y_bins = total_y_bin_edges;
+  
+  switch (channel)
+    {
+    default:
+    case 1:
+      pt_bins = ntkp_pt_bins;
+      n_pt_bins = (sizeof(ntkp_pt_bins) / sizeof(double)) - 1 ;
+      y_bins = ntkp_y_bins;
+      n_y_bins = (sizeof(ntkp_y_bins) / sizeof(double)) - 1 ;
+      break;
 
-  RooRealVar var = *(w.var(var_name_str));
-  RooRealVar var_low("var_low","var_low",var_min);
-  RooRealVar var_high("var_high","var_high",var_max);
+    case 2:
+      pt_bins = ntkstar_pt_bins;
+      n_pt_bins = (sizeof(ntkstar_pt_bins) / sizeof(double)) - 1 ;
+      y_bins = ntkstar_y_bins;
+      n_y_bins = (sizeof(ntkstar_y_bins) / sizeof(double)) - 1 ;
+      break;
+
+    case 3:
+      pt_bins = ntks_pt_bins;
+      n_pt_bins = (sizeof(ntks_pt_bins) / sizeof(double)) - 1 ;
+      y_bins = ntks_y_bins;
+      n_y_bins = (sizeof(ntks_y_bins) / sizeof(double)) - 1 ;
+      break;
+
+    case 4:
+      pt_bins = ntphi_pt_bins;
+      n_pt_bins = (sizeof(ntphi_pt_bins) / sizeof(double)) - 1 ;
+      y_bins = ntphi_y_bins;
+      n_y_bins = (sizeof(ntphi_y_bins) / sizeof(double)) - 1 ;
+      break;
+
+    case 5:
+      pt_bins = ntmix_pt_bins;
+      n_pt_bins = (sizeof(ntmix_pt_bins) / sizeof(double)) - 1 ;
+      y_bins = ntmix_y_bins;
+      n_y_bins = (sizeof(ntmix_y_bins) / sizeof(double)) - 1 ;
+      break;
+
+    case 6:
+      pt_bins = ntlambda_pt_bins;
+      n_pt_bins = (sizeof(ntlambda_pt_bins) / sizeof(double)) - 1 ;
+      y_bins = ntlambda_y_bins;
+      n_y_bins = (sizeof(ntlambda_y_bins) / sizeof(double)) - 1 ;
+      break;
+    }
+  
+  if(measure == "ratio")
+    {
+      pt_bins = ratio_pt_bins;
+      n_pt_bins = (sizeof(ratio_pt_bins) / sizeof(double)) - 1 ;
+      y_bins = ratio_y_bins;
+      n_y_bins = (sizeof(ratio_y_bins) / sizeof(double)) - 1 ;
+    }
+  
+  if(bins == "full")
+    {
+      *n_var1_bins= 1;
+      *var1_name = "pt";
+      *var1_bins = total_pt_bin_edges;
+
+      *n_var2_bins= 1;
+      *var2_name = "y";
+      *var2_bins = total_y_bin_edges;
+    }
+  else
+    if(bins == "pt")
+      {
+        *n_var1_bins = n_pt_bins;
+        *var1_name = "pt";
+        *var1_bins = pt_bins;
+	
+        *n_var2_bins = 1;
+        *var2_name = "y";
+        *var2_bins = total_y_bin_edges;
+      }
+    else
+      if(bins == "pt_y")
+        {
+          *n_var1_bins = n_pt_bins;
+          *var1_name = "pt";
+          *var1_bins = pt_bins;
+
+          *n_var2_bins = n_y_bins;
+          *var2_name = "y";
+          *var2_bins = y_bins;
+        }
+      else
+        if(bins == "y")
+          {
+            *n_var1_bins = n_y_bins;
+            *var1_name = "y";
+            *var1_bins = y_bins;
+
+            *n_var2_bins = 1;
+            *var2_name = "pt";
+            *var2_bins = total_pt_bin_edges;
+          }
+        else
+          if(bins == "y_pt")
+            {
+              *n_var1_bins = n_y_bins;
+              *var1_name = "y";
+              *var1_bins = y_bins;
+
+              *n_var2_bins = n_pt_bins;
+              *var2_name = "pt";
+              *var2_bins = pt_bins;
+            }
+          else
+            {
+              printf("ERROR: The variables you asked for are not deffined. Only full, pt, y, pt_y, y_pt are deffined. Please check in the code.\n");
+              return;
+            }
+}
+
+double var_mean_value(RooWorkspace& w, TString var1_name, double var1_min, double var1_max, TString var2_name, double var2_min, double var2_max)
+{
+  RooRealVar var1 = *(w.var(var1_name));
+  RooRealVar var1_low("var1_low","var1_low",var1_min);
+  RooRealVar var1_high("var1_high","var1_high",var1_max);
+  RooRealVar var2 = *(w.var(var2_name));
+  RooRealVar var2_low("var2_low","var2_low",var2_min);
+  RooRealVar var2_high("var2_high","var2_high",var2_max);
+  
   RooAbsData* data_original;
   RooAbsData* data_cut;
   double mean_value;
 
   data_original = w.data("data");
 
-  TString cut_formula = var_name + ">var_low && " + var_name + "<var_high";
+  TString cut_formula = var1_name + ">var1_low && " + var1_name + "<var1_high && " + var2_name + ">var2_low && " + var2_name + "<var2_high";
   
-  RooFormulaVar var_cut("var_cut", cut_formula, RooArgList(var,var_low,var_high));
+  RooFormulaVar var_cut("var_cut", cut_formula, RooArgList(var1,var1_low,var1_high,var2,var2_low,var2_high));
   
   data_cut = data_original->reduce(var_cut);
 
-  mean_value = (double) data_cut->meanVar(var)->getVal();
+  mean_value = (double) data_cut->meanVar(var1)->getVal();
   
   return mean_value;
 }
@@ -475,7 +606,7 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high,
   
   model->plotOn(frame_m,Name("thePdf"),Precision(2E-4));
   
-  model->paramOn(frame_m,Layout(0.505,0.89,0.57));
+  model->paramOn(frame_m,Layout(0.60,1.00,0.57)); //(0.505,0.89,0.57)
   
   model->plotOn(frame_m,Name("signal"),Precision(2E-4),Components("pdf_m_signal"),LineColor(8),LineWidth(2),LineStyle(kSolid),FillStyle(3008),FillColor(8), VLines(), DrawOption("F"));
   
@@ -635,8 +766,8 @@ void plot_mass_fit(RooWorkspace& w, int channel, TString directory, int pt_high,
   Legend(channel, pt_low, pt_high, y_low, y_high, 1);
 
   //////////////////////////////////////////
-  double x_1 = 0.505; //0.45
-  double x_2 = 0.89; //0.85
+  double x_1 = 0.60; //0.505; //0.45
+  double x_2 = 1.00; //0.89; //0.85
   double y_1;
   double y_2= 0.88;
   double y_space = 0.05;
@@ -732,6 +863,7 @@ RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_
   plot_mass_fit(ws_cut, channel, dir, (int) pt_max, (int) pt_min, y_min, y_max);
 
   signal_res = ws_cut.var("n_signal");
+  
   return signal_res;
 }
 
@@ -1086,63 +1218,107 @@ RooRealVar* branching_fraction(int channel)
   return b_fraction;
 }
 
-void calculate_eff(TString eff_name, int channel, int n_var1_bins, int n_var2_bins, TString var1_name, TString var2_name, double* var1_bin_edges, double* var2_bin_edges, double* eff_array, double* eff_err_lo_array, double* eff_err_hi_array)
+void read_vector(TString measure, int channel, TString vector, TString var1_name , TString var2_name, int n_var1_bins, int n_var2_bins,  double* var1_bins, double* var2_bins, double* array, double* err_lo, double* err_hi)
 {
-  RooRealVar* eff = new RooRealVar("eff","eff",1);
+  //input_file_name
+  TString bins_str = "";
+  TString in_file_name = "";
+  TString dir = "";
+  TString ntuple_name = "";
 
+  if(vector == "yield")
+    {
+      dir = "signal_yield_root/";
+      dir += channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/";
+      measure += "_";
+    }
+  else
+    if(vector == "preeff" || vector == "recoeff" || vector == "totaleff")
+      {
+	dir = "efficiencies_root/";
+	dir += channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/";
+	measure += "_";
+      }
+    else
+      if(vector == "x_sec")
+	{
+	  dir = "x_sec/";
+	  measure = "";
+	}
+      else
+	if(vector == "Bs_Bu" || vector == "fs_fu" || vector == "Bs_Bd" || vector == "fs_fd" || vector == "Bd_Bu" || vector == "fd_fu")
+	  {
+	    dir = "ratio/";
+	    measure = "";
+	  }
+
+  if(vector == "Bs_Bu" || vector == "fs_fu" || vector == "Bs_Bd" || vector == "fs_fd" || vector == "Bd_Bu" || vector == "fd_fu")
+    ntuple_name = "";
+  else
+    ntuple_name = channel_to_ntuple_name(channel) + "_";
+  
   for(int j=0; j<n_var2_bins; j++)
     {
-      std::cout << "processing bin: " << var2_bin_edges[j] << " < " << var2_name << " < " << var2_bin_edges[j+1] << std::endl;
+      //file_name
+      if(var1_name == "pt")
+	bins_str = TString::Format("%.2f_to_%.2f", var2_bins[j], var2_bins[j+1]);
+      else
+	bins_str = TString::Format("%d_to_%d", (int)var2_bins[j], (int)var2_bins[j+1]);
+      
+      in_file_name = dir + vector + "_vector_" + measure + ntuple_name + var1_name + "_bins_" + var2_name + "_from_" + bins_str + "_" + TString::Format(VERSION) + ".root";
+      
+      if(n_var1_bins == 1 && n_var2_bins == 1)
+	in_file_name = dir + vector + "_vector_" + measure + ntuple_name + "full_bins_" + TString::Format(VERSION) + ".root";
+
+      //open file
+      TFile* fin = new TFile(in_file_name);
+      TVectorD *in_val = (TVectorD*)fin->Get("val");
+      TVectorD *in_err_lo = (TVectorD*)fin->Get("err_lo");
+      TVectorD *in_err_hi = (TVectorD*)fin->Get("err_hi");
+      delete fin;
+
       for(int i=0; i<n_var1_bins; i++)
 	{
-	  std::cout << "calculating " << eff_name << " : " << var1_bin_edges[i] << " < " << var1_name << " < " << var1_bin_edges[i+1] << std::endl;
-	  
-	  if(eff_name == "pre_eff")
-	    {
-	      if(var1_name == "pt")
-		eff = prefilter_efficiency(channel,var1_bin_edges[i],var1_bin_edges[i+1],var2_bin_edges[j],var2_bin_edges[j+1]);
-	      else
-		eff = prefilter_efficiency(channel,var2_bin_edges[j],var2_bin_edges[j+1],var1_bin_edges[i],var1_bin_edges[i+1]);
-	    }
-	  if(eff_name == "reco_eff")
-	    {
-	      if(var1_name == "pt")
-		eff = reco_efficiency(channel,var1_bin_edges[i],var1_bin_edges[i+1],var2_bin_edges[j],var2_bin_edges[j+1]);
-	      else
-		eff = reco_efficiency(channel,var2_bin_edges[j],var2_bin_edges[j+1],var1_bin_edges[i],var1_bin_edges[i+1]);
-	    }
-
-	  *(eff_array + j*n_var1_bins + i) = eff->getVal();
-	  *(eff_err_lo_array + j*n_var1_bins + i) = -(eff->getAsymErrorLo());
-	  *(eff_err_hi_array + j*n_var1_bins + i) = eff->getAsymErrorHi();
+	  //copy to output_array
+	  *(array + j*n_var1_bins + i) = in_val[0][i];
+	  *(err_lo + j*n_var1_bins + i) = in_err_lo[0][i];
+	  *(err_hi + j*n_var1_bins + i) = in_err_hi[0][i];
 	}
     }
 }
 
-void plot_eff(TString eff_name, int channel, int n_var1_bins, TString var2_name, double var2_min, double var2_max, TString x_axis_name, TString b_title, double* var1_bin_centre, double* var1_bin_centre_lo, double* var1_bin_centre_hi, double* eff_array, double* eff_err_lo_array, double* eff_err_hi_array)
+void plot_eff(TString measure, TString eff_name, int channel, int n_var1_bins, TString var2_name, double var2_min, double var2_max, TString x_axis_name, TString b_title, double* var1_bin_centre, double* var1_bin_centre_lo, double* var1_bin_centre_hi, double* eff_array, double* eff_err_lo_array, double* eff_err_hi_array)
 {  
   TCanvas ce;
   TGraphAsymmErrors* graph_pre_eff = new TGraphAsymmErrors(n_var1_bins, var1_bin_centre, eff_array, var1_bin_centre_lo, var1_bin_centre_hi, eff_err_lo_array, eff_err_hi_array);
   
   TString eff_title = "";
+  TString ntuple = "";
 
-  if(eff_name == "pre_eff")
+  if(eff_name != "ratioeff")
+    ntuple = channel_to_ntuple_name(channel) + "_";
+  
+  if(eff_name == "preeff")
     eff_title = b_title + " Pre-filter efficiency";
-  if(eff_name == "reco_eff")
+  if(eff_name == "recoeff")
     eff_title = b_title + " Reconstruction efficiency";
-  if(eff_name == "total")
+  if(eff_name == "totaleff")
     eff_title = b_title + " Overall efficiency";
-  if(eff_name == "ratio")
+  if(eff_name == "ratioeff")
     eff_title = b_title + " Efficiency ratio";
 
   graph_pre_eff->SetTitle(eff_title);
-  graph_pre_eff->SetMarkerColor(4);
-  graph_pre_eff->SetMarkerStyle(21);
-
   graph_pre_eff->GetXaxis()->SetTitle(x_axis_name);
   graph_pre_eff->Draw("AP");
 
-  TString save_eff = "efficiencies/" + eff_name + "_" + channel_to_ntuple_name(channel) + "_" + var2_name + TString::Format("_from_%.2f_to_%.2f", var2_min, var2_max) + "_" + TString::Format(VERSION) + ".png";
+  if(measure != "x_sec" && measure != "ratio")
+    return;
+  
+  TString save_eff = "efficiencies/" + measure + "_" + eff_name + "_" + ntuple + var2_name + TString::Format("_from_%.2f_to_%.2f", var2_min, var2_max) + "_" + TString::Format(VERSION) + ".png";
+  
+  if(n_var1_bins == 1)
+    save_eff = "efficiencies/" + measure + "_" + eff_name + "_" + ntuple + "full_bins_" + TString::Format(VERSION) + ".png";
+  
   ce.SaveAs(save_eff);
 }
 
@@ -1179,11 +1355,9 @@ void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::st
   file << "\\usepackage{cancel}" << std::endl;
   file << "\\usepackage{geometry}" << std::endl;
   file << "\\usepackage{booktabs}" << std::endl;
-  file << "\\geometry{a4paper, total={170mm,257mm}, left=20mm, top=20mm,}" << std::endl;
-  file << "\\title{B production at 13 TeV}" << std::endl;
+  file << "\\geometry{a4paper, total={170mm,257mm}, left=20mm, top=20mm}" << std::endl;
   file << "\\begin{document}" << std::endl;
-  file << "\\maketitle" << std::endl;
-
+  
   // Create table                                                                                                                                
   file << "\\begin{table}[!h]" << std::endl;
 
@@ -1193,13 +1367,15 @@ void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::st
   for(int i=1; i<n_col; i++)
     col+="|c";
 
+  file << "\\begin{center}" << std::endl;
   file << "\\begin{tabular}{"+col+"}" << std::endl;
   file << "\\toprule" << std::endl;
 
   for(int c=0; c<n_col-1; c++)
     file << col_name[c] << " & ";
 
-  file << col_name[n_col-1] << " \\\\ \\midrule" << std::endl;
+  file << col_name[n_col-1] << " \\\\" << std::endl;
+  file << "\\midrule" << std::endl;
 
   for(int i=1; i<n_lin; i++)
     {
@@ -1216,13 +1392,30 @@ void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::st
   //End Table                                                                                                                                
   file << "\\end{tabular}" << std::endl;
   file << "\\caption{"+caption+"}" << std::endl;
+  file << "\\end{center}" << std::endl;
   file << "\\end{table}" << std::endl;
 
   //End document
   file << "\\end{document}" << std::endl;
 
-  system(("pdflatex " + filename + ".tex").c_str());
-  system(("gnome-open " + filename + ".pdf").c_str());
+  std::string line;
+
+  std::ifstream infile;
+  infile.open(filename + ".tex");
+
+  if(infile.is_open())
+    {
+      while(getline (infile,line))
+	{
+	  std::cout << line << std::endl;
+	}
+      infile.close();
+    }
+
+  infile.close();
+
+  //system(("pdflatex " + filename + ".tex").c_str());
+  //system(("gnome-open " + filename + ".pdf").c_str());
 }
 
 void mc_study(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max)
@@ -1283,3 +1476,38 @@ void mc_study(RooWorkspace& w, int channel, double pt_min, double pt_max, double
   f_nll->Draw();
   c4.SaveAs(dir_mc + "_nll_signal.png");
 }
+
+/*
+void calculate_eff(TString eff_name, int channel, int n_var1_bins, int n_var2_bins, TString var1_name, TString var2_name, double* var1_bin_edges, double* var2_bin_edges, double* eff_array, double* eff_err_lo_array, double* eff_err_hi_array)
+{
+  RooRealVar* eff = new RooRealVar("eff","eff",1);
+
+  for(int j=0; j<n_var2_bins; j++)
+    {
+      std::cout << "processing bin: " << var2_bin_edges[j] << " < " << var2_name << " < " << var2_bin_edges[j+1] << std::endl;
+      for(int i=0; i<n_var1_bins; i++)
+	{
+	  std::cout << "calculating " << eff_name << " : " << var1_bin_edges[i] << " < " << var1_name << " < " << var1_bin_edges[i+1] << std::endl;
+	  
+	  if(eff_name == "pre_eff")
+	    {
+	      if(var1_name == "pt")
+		eff = prefilter_efficiency(channel,var1_bin_edges[i],var1_bin_edges[i+1],var2_bin_edges[j],var2_bin_edges[j+1]);
+	      else
+		eff = prefilter_efficiency(channel,var2_bin_edges[j],var2_bin_edges[j+1],var1_bin_edges[i],var1_bin_edges[i+1]);
+	    }
+	  if(eff_name == "reco_eff")
+	    {
+	      if(var1_name == "pt")
+		eff = reco_efficiency(channel,var1_bin_edges[i],var1_bin_edges[i+1],var2_bin_edges[j],var2_bin_edges[j+1]);
+	      else
+		eff = reco_efficiency(channel,var2_bin_edges[j],var2_bin_edges[j+1],var1_bin_edges[i],var1_bin_edges[i+1]);
+	    }
+
+	  *(eff_array + j*n_var1_bins + i) = eff->getVal();
+	  *(eff_err_lo_array + j*n_var1_bins + i) = -(eff->getAsymErrorLo());
+	  *(eff_err_hi_array + j*n_var1_bins + i) = eff->getAsymErrorHi();
+	}
+    }
+}
+*/

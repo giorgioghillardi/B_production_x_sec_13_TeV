@@ -10,7 +10,7 @@
 // channel = 6: Lambda_b -> Jpsi + Lambda
 //-----------------------------------------------------------------
 
-//input example: calculate_bin_eff --channel 1 --eff --ptmin 10 --ptmax 20 --ymin 0.00 --ymax 0.50
+//input example: calculate_bin_eff --channel 1 --eff preeff --ptmin 10 --ptmax 20 --ymin 0.00 --ymax 0.50
 int main(int argc, char** argv)
 {
   int channel = 1;
@@ -84,45 +84,45 @@ int main(int argc, char** argv)
   ///////////////////////////////////////////////////
   std::cout << "processing subsample: " << pt_min << " < " << "pt" << " < " << pt_max << " and " << y_min << " < " << "|y|" << " < " << y_max << std::endl;
   
-  if(eff_name == "pre-filter")
+  if(eff_name == "preeff")
     eff_res = prefilter_efficiency(channel, pt_min, pt_max, y_min, y_max);
   else
-    if(eff_name == "reco")
+    if(eff_name == "recoeff")
       eff_res = reco_efficiency(channel, pt_min, pt_max, y_min, y_max);
+    else
+      if(eff_name == "totaleff")
+	{
+	  //read pre-filter eff values
+	  TString eff_dir = "efficiencies_root/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/preeff_" + channel_to_ntuple_name(channel) + "_pt_from_" + TString::Format("%d_to_%d", (int)pt_min, (int)pt_max) + "_y_from_" + TString::Format("%.2f_to_%.2f", y_min, y_max) + "_" + TString::Format(VERSION) + ".root";
+	  
+	  TFile* f = new TFile(eff_dir);
+	  TVectorD *pre_eff_val = (TVectorD*)f->Get("val");
+	  TVectorD *pre_stat_lo = (TVectorD*)f->Get("err_lo");
+	  TVectorD *pre_stat_hi = (TVectorD*)f->Get("err_hi");
 
-  if(eff_name == "total")
-    {
-      //read pre-filter eff values
-      TString eff_dir = "efficiencies_root/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "_pre-filter_efficiency_pt_from_" + TString::Format("%d_to_%d", (int)pt_min, (int)pt_max) + "_y_from_" + TString::Format("%.2f_to_%.2f", y_min, y_max) + "_" + TString::Format(VERSION) + ".root";
+	  //read reco eff values
+	  eff_dir = "efficiencies_root/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/recoeff_" + channel_to_ntuple_name(channel) + "_pt_from_" + TString::Format("%d_to_%d", (int)pt_min, (int)pt_max) + "_y_from_" + TString::Format("%.2f_to_%.2f", y_min, y_max) + "_" + TString::Format(VERSION) + ".root";
       
-      TFile* f = new TFile(eff_dir);
-      TVectorD *pre_eff_val = (TVectorD*)f->Get("efficiency");
-      TVectorD *pre_stat_lo = (TVectorD*)f->Get("stat_err_lo");
-      TVectorD *pre_stat_hi = (TVectorD*)f->Get("stat_err_hi");
-
-      //read reco eff values
-      eff_dir = "efficiencies_root/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "_reco_efficiency_pt_from_" + TString::Format("%d_to_%d", (int)pt_min, (int)pt_max) + "_y_from_" + TString::Format("%.2f_to_%.2f", y_min, y_max) + "_" + TString::Format(VERSION) + ".root";
+	  TFile* f2 = new TFile(eff_dir);
+	  TVectorD *reco_eff_val = (TVectorD*)f2->Get("val");
+	  TVectorD *reco_stat_lo = (TVectorD*)f2->Get("err_lo");
+	  TVectorD *reco_stat_hi = (TVectorD*)f2->Get("err_hi");
       
-      TFile* f2 = new TFile(eff_dir);
-      TVectorD *reco_eff_val = (TVectorD*)f2->Get("efficiency");
-      TVectorD *reco_stat_lo = (TVectorD*)f2->Get("stat_err_lo");
-      TVectorD *reco_stat_hi = (TVectorD*)f2->Get("stat_err_hi");
+	  //put the total efficiency values in eff_res
       
-      //put the total efficiency values in eff_res
+	  eff_res->setVal(pre_eff_val[0][0] * reco_eff_val[0][0]);
       
-      eff_res->setVal(pre_eff_val[0][0] * reco_eff_val[0][0]);
-      
-      double err_lo = -eff_res->getVal() * sqrt( pow(pre_stat_lo[0][0]/pre_eff_val[0][0],2) + pow(reco_stat_lo[0][0]/reco_eff_val[0][0],2) );
-      double err_hi = eff_res->getVal() * sqrt( pow(pre_stat_hi[0][0]/pre_eff_val[0][0],2) + pow(reco_stat_hi[0][0]/reco_eff_val[0][0],2) );
+	  double err_lo = -eff_res->getVal() * sqrt( pow(pre_stat_lo[0][0]/pre_eff_val[0][0],2) + pow(reco_stat_lo[0][0]/reco_eff_val[0][0],2) );
+	  double err_hi = eff_res->getVal() * sqrt( pow(pre_stat_hi[0][0]/pre_eff_val[0][0],2) + pow(reco_stat_hi[0][0]/reco_eff_val[0][0],2) );
  
-      eff_res->setAsymError(err_lo , err_hi);
+	  eff_res->setAsymError(err_lo , err_hi);
 
-      delete f;
-      delete f2;
-    }
+	  delete f;
+	  delete f2;
+	}
 
   //write efficiency and statistical error to file
-  TString eff_file_name = "efficiencies_root/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + "_" +  eff_name + "_" + "efficiency_pt_from_" + TString::Format("%d_to_%d", (int)pt_min, (int)pt_max) + "_y_from_" + TString::Format("%.2f_to_%.2f", y_min, y_max) + "_" + TString::Format(VERSION) + ".root";
+  TString eff_file_name = "efficiencies_root/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + eff_name + "_" + channel_to_ntuple_name(channel) + "_pt_from_" + TString::Format("%d_to_%d", (int)pt_min, (int)pt_max) + "_y_from_" + TString::Format("%.2f_to_%.2f", y_min, y_max) + "_" + TString::Format(VERSION) + ".root";
   
   TFile* eff_file = new TFile(eff_file_name,"recreate");
   
@@ -131,12 +131,12 @@ int main(int argc, char** argv)
   TVectorD stat_err_hi(1);
 
   efficiency[0] = eff_res->getVal();
-  stat_err_lo[0] = eff_res->getAsymErrorLo();
+  stat_err_lo[0] = -eff_res->getAsymErrorLo();
   stat_err_hi[0] = eff_res->getAsymErrorHi();
   
-  efficiency.Write("efficiency");
-  stat_err_lo.Write("stat_err_lo");
-  stat_err_hi.Write("stat_err_hi");
+  efficiency.Write("val");
+  stat_err_lo.Write("err_lo");
+  stat_err_hi.Write("err_hi");
 
   eff_file->Close();
   delete eff_file; 
@@ -146,9 +146,9 @@ int main(int argc, char** argv)
   /////////////////
   /*
   TFile* f3 = new TFile(eff_file_name);
-  TVectorD *eff_val = (TVectorD*)f3->Get("efficiency");
-  TVectorD *stat_lo = (TVectorD*)f3->Get("stat_err_lo");
-  TVectorD *stat_hi = (TVectorD*)f3->Get("stat_err_hi");
+  TVectorD *eff_val = (TVectorD*)f3->Get("val");
+  TVectorD *stat_lo = (TVectorD*)f3->Get("err_lo");
+  TVectorD *stat_hi = (TVectorD*)f3->Get("err_hi");
   
   eff_val->Print();
   stat_lo->Print();
