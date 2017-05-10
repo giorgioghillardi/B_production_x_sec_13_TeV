@@ -74,10 +74,6 @@ int main(int argc, char** argv)
   double var1_bin_centre[n_var1_bins];
   double var1_bin_centre_lo[n_var1_bins];
   double var1_bin_centre_hi[n_var1_bins];
-
-  double yield_array[2][n_var2_bins][n_var1_bins];
-  double yield_err_lo[2][n_var2_bins][n_var1_bins];
-  double yield_err_hi[2][n_var2_bins][n_var1_bins];
   
   double total_eff[2][n_var2_bins][n_var1_bins];
   double total_eff_err_lo[2][n_var2_bins][n_var1_bins];
@@ -116,6 +112,27 @@ int main(int argc, char** argv)
       var1_bin_centre_hi[i] = var1_bins[i+1] - var1_bin_centre[i];
     }
   
+  TString ratio_str = "";
+
+  if(ratio == "fs_fu")
+    ratio_str = "Bs_Bu";
+  else
+    if(ratio == "fs_fd")
+      ratio_str = "Bs_Bd";
+    else
+      if(ratio == "fd_fu")
+            ratio_str = "Bd_Bu";
+  
+  //read ratios
+  TString read_ratio = "";
+
+  if(eff)
+    read_ratio = ratio;
+  else
+    read_ratio = ratio_str;
+  
+  read_vector(measure, 0, read_ratio, var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, ratio_array[0], ratio_err_lo[0], ratio_err_hi[0]);
+
   for(int ch=0; ch<2; ch++)
     {
       int channel = 1;
@@ -137,9 +154,6 @@ int main(int argc, char** argv)
       RooRealVar* branch = branching_fraction(channel);
       b_fraction[ch] = branch->getVal();
       b_fraction_err[ch] = branch->getError();
-      
-      //read yields
-      read_vector(measure, channel, "yield", var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, yield_array[ch][0], yield_err_lo[ch][0], yield_err_hi[ch][0]);
 
       //read efficiency
       if(eff)
@@ -162,9 +176,8 @@ int main(int argc, char** argv)
 	      yield_syst[ch][j][i]=0;
 	    }
 	}
-      
   }//enf of ch cicle
-
+  
   if(eff)
     {
       //calculate and plot ratioeff
@@ -175,9 +188,8 @@ int main(int argc, char** argv)
 	      ratio_eff[j][i] = total_eff[0][j][i] / total_eff[1][j][i];
 	      ratio_eff_err_lo[j][i] = ratio_eff[j][i] * sqrt(pow(total_eff_err_lo[0][j][i]/total_eff[0][j][i],2) + pow(total_eff_err_lo[1][j][i]/total_eff[1][j][i],2));
 	      ratio_eff_err_hi[j][i] = ratio_eff[j][i] * sqrt(pow(total_eff_err_hi[0][j][i]/total_eff[0][j][i],2) + pow(total_eff_err_hi[1][j][i]/total_eff[1][j][i],2));
-	  
-	      plot_eff(measure, "ratioeff", 0, n_var1_bins, var2_name, var2_bins[j], var2_bins[j+1], x_axis_name, ratio, var1_bin_centre, var1_bin_centre_lo, var1_bin_centre_hi, ratio_eff[j], ratio_eff_err_lo[j], ratio_eff_err_hi[j]);
 	    }
+	  plot_eff(measure, "ratioeff", 0, n_var1_bins, var2_name, var2_bins[j], var2_bins[j+1], x_axis_name, ratio, var1_bin_centre, var1_bin_centre_lo, var1_bin_centre_hi, ratio_eff[j], ratio_eff_err_lo[j], ratio_eff_err_hi[j]);
 	}
     }
   
@@ -186,27 +198,25 @@ int main(int argc, char** argv)
     {
       for(int i=0; i<n_var1_bins; i++)
 	{
-	  ratio_array[j][i] = (yield_array[1][j][i]/yield_array[0][j][i]) * pow(10,j);
+	  ratio_array[j][i]  *= pow(10,j);
+	  ratio_err_lo[j][i] *= pow(10,j);
+	  ratio_err_hi[j][i] *= pow(10,j);
 
-	  ratio_syst_sqrt_lo[j][i] = pow(yield_syst[0][j][i]/yield_array[0][j][i],2) + pow(yield_syst[1][j][i]/yield_array[1][j][i],2);
+	  ratio_syst_sqrt_lo[j][i] = pow(yield_syst[0][j][i],2) + pow(yield_syst[1][j][i],2);
           ratio_syst_sqrt_hi[j][i] = ratio_syst_sqrt_lo[j][i];
 
           if(eff)
             {
-              ratio_array[j][i] *= ratio_eff[j][i] * (b_fraction[0]/b_fraction[1]);
-              ratio_syst_sqrt_lo[j][i]  += pow(ratio_eff_err_lo[j][i]/ratio_eff[j][i],2) + pow(b_fraction_err[0]/b_fraction[0],2) + pow(b_fraction_err[1]/b_fraction[1],2);
+	      ratio_syst_sqrt_lo[j][i]  += pow(ratio_eff_err_lo[j][i]/ratio_eff[j][i],2) + pow(b_fraction_err[0]/b_fraction[0],2) + pow(b_fraction_err[1]/b_fraction[1],2);
               ratio_syst_sqrt_hi[j][i] += pow(ratio_eff_err_hi[j][i]/ratio_eff[j][i],2) + pow(b_fraction_err[0]/b_fraction[0],2) + pow(b_fraction_err[1]/b_fraction[1],2);
             }
 
           ratio_syst_lo[j][i]  = ratio_array[j][i] * sqrt(ratio_syst_sqrt_lo[j][i]);
           ratio_syst_hi[j][i]  = ratio_array[j][i] * sqrt(ratio_syst_sqrt_hi[j][i]);
-
-          ratio_err_lo[j][i] = ratio_array[j][i] * sqrt( pow(yield_err_lo[0][j][i]/yield_array[0][j][i],2) + pow(yield_err_lo[1][j][i]/yield_array[1][j][i],2) );
-          ratio_err_hi[j][i] = ratio_array[j][i] * sqrt( pow(yield_err_hi[0][j][i]/yield_array[0][j][i],2) + pow(yield_err_hi[1][j][i]/yield_array[1][j][i],2) );
 	}
     }
 
-  //plot of the cross section
+  //plot the ratio
   TCanvas cz;
   
   double leg_x2 = 0.98;
@@ -332,23 +342,10 @@ int main(int argc, char** argv)
   //To show the values and the errors at the end, like a table/
   /////////////////////////////////////////////////////////////
 
-  for(int ch=0; ch<2; ch++)
-    {
-      //signal yield
-      print_table("YIELDS", n_var1_bins, n_var2_bins, var1_name, var2_name, var1_bins, var2_bins, yield_array[ch][0], yield_err_lo[ch][0], yield_err_hi[ch][0], yield_syst[ch][0], yield_syst[ch][0]);
-
-      //total eff
-      print_table("OVERALL EFFICIENCY", n_var1_bins, n_var2_bins, var1_name, var2_name, var1_bins, var2_bins, total_eff[ch][0], total_eff_err_lo[ch][0], total_eff_err_hi[ch][0]);
-
-      //branching fraction
-      std::cout << "BRANCHING FRACTION : " << b_fraction[ch] << " +- " << b_fraction_err[ch] << std::endl;
-      std::cout << std::endl;
-    }
-
   //ratio eff
   print_table("EFFICIENCY RATIO", n_var1_bins, n_var2_bins, var1_name, var2_name, var1_bins, var2_bins, ratio_eff[0], ratio_eff_err_lo[0], ratio_eff_err_hi[0]);
 
   //Fragmentation fraction
   print_table("FRAGMENTATION FRACTION RATIO", n_var1_bins, n_var2_bins, var1_name, var2_name, var1_bins, var2_bins, ratio_array[0], ratio_err_lo[0], ratio_err_hi[0], ratio_syst_lo[0], ratio_syst_hi[0]);
   
-}//end of calculate_x_sec
+}//end

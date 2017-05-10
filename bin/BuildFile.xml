@@ -18,8 +18,8 @@
   <bin name="create_ratio_vector"   file="create_ratio_vector.cc"></bin>
   <bin name="plot_eff"   file="plot_eff.cc"></bin>
   <bin name="plot_x_sec"   file="plot_x_sec.cc"></bin>
+  <bin name="plot_ratio"   file="plot_ratio.cc"></bin>
   <bin name="create_table"   file="create_table.cc"></bin> 
-  <bin name="calculate_ratio"   file="calculate_ratio.cc"></bin>
 </environment>
 
 <Flags CXXFLAGS="-g"/>
