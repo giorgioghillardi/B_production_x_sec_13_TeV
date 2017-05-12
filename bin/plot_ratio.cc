@@ -10,10 +10,10 @@
 // channel = 6: Lambda_b -> Jpsi + Lambda
 //-----------------------------------------------------------------
 
-//input example: plot_ratio --ratio fs_fu --bins pt_y --eff 1 --syst 0 --poly 1
+//input example: plot_ratio --ratio fsfu --bins pt_y --eff 1 --syst 0 --poly 1
 int main(int argc, char** argv)
 {
-  std::string ratio = "fs_fu";
+  std::string ratio = "fsfu";
   std::string bins = "pt";
   int poly = 1;
   int eff = 1;
@@ -114,14 +114,14 @@ int main(int argc, char** argv)
   
   TString ratio_str = "";
 
-  if(ratio == "fs_fu")
-    ratio_str = "Bs_Bu";
+  if(ratio == "fsfu")
+    ratio_str = "BsBu";
   else
-    if(ratio == "fs_fd")
-      ratio_str = "Bs_Bd";
+    if(ratio == "fsfd")
+      ratio_str = "BsBd";
     else
-      if(ratio == "fd_fu")
-            ratio_str = "Bd_Bu";
+      if(ratio == "fdfu")
+            ratio_str = "BdBu";
   
   //read ratios
   TString read_ratio = "";
@@ -137,17 +137,17 @@ int main(int argc, char** argv)
     {
       int channel = 1;
 
-      if(ratio == "fs_fu")
+      if(ratio == "fsfu")
         channel = 3*ch+1; //fs_fu: if ch=0 -> channel=1, if ch=1 -> channel=4
       else
-        if(ratio == "fs_fd")
+        if(ratio == "fsfd")
           channel = 2*(ch+1); //fs_fd: if ch=0 -> channel=2, if ch=1 -> channel=4
 	else
-          if(ratio == "fd_fu")
+          if(ratio == "fdfu")
             channel= ch+1; //fd_fu: if ch=0 -> channel=1, if ch=1 -> channel=2
 	  else
             {
-              printf("ERROR: The ratio you asked for is not deffined. Only fs_fu, fs_fd, fd_fu are deffined. Please check in the code.");
+              printf("ERROR: The ratio you asked for is not deffined. Only fsfu, fsfd, fdfu are deffined. Please check in the code.");
               return 0;
             }
       
@@ -258,7 +258,7 @@ int main(int argc, char** argv)
     {
       TGraphAsymmErrors* graph = new TGraphAsymmErrors(n_var1_bins, var1_bin_centre, ratio_array[j], var1_bin_centre_lo, var1_bin_centre_hi, ratio_err_lo[j], ratio_err_hi[j]);
 
-      TString ratio_title = ratio;
+      TString ratio_title = read_ratio;
       
       if(eff)
         ratio_title += " fragmentation fraction ratio";
@@ -332,11 +332,8 @@ int main(int argc, char** argv)
 
   if(syst)
     systematic = "_syst";
-
-  if(eff)
-    cz.SaveAs("ratio/" + ratio + "_" + bins + "_bins" + systematic + "_" + TString::Format(VERSION) + ".png");
-  else
-    cz.SaveAs("ratio/" + ratio + "_yield_ratio_" + bins + "_bins" + systematic + "_" + TString::Format(VERSION) + ".png");
+  
+  cz.SaveAs("ratio/" + read_ratio + "_" + bins + "_bins" + systematic + "_" + TString::Format(VERSION) + ".png");
   
   /////////////////////////////////////////////////////////////
   //To show the values and the errors at the end, like a table/

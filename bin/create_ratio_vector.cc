@@ -10,7 +10,7 @@
 // channel = 6: Lambda_b -> Jpsi + Lambda
 //-----------------------------------------------------------------
 
-//input example: create_ratio_vector --ratio fs_fu --bins pt_y
+//input example: create_ratio_vector --ratio fsfu --bins pt_y
 int main(int argc, char** argv)
 {
   std::string ratio = "fs_fu";
@@ -72,17 +72,17 @@ int main(int argc, char** argv)
     {
       int channel = 1;
 
-      if(ratio == "fs_fu")
+      if(ratio == "fsfu")
         channel = 3*ch+1; //fs_fu: if ch=0 -> channel=1, if ch=1 -> channel=4
       else
-        if(ratio == "fs_fd")
+        if(ratio == "fsfd")
           channel = 2*(ch+1); //fs_fd: if ch=0 -> channel=2, if ch=1 -> channel=4
 	else
-          if(ratio == "fd_fu")
+          if(ratio == "fdfu")
             channel= ch+1; //fd_fu: if ch=0 -> channel=1, if ch=1 -> channel=2
 	  else
             {
-              printf("ERROR: The ratio you asked for is not deffined. Only fs_fu, fs_fd, fd_fu are deffined. Please check in the code.");
+              printf("ERROR: The ratio you asked for is not deffined. Only fsfu, fsfd, fdfu are deffined. Please check in the code.");
               return 0;
             }
       

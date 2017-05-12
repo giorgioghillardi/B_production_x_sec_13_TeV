@@ -14,7 +14,7 @@
 int main(int argc, char** argv)
 {
   TString measure = "";
-  int channel = 1;
+  int channel = 0;
   std::string bins = "pt";
   TString vector = "";
 
@@ -74,7 +74,6 @@ int main(int argc, char** argv)
   TString b_title= "";
   switch(channel)
     {
-    default:
     case 1:
       b_title = "B+";
       break;
@@ -83,6 +82,8 @@ int main(int argc, char** argv)
       break;
     case 4:
       b_title = "Bs";
+      break;
+    default:
       break;
     }
   
@@ -146,7 +147,7 @@ int main(int argc, char** argv)
       TString bins_str ="";
       TString ntuple_name = "";
 
-      if(vector == "Bs_Bu" || vector == "fs_fu" || vector == "Bs_Bd" || vector == "fs_fd" || vector == "Bd_Bu" || vector == "fd_fu")
+      if(vector == "BsBu" || vector == "fsfu" || vector == "BsBd" || vector == "fsfd" || vector == "BdBu" || vector == "fdfu")
 	ntuple_name = "";
       else
 	ntuple_name = channel_to_ntuple_name(channel) + "_";

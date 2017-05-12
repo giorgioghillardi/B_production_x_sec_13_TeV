@@ -1246,13 +1246,13 @@ void read_vector(TString measure, int channel, TString vector, TString var1_name
 	  measure = "";
 	}
       else
-	if(vector == "Bs_Bu" || vector == "fs_fu" || vector == "Bs_Bd" || vector == "fs_fd" || vector == "Bd_Bu" || vector == "fd_fu")
+	if(vector == "BsBu" || vector == "fsfu" || vector == "BsBd" || vector == "fsfd" || vector == "BdBu" || vector == "fdfu")
 	  {
 	    dir = "ratio/";
 	    measure = "";
 	  }
 
-  if(vector == "Bs_Bu" || vector == "fs_fu" || vector == "Bs_Bd" || vector == "fs_fd" || vector == "Bd_Bu" || vector == "fd_fu")
+  if(vector == "BsBu" || vector == "fsfu" || vector == "BsBd" || vector == "fsfd" || vector == "BdBu" || vector == "fdfu")
     ntuple_name = "";
   else
     ntuple_name = channel_to_ntuple_name(channel) + "_";
@@ -1351,12 +1351,12 @@ void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::st
   //Begin Document                                                                                                                               
   file.open(filename + ".tex");
 
-  file << "\\documentclass{article}" << std::endl;
-  file << "\\usepackage{cancel}" << std::endl;
-  file << "\\usepackage{geometry}" << std::endl;
-  file << "\\usepackage{booktabs}" << std::endl;
-  file << "\\geometry{a4paper, total={170mm,257mm}, left=20mm, top=20mm}" << std::endl;
-  file << "\\begin{document}" << std::endl;
+  //file << "\\documentclass{article}" << std::endl;
+  //file << "\\usepackage{cancel}" << std::endl;
+  //file << "\\usepackage{geometry}" << std::endl;
+  //file << "\\usepackage{booktabs}" << std::endl;
+  //file << "\\geometry{a4paper, total={170mm,257mm}, left=20mm, top=20mm}" << std::endl;
+  //file << "\\begin{document}" << std::endl;
   
   // Create table                                                                                                                                
   file << "\\begin{table}[!h]" << std::endl;
@@ -1396,7 +1396,7 @@ void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::st
   file << "\\end{table}" << std::endl;
 
   //End document
-  file << "\\end{document}" << std::endl;
+  //file << "\\end{document}" << std::endl;
 
   std::string line;
 
