@@ -1,0 +1,6 @@
+sh produce_all_ratio_yields_effs.sh
+sh produce_all_ratio_syst.sh
+sh produce_all_ratio_tables.sh
+sh plot_all_ratio_effs.sh
+sh plot_all_ratio_syst.sh
+sh plot_all_ratios.sh
