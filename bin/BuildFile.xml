@@ -12,13 +12,16 @@
   <bin name="data_selection"   file="data_selection_new.cc"></bin>
   <bin name="calculate_bin_yield"   file="calculate_bin_yield.cc"></bin>
   <bin name="calculate_bin_eff"   file="calculate_bin_eff.cc"></bin>
-  <bin name="create_yield_eff_vector"   file="create_yield_eff_vector.cc"></bin>
+  <bin name="calculate_bin_syst"   file="calculate_bin_syst.cc"></bin>
+  <bin name="create_yield_eff_syst_vector"   file="create_yield_eff_syst_vector.cc"></bin>
   <bin name="create_x_sec_vector"   file="create_x_sec_vector.cc"></bin>
   <bin name="create_yield_ratio_vector"   file="create_yield_ratio_vector.cc"></bin>
   <bin name="create_ratio_vector"   file="create_ratio_vector.cc"></bin>
+  <bin name="combine_syst"   file="combine_syst.cc"></bin> 
   <bin name="plot_eff"   file="plot_eff.cc"></bin>
   <bin name="plot_x_sec"   file="plot_x_sec.cc"></bin>
   <bin name="plot_ratio"   file="plot_ratio.cc"></bin>
+  <bin name="plot_syst"   file="plot_syst.cc"></bin>
   <bin name="create_table"   file="create_table.cc"></bin> 
 </environment>
 

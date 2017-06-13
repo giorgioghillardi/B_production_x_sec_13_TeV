@@ -82,6 +82,8 @@ int main(int argc, char** argv)
   double totaleff_err_hi[n_var2_bins][n_var1_bins];
 
   double yield_syst[n_var2_bins][n_var1_bins];
+  double yield_syst_lo[n_var2_bins][n_var1_bins];
+  double yield_syst_hi[n_var2_bins][n_var1_bins];
  
   double x_sec_syst_sqrt_lo[n_var2_bins][n_var1_bins];
   double x_sec_syst_sqrt_hi[n_var2_bins][n_var1_bins];
@@ -160,18 +162,19 @@ int main(int argc, char** argv)
   //read syst
   if(syst)
     {
-      //read_vector(measure, channel, "totaleff", var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, totaleff[0], totaleff_err_lo[0], totaleff_err_hi[0]);
+      read_vector(measure, channel, "combined_syst", var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, yield_syst[0], yield_syst_lo[0], yield_syst_hi[0]);
     }
-  
-  //add all the systematics
-  for(int j=0; j<n_var2_bins; j++)
-    {
-      for(int i=0; i<n_var1_bins; i++)
+  else
+    for(int j=0; j<n_var2_bins; j++)
 	{
-	  //syst set to zero for now
-	  yield_syst[j][i]=0;
+	  for(int i=0; i<n_var1_bins; i++)
+	    {
+	      yield_syst[j][i] = 0;
+	      yield_syst_lo[j][i] = 0;
+	      yield_syst_hi[j][i] = 0;
+	    }
 	}
-    }
+  
   
   //to correct the yield for bin size
   if(!eff)
@@ -186,8 +189,8 @@ int main(int argc, char** argv)
 	      x_sec_err_lo[j][i] = (x_sec_err_lo[j][i] / bin_size) * pow(10,j);
 	      x_sec_err_hi[j][i] = (x_sec_err_hi[j][i] / bin_size) * pow(10,j);
 	      
-	      x_sec_syst_lo[j][i] = (yield_syst[j][i] / bin_size) * pow(10,j);
-	      x_sec_syst_hi[j][i] = (yield_syst[j][i] / bin_size) * pow(10,j);
+	      x_sec_syst_lo[j][i] = (yield_syst_lo[j][i] / bin_size) * pow(10,j);
+	      x_sec_syst_hi[j][i] = (yield_syst_hi[j][i] / bin_size) * pow(10,j);
 	    }
 	}
     }

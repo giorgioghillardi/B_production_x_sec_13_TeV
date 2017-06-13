@@ -10,7 +10,7 @@
 // channel = 6: Lambda_b -> Jpsi + Lambda
 //-----------------------------------------------------------------
 
-//input example: create_yield_eff_vector --measure x_sec --channel 1 --bins pt_y --vector yield --calculate 0
+//input example: create_yield_eff_syst_vector --measure x_sec --channel 1 --bins pt_y --vector yield --calculate 0
 int main(int argc, char** argv)
 {
   TString measure = "";
@@ -82,7 +82,7 @@ int main(int argc, char** argv)
   TString y_min;
   TString y_max;
   
-  //calculate the yield or eff for all the bins, if --calculate 1
+  //calculate the yield or eff or syst for all the bins, if --calculate 1
   if(calculate)
     {
       for(int j=0; j<n_var2_bins; j++)
@@ -110,15 +110,22 @@ int main(int argc, char** argv)
 		{
 		  command = "calculate_bin_yield";
 		  line = command + opt;
-		  gSystem->Exec(line);
 		}
 	      else
 		if(vector == "preeff" || vector == "recoeff" || vector == "totaleff")
 		  {
 		    command = "calculate_bin_eff";
-		    line = command + " --eff " + vector + opt;
-		    gSystem->Exec(line);
+		    line = command + opt + " --eff " + vector;
 		  }
+		else
+		  if(vector == "signal_pdf" || vector == "cb_pdf" || vector == "mass_window")
+		    {
+		      command = "calculate_bin_syst";
+		      line = command + opt + " --syst " + vector;
+		    }
+	      
+	      gSystem->Exec(line);
+	      
 	    }//end of var1 cicle
 	}//end of var2 cicle
     }//end of if(calculate)
@@ -135,7 +142,10 @@ int main(int argc, char** argv)
   if(vector == "yield")
     dir = "signal_yield_root/";
   else
-    dir = "efficiencies_root/";
+    if(vector == "signal_pdf" || vector == "cb_pdf" || vector == "mass_window")
+      dir = "signal_yield_root/syst/";
+    else
+      dir = "efficiencies_root/";
       
   dir += channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/"; 
 
@@ -154,7 +164,7 @@ int main(int argc, char** argv)
 	      
 	  //debug
 	  std::cout << "read :" << in_file_name << std::endl;
-	    
+
 	  //open input file
 	  TFile* fin = new TFile(in_file_name);
 	  TVectorD *in_val = (TVectorD*)fin->Get("val");
@@ -196,4 +206,4 @@ int main(int argc, char** argv)
       out_err_hi.Print();
     }//end of var2 cicle
 
-}//end of calculate_yields
+}//end

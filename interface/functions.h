@@ -55,7 +55,7 @@ using namespace RooFit;
 
 #define LUMINOSITY          2.71
 #define NUMBER_OF_CPU       1
-#define VERSION             "v12"
+#define VERSION             "v14"
 #define BASE_DIR            "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/"
 
 //////////////////////////////////////////////
@@ -79,23 +79,19 @@ void setup_bins(TString measure, int channel, TString bins, TString* var1_name, 
 double var_mean_value(RooWorkspace& w, TString var1_name, double var1_min, double var1_max, TString var2_name, double var2_min, double var2_max);
 void plot_var_dist(RooWorkspace& w, std::string var_name, int channel, TString directory);
 void plot_mass_fit(RooWorkspace& w, int channel, TString directory,int pt_high, int pt_low, double y_min, double y_max);
+void plot_eff(TString measure, TString eff_name, int channel, int n_var1_bins, TString var2_name, double var2_min, double var2_max, TString x_axis_name, TString b_title, double* var1_bin_centre, double* var1_bin_centre_lo, double* var1_bin_centre_hi, double* eff_array, double* eff_err_lo_array, double* eff_err_hi_array);
 
 RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max, std::string choice = "", std::string choice2 = "", double mass_min = 0.0, double mass_max = 0.0, Bool_t verb = kFALSE);
-double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_max, double y_min, double y_max, double signal_res, TString data_selection_input_file, int syst);
 
 RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max, double y_min, double y_max);
 RooRealVar* reco_efficiency(int channel, double pt_min, double pt_max, double y_min, double y_max);
 RooRealVar* branching_fraction(int channel);
 
-void read_vector(TString measure, int channel, TString vector, TString var1_name , TString var2_name, int n_var1_bins, int n_var2_bins,  double* var1_bins, double* var2_bins, double* array, double* err_lo, double* err_hi);
-void plot_eff(TString measure, TString eff_name, int channel, int n_var1_bins, TString var2_name, double var2_min, double var2_max, TString x_axis_name, TString b_title, double* var1_bin_centre, double* var1_bin_centre_lo, double* var1_bin_centre_hi, double* eff_array, double* eff_err_lo_array, double* eff_err_hi_array);
-
+void read_vector(TString measure, int channel, TString vector, TString var1_name , TString var2_name, int n_var1_bins, int n_var2_bins,  double* var1_bins, double* var2_bins, double* array, double* err_lo = NULL, double* err_hi = NULL);
 void print_table(TString title, int n_var1_bins, int n_var2_bins, TString var1_name, TString var2_name, double* var1_bin_edges, double* var2_bin_edges, double* array, double* stat_err_lo, double* stat_err_hi, double* syst_err_lo = NULL, double* syst_err_hi = NULL);
-
 void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::string> col_name, std::vector<std::string> labels, std::vector<std::vector<double> > numbers, std::string caption);
 
 void mc_study(RooWorkspace& w, int channel, double pt_min, double pt_max, double y_min, double y_max);
-//void calculate_eff(TString eff_name, int channel, int n_var1_bins, int n_var2_bins, TString var1_name, TString var2_name, double* var1_bin_edges, double* var2_bin_edges, double* eff_array);
 
 //////////////////////////////////////////FUNCIONS////////////////////////////////////////////////////
 void create_dir(std::vector<std::string> list)
@@ -852,130 +848,24 @@ RooRealVar* bin_mass_fit(RooWorkspace& w, int channel, double pt_min, double pt_
   if(mass_min!=0.0 && mass_max!=0.0)
     mass_info = TString::Format("_mass_from_%.2f_to_%.2f",mass_min,mass_max);
   
-  TString syst_info = "";
-  if(choice != "" && choice2 != "")
-    syst_info = "_syst_" + choice + "_" + choice2;
+  TString base_dir = "mass_fits/"; 
 
+  TString syst_info = "";
+  
+if(choice != "" && choice2 != "")
+  {
+    base_dir += "syst/"; 
+    syst_info = "_syst_" + choice + "_" + choice2;
+  }
   TString dir = "";
   
-  dir = "mass_fits/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + syst_info + "_mass_fit_" + TString::Format("pt_from_%d_to_%d_y_from_%.2f_to_%.2f",(int)pt_min,(int)pt_max,y_min,y_max) + mass_info;
+  dir = base_dir + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + channel_to_ntuple_name(channel) + syst_info + "_mass_fit_" + TString::Format("pt_from_%d_to_%d_y_from_%.2f_to_%.2f",(int)pt_min,(int)pt_max,y_min,y_max) + mass_info;
   
   plot_mass_fit(ws_cut, channel, dir, (int) pt_max, (int) pt_min, y_min, y_max);
 
   signal_res = ws_cut.var("n_signal");
   
   return signal_res;
-}
-
-double bin_systematics(RooWorkspace& ws, int channel, double pt_min, double pt_max, double y_min, double y_max,double signal_res, TString data_selection_input_file, int syst)
-{
-  if(syst==0) return 0.;
-
-  RooRealVar mass = *(ws.var("mass"));
-  RooRealVar* fit_res;
-
-  std::vector<std::string> background = {"bern"}; //, "2exp", "power"};
-  std::vector<std::string> signal = {"1gauss"}; //,"crystal", "3gauss"};
-
-  std::vector<double> mass_min(2);
-  std::vector<double> mass_max(2);
-    
-  mass_min[0] = mass.getMin();
-  mass_min[1] = 0.95 * mass.getMin();
-  mass_max[0] = mass.getMax();
-  mass_max[1] = 1.05 * mass.getMax();
-  
-  std::vector<double> signal_syst;
-  std::vector<double> back_syst;
-  std::vector<double> range_syst;
-
-  signal_syst.reserve((int)background.size() + 1);
-  back_syst.reserve((int)signal.size() + 1);
-  range_syst.reserve((int)mass_min.size() + 1);
-
-  signal_syst.push_back(signal_res);
-  back_syst.push_back(signal_res);
-  range_syst.push_back(signal_res);
-
-  //std::cout << std::endl << std::endl << std::endl << " signal_syst[0]: " << signal_syst[0] << std::endl << std::endl << std::endl;
-
-  //signal_syst.push_back(71544.9);
-    back_syst.push_back(73467.5);
-    range_syst.push_back(69823.1);
-    range_syst.push_back(70524.5);
-    
-    /*
-    //Background Systematics
-  for(int i=0; i<(int)background.size(); i++)
-    {
-      fit_res = bin_mass_fit(ws, channel, pt_min, pt_max, y_min, y_max, background[i], "background");
-      back_syst.push_back((double)fit_res->getVal());
-
-      std::cout << std::endl << std::endl << std::endl << " back_syst[" << i+1 << "]: " << back_syst[i+1] << std::endl << std::endl << std::endl;
-    }
-    */
-
-  //Signal Systematics
-  for(int i=0; i<(int)signal.size(); i++)
-    {
-      fit_res = bin_mass_fit(ws, channel, pt_min, pt_max, y_min, y_max, signal[i], "signal");
-      signal_syst.push_back((double)fit_res->getVal());
-
-      std::cout << std::endl << std::endl << std::endl << " signal_syst[" << i+1 << "]: " << signal_syst[i+1] << std::endl << std::endl << std::endl;
-    }
-
-  /*
-  //Mass Range Systematics
-  for(int i=0; i<(int)mass_min.size(); i++)
-    {
-      RooWorkspace* ws1 = new RooWorkspace("ws1","Bmass");
-
-      set_up_workspace_variables(*ws1,channel,mass_min[i],mass_max[1-i]);
-      read_data(*ws1, data_selection_input_file,channel);
-      
-      fit_res = bin_mass_fit(*ws1, channel, pt_min, pt_max, y_min, y_max, "", "", mass_min[i], mass_max[1-i]);
-      range_syst.push_back((double)fit_res->getVal());
-
-      std::cout << std::endl << std::endl << std::endl << " range_syst[" << i+1 << "]: " << range_syst[i+1] << std::endl << std::endl << std::endl;
-    }
-  */
-
-  printf("debug: start of printing\n");
-
-  for(int i=0; i<(int)signal_syst.size(); i++)
-    std::cout << "signal_syst[" << i << "]: " << signal_syst[i] << std::endl;
-
-  for(int i=0; i<(int)back_syst.size(); i++)
-    std::cout << "back_syst[" << i << "]: " << back_syst[i] << std::endl;
-
-  for(int i=0; i<(int)range_syst.size(); i++)
-    std::cout << "range_syst[" << i << "]: " << range_syst[i] << std::endl;
-  
-  printf("debug: end of printing\n");
-
-  std::vector<double> deviation_signal;
-  std::vector<double> deviation_back;
-  std::vector<double> deviation_range;
-
-  for(int i=0; i<(int)signal_syst.size(); i++)
-    deviation_signal.push_back(abs(signal_syst[i] - signal_syst[0]));   
-
-  for(int i=0; i<(int)back_syst.size(); i++)
-    deviation_back.push_back(abs(back_syst[i] - back_syst[0]));   
- 
-  for(int i=0; i<(int)range_syst.size(); i++)
-    deviation_range.push_back(abs(range_syst[i] - range_syst[0]));    
-  
-  //find the max difference from the initial result, for each systematic error
-  double signal_diff = *max_element(deviation_signal.begin(), deviation_signal.end());
-  double bkg_diff = *max_element(deviation_back.begin(), deviation_back.end());
-  double range_diff = *max_element(deviation_range.begin(), deviation_range.end());
-  
-  //sum the different systematic errors in quadrature to get the overall systematic error
-  double overall_syst = sqrt(pow(signal_diff,2) + pow(bkg_diff,2) + pow(range_diff,2));
-  
-  printf("debug: end of funtion \n");
-  return overall_syst;
 }
 
 //the input file must be produced with myloop_gen.cc to have the gen info. otherwise the signal needs to be extracted using a fit.
@@ -1233,25 +1123,32 @@ void read_vector(TString measure, int channel, TString vector, TString var1_name
       measure += "_";
     }
   else
-    if(vector == "preeff" || vector == "recoeff" || vector == "totaleff")
-      {
-	dir = "efficiencies_root/";
-	dir += channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/";
-	measure += "_";
-      }
+    if(vector == "combined_syst" || vector == "signal_pdf" || vector == "cb_pdf" || vector == "mass_window")
+    {
+      dir = "signal_yield_root/syst/";
+      dir += channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/";
+      measure += "_";
+    }
     else
-      if(vector == "x_sec")
+      if(vector == "preeff" || vector == "recoeff" || vector == "totaleff")
 	{
-	  dir = "x_sec/";
-	  measure = "";
+	  dir = "efficiencies_root/";
+	  dir += channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/";
+	  measure += "_";
 	}
       else
-	if(vector == "BsBu" || vector == "fsfu" || vector == "BsBd" || vector == "fsfd" || vector == "BdBu" || vector == "fdfu")
+	if(vector == "x_sec")
 	  {
-	    dir = "ratio/";
+	    dir = "x_sec/";
 	    measure = "";
 	  }
-
+	else
+	  if(vector == "BsBu" || vector == "fsfu" || vector == "BsBd" || vector == "fsfd" || vector == "BdBu" || vector == "fdfu")
+	    {
+	      dir = "ratio/";
+	      measure = "";
+	    }
+  
   if(vector == "BsBu" || vector == "fsfu" || vector == "BsBd" || vector == "fsfd" || vector == "BdBu" || vector == "fdfu")
     ntuple_name = "";
   else
@@ -1273,17 +1170,26 @@ void read_vector(TString measure, int channel, TString vector, TString var1_name
       //open file
       TFile* fin = new TFile(in_file_name);
       TVectorD *in_val = (TVectorD*)fin->Get("val");
-      TVectorD *in_err_lo = (TVectorD*)fin->Get("err_lo");
-      TVectorD *in_err_hi = (TVectorD*)fin->Get("err_hi");
-      delete fin;
-
+      
       for(int i=0; i<n_var1_bins; i++)
 	{
 	  //copy to output_array
 	  *(array + j*n_var1_bins + i) = in_val[0][i];
-	  *(err_lo + j*n_var1_bins + i) = in_err_lo[0][i];
-	  *(err_hi + j*n_var1_bins + i) = in_err_hi[0][i];
 	}
+
+      if(err_lo != NULL && err_hi != NULL)
+	{
+	  TVectorD *in_err_lo = (TVectorD*)fin->Get("err_lo");
+	  TVectorD *in_err_hi = (TVectorD*)fin->Get("err_hi");
+	  
+	  for(int i=0; i<n_var1_bins; i++)
+	    {
+	      //copy to output_array
+	      *(err_lo + j*n_var1_bins + i) = in_err_lo[0][i];
+	      *(err_hi + j*n_var1_bins + i) = in_err_hi[0][i];
+	    }
+	}
+      delete fin;
     }
 }
 
@@ -1476,38 +1382,3 @@ void mc_study(RooWorkspace& w, int channel, double pt_min, double pt_max, double
   f_nll->Draw();
   c4.SaveAs(dir_mc + "_nll_signal.png");
 }
-
-/*
-void calculate_eff(TString eff_name, int channel, int n_var1_bins, int n_var2_bins, TString var1_name, TString var2_name, double* var1_bin_edges, double* var2_bin_edges, double* eff_array, double* eff_err_lo_array, double* eff_err_hi_array)
-{
-  RooRealVar* eff = new RooRealVar("eff","eff",1);
-
-  for(int j=0; j<n_var2_bins; j++)
-    {
-      std::cout << "processing bin: " << var2_bin_edges[j] << " < " << var2_name << " < " << var2_bin_edges[j+1] << std::endl;
-      for(int i=0; i<n_var1_bins; i++)
-	{
-	  std::cout << "calculating " << eff_name << " : " << var1_bin_edges[i] << " < " << var1_name << " < " << var1_bin_edges[i+1] << std::endl;
-	  
-	  if(eff_name == "pre_eff")
-	    {
-	      if(var1_name == "pt")
-		eff = prefilter_efficiency(channel,var1_bin_edges[i],var1_bin_edges[i+1],var2_bin_edges[j],var2_bin_edges[j+1]);
-	      else
-		eff = prefilter_efficiency(channel,var2_bin_edges[j],var2_bin_edges[j+1],var1_bin_edges[i],var1_bin_edges[i+1]);
-	    }
-	  if(eff_name == "reco_eff")
-	    {
-	      if(var1_name == "pt")
-		eff = reco_efficiency(channel,var1_bin_edges[i],var1_bin_edges[i+1],var2_bin_edges[j],var2_bin_edges[j+1]);
-	      else
-		eff = reco_efficiency(channel,var2_bin_edges[j],var2_bin_edges[j+1],var1_bin_edges[i],var1_bin_edges[i+1]);
-	    }
-
-	  *(eff_array + j*n_var1_bins + i) = eff->getVal();
-	  *(eff_err_lo_array + j*n_var1_bins + i) = -(eff->getAsymErrorLo());
-	  *(eff_err_hi_array + j*n_var1_bins + i) = eff->getAsymErrorHi();
-	}
-    }
-}
-*/
