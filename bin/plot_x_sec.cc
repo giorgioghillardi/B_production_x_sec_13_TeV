@@ -47,7 +47,7 @@ int main(int argc, char** argv)
   
   //to create the directories to save the .png files
   std::vector<std::string> dir_list;  
-  dir_list.push_back("x_sec");
+  dir_list.push_back(static_cast<const char*>(TString::Format(VERSION) + "/x_sec"));
   create_dir(dir_list);
   
   //set up the vectors
@@ -319,9 +319,9 @@ int main(int argc, char** argv)
     systematic = "_syst";
 
   if(eff)
-    cz.SaveAs("x_sec/x_sec_" + bins + "_bins_" + channel_to_ntuple_name(channel) + systematic + "_" + TString::Format(VERSION) + ".png");
+    cz.SaveAs(TString::Format(VERSION) + "/x_sec/x_sec_" + bins + "_bins_" + channel_to_ntuple_name(channel) + systematic + ".png");
   else
-    cz.SaveAs("x_sec/signal_yield_" + bins + "_bins_" + channel_to_ntuple_name(channel) + systematic + "_" + TString::Format(VERSION) + ".png");
+    cz.SaveAs(TString::Format(VERSION) + "/x_sec/signal_yield_" + bins + "_bins_" + channel_to_ntuple_name(channel) + systematic + ".png");
   
   //////////////////////////////////////////////////////////////////////////////////////////////
   //To show the values of cross section or signal yield and the errors at the end, like a table/

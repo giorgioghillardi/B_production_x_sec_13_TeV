@@ -35,7 +35,7 @@ int main(int argc, char** argv)
   
   //create directories
   std::vector<std::string> dir_list;
-  dir_list.push_back("x_sec/");
+  dir_list.push_back(static_cast<const char*>(TString::Format(VERSION) + "/x_sec/"));
   create_dir(dir_list);
   
   //set up the vectors
@@ -134,10 +134,10 @@ int main(int argc, char** argv)
       else
 	bins_str = TString::Format("%d_to_%d", (int)var2_bins[j], (int)var2_bins[j+1]);
 
-      out_file_name = "x_sec/x_sec_vector_" + channel_to_ntuple_name(channel) + "_" + var1_name + "_bins_" + var2_name + "_from_" + bins_str + "_" + TString::Format(VERSION) + ".root";
+      out_file_name = TString::Format(VERSION) + "/x_sec/x_sec_vector_" + channel_to_ntuple_name(channel) + "_" + var1_name + "_bins_" + var2_name + "_from_" + bins_str + ".root";
 
       if(bins == "full")
-	out_file_name = "x_sec/x_sec_vector_" + channel_to_ntuple_name(channel) + "_full_bins_" + TString::Format(VERSION) + ".root";
+	out_file_name = TString::Format(VERSION) + "/x_sec/x_sec_vector_" + channel_to_ntuple_name(channel) + "_full_bins.root";
 	  
       TFile* fout = new TFile(out_file_name,"recreate");
 

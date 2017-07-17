@@ -51,7 +51,7 @@ int main(int argc, char** argv)
   //to create the directories to save the .png files
   std::vector<std::string> dir_list;  
   
-  dir_list.push_back("efficiencies");
+  dir_list.push_back(static_cast<const char*>(TString::Format(VERSION) +"/efficiencies"));
   create_dir(dir_list);
   
   //set up the vectors

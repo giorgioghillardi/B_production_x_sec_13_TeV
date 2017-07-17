@@ -23,6 +23,7 @@
   <bin name="plot_ratio"   file="plot_ratio.cc"></bin>
   <bin name="plot_syst"   file="plot_syst.cc"></bin>
   <bin name="create_table"   file="create_table.cc"></bin> 
+  <bin name="print_val"   file="print_val.cc"></bin> 
 </environment>
 
 <Flags CXXFLAGS="-g"/>

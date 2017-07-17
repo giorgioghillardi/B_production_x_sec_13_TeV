@@ -36,7 +36,7 @@ int main(int argc, char** argv)
   //to create the directories to save the .png files
   std::vector<std::string> dir_list;  
   
-  dir_list.push_back("ratio");
+  dir_list.push_back(static_cast<const char*>(TString::Format(VERSION) + "/ratio"));
   create_dir(dir_list);
   
   //set up the vectors
@@ -130,10 +130,10 @@ int main(int argc, char** argv)
       else
         bins_str = TString::Format("%d_to_%d", (int)var2_bins[j], (int)var2_bins[j+1]);
 
-      out_file_name = "ratio/" + ratio + "_vector_" + var1_name + "_bins_" + var2_name + "_from_" + bins_str + "_" + TString::Format(VERSION) + ".root";
+      out_file_name = TString::Format(VERSION) + "/ratio/" + ratio + "_vector_" + var1_name + "_bins_" + var2_name + "_from_" + bins_str + ".root";
 
       if(bins == "full")
-        out_file_name = "ratio/" + ratio + "_vector_full_bins_" + TString::Format(VERSION) + ".root";
+        out_file_name = TString::Format(VERSION) + "/ratio/" + ratio + "_vector_full_bins.root";
 
       TFile* fout = new TFile(out_file_name,"recreate");
 

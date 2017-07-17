@@ -87,7 +87,7 @@ int main(int argc, char** argv)
   TString dir = "";
   TString vector = "signal_pdf";
   
-  dir = "signal_yield_root/syst/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/"; 
+  dir = TString::Format(VERSION) + "/signal_yield_root/syst/" + channel_to_ntuple_name(channel) + "/"; 
 
   double sqrt_err_lo[n_var1_bins];
   double sqrt_err_hi[n_var1_bins];
@@ -112,10 +112,10 @@ int main(int argc, char** argv)
       /////////////////////vector_name cicle
       for(int k=0; k<(int)syst.size(); k++)
 	{
-	  in_file_name = dir + syst[k] + "_vector_" + measure + "_" + channel_to_ntuple_name(channel) + "_" + var1_name + "_bins_" + var2_name + "_from_" + bins_str + "_" + TString::Format(VERSION) + ".root";
+	  in_file_name = dir + syst[k] + "_vector_" + measure + "_" + channel_to_ntuple_name(channel) + "_" + var1_name + "_bins_" + var2_name + "_from_" + bins_str + ".root";
  
 	  if(bins == "full")
-	    in_file_name = dir + syst[k] + "_vector_" + measure + "_" + channel_to_ntuple_name(channel) + "_full_bins_" + TString::Format(VERSION) + ".root";
+	    in_file_name = dir + syst[k] + "_vector_" + measure + "_" + channel_to_ntuple_name(channel) + "_full_bins.root";
 
 	  //debug
 	  std::cout << "read :" << in_file_name << std::endl;
@@ -141,10 +141,10 @@ int main(int argc, char** argv)
 	  out_err_hi[i] = sqrt(sqrt_err_hi[i]);
 	}
       
-      out_file_name = dir + "combined_syst_vector_" + measure + "_" + channel_to_ntuple_name(channel) + "_" + var1_name + "_bins_" + var2_name + "_from_" + bins_str + "_" + TString::Format(VERSION) + ".root";
+      out_file_name = dir + "combined_syst_vector_" + measure + "_" + channel_to_ntuple_name(channel) + "_" + var1_name + "_bins_" + var2_name + "_from_" + bins_str + ".root";
       
       if(bins == "full")
-	out_file_name = dir + "combined_syst_vector_" + measure + "_" + channel_to_ntuple_name(channel) + "_full_bins_" + TString::Format(VERSION) + ".root";
+	out_file_name = dir + "combined_syst_vector_" + measure + "_" + channel_to_ntuple_name(channel) + "_full_bins.root";
 
       //create output file
       TFile* fout = new TFile(out_file_name,"recreate");

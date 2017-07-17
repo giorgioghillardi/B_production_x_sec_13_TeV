@@ -53,7 +53,7 @@ int main(int argc, char** argv)
   //to create the directories to save the .png files
   std::vector<std::string> dir_list;  
   
-  dir_list.push_back("systematics");
+  dir_list.push_back(static_cast<const char*>(TString::Format(VERSION) + "/systematics"));
   create_dir(dir_list);
   
   //set up the vectors
@@ -132,10 +132,10 @@ void plot_syst(TString measure, TString syst, int channel, int n_var1_bins, TStr
   if(measure != "x_sec" && measure != "ratio")
     return;
 
-  TString save_syst = "systematics/" + measure + "_" + syst + "_" + channel_to_ntuple_name(channel) + "_" + var2_name + TString::Format("_from_%.2f_to_%.2f", var2_min, var2_max) + "_" + TString::Format(VERSION) + ".png";
+  TString save_syst = TString::Format(VERSION) + "/systematics/" + measure + "_" + syst + "_" + channel_to_ntuple_name(channel) + "_" + var2_name + TString::Format("_from_%.2f_to_%.2f", var2_min, var2_max) + ".png";
 
   if(n_var1_bins == 1)
-    save_syst = "systematics/" + measure + "_" + syst + "_" + channel_to_ntuple_name(channel) + "_full_bins_" + TString::Format(VERSION) + ".png";
+    save_syst = TString::Format(VERSION) + "/systematics/" + measure + "_" + syst + "_" + channel_to_ntuple_name(channel) + "_full_bins.png";
 
   ce.SaveAs(save_syst);
 }

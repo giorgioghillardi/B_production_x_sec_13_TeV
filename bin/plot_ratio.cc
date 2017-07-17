@@ -53,7 +53,7 @@ int main(int argc, char** argv)
   
   //to create the directories to save the .png files
   std::vector<std::string> dir_list;  
-  dir_list.push_back("ratio");
+  dir_list.push_back(static_cast<const char*>(TString::Format(VERSION) + "/ratio"));
   create_dir(dir_list);
   
   //set up the vectors
@@ -336,7 +336,7 @@ int main(int argc, char** argv)
   if(syst)
     systematic = "_syst";
   
-  cz.SaveAs("ratio/" + read_ratio + "_" + bins + "_bins" + systematic + "_" + TString::Format(VERSION) + ".png");
+  cz.SaveAs(TString::Format(VERSION) + "/ratio/" + read_ratio + "_" + bins + "_bins" + systematic + ".png");
   
   /////////////////////////////////////////////////////////////
   //To show the values and the errors at the end, like a table/

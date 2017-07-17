@@ -53,7 +53,7 @@ int main(int argc, char** argv)
   
   //create dir to save the tables
   std::vector<std::string> dir_list;
-  dir_list.push_back("tables/");
+  dir_list.push_back(static_cast<const char*>(TString::Format(VERSION) + "/tables/"));
   create_dir(dir_list);
   
   //set up the vectors
@@ -143,7 +143,7 @@ int main(int argc, char** argv)
       aux.clear();
       
       TString file_name = "";
-      TString dir = "tables/";
+      TString dir = TString::Format(VERSION) + "/tables/";
       TString bins_str ="";
       TString ntuple_name = "";
 
@@ -157,10 +157,10 @@ int main(int argc, char** argv)
       else
 	bins_str = TString::Format("%d_to_%d", (int)var2_bins[j], (int)var2_bins[j+1]);
 
-      file_name = dir + vector + "_" + measure + "_" + ntuple_name + var1_name + "_bins_" + var2_name + "_from_" + bins_str + "_" + TString::Format(VERSION);
+      file_name = dir + vector + "_" + measure + "_" + ntuple_name + var1_name + "_bins_" + var2_name + "_from_" + bins_str;
       
       if(bins == "full")
-	file_name = dir + vector + "_" + measure + "_" + ntuple_name + "full_bins_" + TString::Format(VERSION);
+	file_name = dir + vector + "_" + measure + "_" + ntuple_name + "full_bins";
       
       TString bins_cap ="";
       

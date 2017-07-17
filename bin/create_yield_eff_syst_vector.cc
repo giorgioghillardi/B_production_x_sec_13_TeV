@@ -137,17 +137,17 @@ int main(int argc, char** argv)
   TString out_file_name = "";
   TString in_file_name = "";
   TString bins_str = "";
-  TString dir = "";
+  TString dir = TString::Format(VERSION) + "/";
 
   if(vector == "yield")
-    dir = "signal_yield_root/";
+    dir += "signal_yield_root/";
   else
     if(vector == "signal_pdf" || vector == "cb_pdf" || vector == "mass_window")
-      dir = "signal_yield_root/syst/";
+      dir += "signal_yield_root/syst/";
     else
-      dir = "efficiencies_root/";
+      dir += "efficiencies_root/";
       
-  dir += channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/"; 
+  dir += channel_to_ntuple_name(channel) + "/"; 
 
   for(int j=0; j<n_var2_bins; j++)
     {
@@ -158,9 +158,9 @@ int main(int argc, char** argv)
       for(int i=0; i<n_var1_bins; i++)
 	{
 	  if(var1_name == "pt")
-	    in_file_name = dir + vector + "_" + channel_to_ntuple_name(channel) + "_pt_from_" + TString::Format("%d_to_%d", (int)var1_bins[i], (int)var1_bins[i+1]) + "_y_from_" + TString::Format("%.2f_to_%.2f", var2_bins[j], var2_bins[j+1]) + "_" + TString::Format(VERSION) + ".root";
+	    in_file_name = dir + vector + "_" + channel_to_ntuple_name(channel) + "_pt_from_" + TString::Format("%d_to_%d", (int)var1_bins[i], (int)var1_bins[i+1]) + "_y_from_" + TString::Format("%.2f_to_%.2f", var2_bins[j], var2_bins[j+1]) + ".root";
 	  else
-	    in_file_name = dir + vector + "_" + channel_to_ntuple_name(channel) + "_pt_from_" + TString::Format("%d_to_%d", (int)var2_bins[j], (int)var2_bins[j+1]) + "_y_from_" + TString::Format("%.2f_to_%.2f", var1_bins[i], var1_bins[i+1]) + "_" + TString::Format(VERSION) + ".root";
+	    in_file_name = dir + vector + "_" + channel_to_ntuple_name(channel) + "_pt_from_" + TString::Format("%d_to_%d", (int)var2_bins[j], (int)var2_bins[j+1]) + "_y_from_" + TString::Format("%.2f_to_%.2f", var1_bins[i], var1_bins[i+1]) + ".root";
 	      
 	  //debug
 	  std::cout << "read :" << in_file_name << std::endl;
@@ -183,10 +183,10 @@ int main(int argc, char** argv)
       else
 	bins_str = TString::Format("%d_to_%d", (int)var2_bins[j], (int)var2_bins[j+1]);
 	  
-      out_file_name = dir + vector + "_vector_" + measure + "_" + channel_to_ntuple_name(channel) + "_" + var1_name + "_bins_" + var2_name + "_from_" + bins_str + "_" + TString::Format(VERSION) + ".root";
+      out_file_name = dir + vector + "_vector_" + measure + "_" + channel_to_ntuple_name(channel) + "_" + var1_name + "_bins_" + var2_name + "_from_" + bins_str + ".root";
 
       if(bins == "full")
-	out_file_name = dir + vector + "_vector_" + measure + "_" + channel_to_ntuple_name(channel) + "_full_bins_" + TString::Format(VERSION) + ".root";
+	out_file_name = dir + vector + "_vector_" + measure + "_" + channel_to_ntuple_name(channel) + "_full_bins.root";
 
       //create output file
       TFile* fout = new TFile(out_file_name,"recreate");

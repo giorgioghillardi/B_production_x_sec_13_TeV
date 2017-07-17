@@ -72,8 +72,8 @@ int main(int argc, char** argv)
   //to create the directories to save the files
   std::vector<std::string> dir_list;  
   
-  dir_list.push_back(static_cast<const char*>("efficiencies_root/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION)));
-  dir_list.push_back("efficiencies");
+  dir_list.push_back(static_cast<const char*>(TString::Format(VERSION) + "/efficiencies"));
+  dir_list.push_back(static_cast<const char*>(TString::Format(VERSION) + "/efficiencies_root/" + channel_to_ntuple_name(channel) + "/"));
   create_dir(dir_list);
 
   RooRealVar* eff_res = new RooRealVar("eff_res","eff_res",1);
@@ -93,7 +93,7 @@ int main(int argc, char** argv)
       if(eff_name == "totaleff")
 	{
 	  //read pre-filter eff values
-	  TString eff_dir = "efficiencies_root/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/preeff_" + channel_to_ntuple_name(channel) + "_pt_from_" + TString::Format("%d_to_%d", (int)pt_min, (int)pt_max) + "_y_from_" + TString::Format("%.2f_to_%.2f", y_min, y_max) + "_" + TString::Format(VERSION) + ".root";
+	  TString eff_dir = TString::Format(VERSION) + "/efficiencies_root/" + channel_to_ntuple_name(channel) + "/preeff_" + channel_to_ntuple_name(channel) + "_pt_from_" + TString::Format("%d_to_%d", (int)pt_min, (int)pt_max) + "_y_from_" + TString::Format("%.2f_to_%.2f", y_min, y_max) + ".root";
 	  
 	  TFile* f = new TFile(eff_dir);
 	  TVectorD *pre_eff_val = (TVectorD*)f->Get("val");
@@ -101,7 +101,7 @@ int main(int argc, char** argv)
 	  TVectorD *pre_stat_hi = (TVectorD*)f->Get("err_hi");
 
 	  //read reco eff values
-	  eff_dir = "efficiencies_root/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/recoeff_" + channel_to_ntuple_name(channel) + "_pt_from_" + TString::Format("%d_to_%d", (int)pt_min, (int)pt_max) + "_y_from_" + TString::Format("%.2f_to_%.2f", y_min, y_max) + "_" + TString::Format(VERSION) + ".root";
+	  eff_dir = TString::Format(VERSION) + "/efficiencies_root/" + channel_to_ntuple_name(channel) + "/recoeff_" + channel_to_ntuple_name(channel) + "_pt_from_" + TString::Format("%d_to_%d", (int)pt_min, (int)pt_max) + "_y_from_" + TString::Format("%.2f_to_%.2f", y_min, y_max) + ".root";
       
 	  TFile* f2 = new TFile(eff_dir);
 	  TVectorD *reco_eff_val = (TVectorD*)f2->Get("val");
@@ -122,7 +122,7 @@ int main(int argc, char** argv)
 	}
 
   //write efficiency and statistical error to file
-  TString eff_file_name = "efficiencies_root/" + channel_to_ntuple_name(channel) + "_" + TString::Format(VERSION) + "/" + eff_name + "_" + channel_to_ntuple_name(channel) + "_pt_from_" + TString::Format("%d_to_%d", (int)pt_min, (int)pt_max) + "_y_from_" + TString::Format("%.2f_to_%.2f", y_min, y_max) + "_" + TString::Format(VERSION) + ".root";
+  TString eff_file_name = TString::Format(VERSION) + "/efficiencies_root/" + channel_to_ntuple_name(channel) + "/" + eff_name + "_" + channel_to_ntuple_name(channel) + "_pt_from_" + TString::Format("%d_to_%d", (int)pt_min, (int)pt_max) + "_y_from_" + TString::Format("%.2f_to_%.2f", y_min, y_max) + ".root";
   
   TFile* eff_file = new TFile(eff_file_name,"recreate");
   
