@@ -83,6 +83,10 @@ int main(int argc, char** argv)
   double ratio_eff_err_lo[n_var2_bins][n_var1_bins];
   double ratio_eff_err_hi[n_var2_bins][n_var1_bins];
 
+  double yield[2][n_var2_bins][n_var1_bins];
+  double yield_err_lo[2][n_var2_bins][n_var1_bins];
+  double yield_err_hi[2][n_var2_bins][n_var1_bins];
+
   double ratio_array[n_var2_bins][n_var1_bins];
   double ratio_err_lo[n_var2_bins][n_var1_bins];
   double ratio_err_hi[n_var2_bins][n_var1_bins];
@@ -113,27 +117,6 @@ int main(int argc, char** argv)
       var1_bin_centre_lo[i] = var1_bin_centre[i] - var1_bins[i];
       var1_bin_centre_hi[i] = var1_bins[i+1] - var1_bin_centre[i];
     }
-  
-  TString ratio_str = "";
-
-  if(ratio == "fsfu")
-    ratio_str = "BsBu";
-  else
-    if(ratio == "fsfd")
-      ratio_str = "BsBd";
-    else
-      if(ratio == "fdfu")
-            ratio_str = "BdBu";
-  
-  //read ratios
-  TString read_ratio = "";
-
-  if(eff)
-    read_ratio = ratio;
-  else
-    read_ratio = ratio_str;
-  
-  read_vector(measure, 0, read_ratio, var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, ratio_array[0], ratio_err_lo[0], ratio_err_hi[0]);
 
   for(int ch=0; ch<2; ch++)
     {
@@ -157,17 +140,16 @@ int main(int argc, char** argv)
       b_fraction[ch] = branch->getVal();
       b_fraction_err[ch] = branch->getError();
 
+      //read yield
+      read_vector(channel, "yield", var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, yield[ch][0], yield_err_lo[ch][0], yield_err_hi[ch][0]);
+	  
       //read efficiency
       if(eff)
-	{
-	  read_vector(measure, channel, "totaleff", var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, total_eff[ch][0], total_eff_err_lo[ch][0], total_eff_err_hi[ch][0]);
-	}
-  
+	read_vector(channel, "totaleff", var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, total_eff[ch][0], total_eff_err_lo[ch][0], total_eff_err_hi[ch][0]);
+      
       //read syst
       if(syst)
-	{
-	  read_vector(measure, channel, "combined_syst", var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, yield_syst[ch][0],yield_syst_lo[ch][0],yield_syst_hi[ch][0]);
-	}
+	read_vector(channel, "combined_syst", var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, yield_syst[ch][0],yield_syst_lo[ch][0],yield_syst_hi[ch][0]);
       else
 	for(int j=0; j<n_var2_bins; j++)
 	  {
@@ -201,15 +183,18 @@ int main(int argc, char** argv)
     {
       for(int i=0; i<n_var1_bins; i++)
 	{
+	  ratio_array[j][i]  = yield[1][j][i] / yield[0][j][i];
 	  ratio_array[j][i]  *= pow(10,j);
-	  ratio_err_lo[j][i] *= pow(10,j);
-	  ratio_err_hi[j][i] *= pow(10,j);
 
+	  ratio_err_lo[j][i] = ratio_array[j][i] * sqrt(pow(yield_err_lo[0][j][i]/yield[0][j][i],2) + pow(yield_err_lo[1][j][i]/yield[1][j][i],2));
+	  ratio_err_hi[j][i] = ratio_array[j][i] * sqrt(pow(yield_err_hi[0][j][i]/yield[0][j][i],2) + pow(yield_err_hi[1][j][i]/yield[1][j][i],2));
+          
 	  ratio_syst_sqrt_lo[j][i] = pow(yield_syst_lo[0][j][i],2) + pow(yield_syst_lo[1][j][i],2);
           ratio_syst_sqrt_hi[j][i] = pow(yield_syst_hi[0][j][i],2) + pow(yield_syst_hi[1][j][i],2);
 
           if(eff)
             {
+	      ratio_array[j][i] *= ratio_eff[j][i] * (b_fraction[0]/b_fraction[1]);
 	      ratio_syst_sqrt_lo[j][i] += pow(ratio_eff_err_lo[j][i]/ratio_eff[j][i],2) + pow(b_fraction_err[0]/b_fraction[0],2) + pow(b_fraction_err[1]/b_fraction[1],2);
               ratio_syst_sqrt_hi[j][i] += pow(ratio_eff_err_hi[j][i]/ratio_eff[j][i],2) + pow(b_fraction_err[0]/b_fraction[0],2) + pow(b_fraction_err[1]/b_fraction[1],2);
             }
@@ -257,11 +242,30 @@ int main(int argc, char** argv)
 	ratio_min = ratio_array[0][i] - ratio_syst_lo[0][i];
     }
 
+  TString no_eff_ratio = "";
+  
+  if(ratio == "fsfu")
+    no_eff_ratio = "BsBu";
+  else
+    if(ratio == "fsfd")
+      no_eff_ratio = "BsBd";
+    else
+      if(ratio == "fdfu")
+	no_eff_ratio = "BdBu";
+  
+  //ratio name
+  TString ratio_name = "";
+  
+  if(eff)
+    ratio_name = ratio;
+  else
+    ratio_name = no_eff_ratio;
+
   for(int j=0; j<n_var2_bins; j++)
     {
       TGraphAsymmErrors* graph = new TGraphAsymmErrors(n_var1_bins, var1_bin_centre, ratio_array[j], var1_bin_centre_lo, var1_bin_centre_hi, ratio_err_lo[j], ratio_err_hi[j]);
-
-      TString ratio_title = read_ratio;
+      
+      TString ratio_title = ratio_name;
       
       if(eff)
         ratio_title += " fragmentation fraction ratio";
@@ -336,7 +340,7 @@ int main(int argc, char** argv)
   if(syst)
     systematic = "_syst";
   
-  cz.SaveAs(TString::Format(VERSION) + "/ratio/" + read_ratio + "_" + bins + "_bins" + systematic + ".png");
+  cz.SaveAs(TString::Format(VERSION) + "/ratio/" + ratio_name + "_" + bins + "_bins" + systematic + ".png");
   
   /////////////////////////////////////////////////////////////
   //To show the values and the errors at the end, like a table/

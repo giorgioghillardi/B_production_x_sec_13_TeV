@@ -154,15 +154,15 @@ int main(int argc, char** argv)
   else
     vector = "yield";
   
-  read_vector(measure, channel, vector, var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, x_sec[0], x_sec_err_lo[0], x_sec_err_hi[0]);
+  read_vector(channel, vector, var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, x_sec[0], x_sec_err_lo[0], x_sec_err_hi[0]);
 
   if(eff)
-    read_vector(measure, channel, "totaleff", var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, totaleff[0], totaleff_err_lo[0], totaleff_err_hi[0]);
+    read_vector(channel, "totaleff", var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, totaleff[0], totaleff_err_lo[0], totaleff_err_hi[0]);
 
   //read syst
   if(syst)
     {
-      read_vector(measure, channel, "combined_syst", var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, yield_syst[0], yield_syst_lo[0], yield_syst_hi[0]);
+      read_vector(channel, "combined_syst", var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, yield_syst[0], yield_syst_lo[0], yield_syst_hi[0]);
     }
   else
     for(int j=0; j<n_var2_bins; j++)

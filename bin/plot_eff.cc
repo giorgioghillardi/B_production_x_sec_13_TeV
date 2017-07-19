@@ -105,7 +105,7 @@ int main(int argc, char** argv)
     }
   
   //read efficiency
-  read_vector(measure, channel, eff, var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, eff_array[0], eff_err_lo[0], eff_err_hi[0]);
+  read_vector(channel, eff, var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, eff_array[0], eff_err_lo[0], eff_err_hi[0]);
   
   //to calculate cross section
   for(int j=0; j<n_var2_bins; j++)

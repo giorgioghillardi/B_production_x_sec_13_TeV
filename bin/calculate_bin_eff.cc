@@ -96,6 +96,21 @@ int main(int argc, char** argv)
 	  TString eff_dir = TString::Format(VERSION) + "/efficiencies_root/" + channel_to_ntuple_name(channel) + "/preeff_" + channel_to_ntuple_name(channel) + "_pt_from_" + TString::Format("%d_to_%d", (int)pt_min, (int)pt_max) + "_y_from_" + TString::Format("%.2f_to_%.2f", y_min, y_max) + ".root";
 	  
 	  TFile* f = new TFile(eff_dir);
+
+	  ////////////////////////////////////////////////////
+	  TString line = "";
+	  TString eff_str = "";
+	  TString opt = "--channel " + TString::Format("%d", channel) + " --ptmin " + TString::Format("%d",(int)pt_min) + " --ptmax " + TString::Format("%d", (int)pt_max) + " --ymin " +  TString::Format("%.2f", y_min) + " --ymax " + TString::Format("%.2f", y_max);
+
+	  if(f->IsZombie())
+	    {
+	      line = "calculate_bin_eff --eff";
+	      eff_str = "preeff";
+	      line += " " + eff_str + " " + opt;
+	      gSystem->Exec(line);
+	      f = new TFile(eff_dir);
+	    }
+
 	  TVectorD *pre_eff_val = (TVectorD*)f->Get("val");
 	  TVectorD *pre_stat_lo = (TVectorD*)f->Get("err_lo");
 	  TVectorD *pre_stat_hi = (TVectorD*)f->Get("err_hi");
@@ -104,6 +119,17 @@ int main(int argc, char** argv)
 	  eff_dir = TString::Format(VERSION) + "/efficiencies_root/" + channel_to_ntuple_name(channel) + "/recoeff_" + channel_to_ntuple_name(channel) + "_pt_from_" + TString::Format("%d_to_%d", (int)pt_min, (int)pt_max) + "_y_from_" + TString::Format("%.2f_to_%.2f", y_min, y_max) + ".root";
       
 	  TFile* f2 = new TFile(eff_dir);
+
+	  /////////////////////////////////////////////////////////
+	  if(f2->IsZombie())
+	    {
+	      line = "calculate_bin_eff --eff";
+	      eff_str = "recoeff";
+	      line += " " + eff_str + " " + opt;
+	      gSystem->Exec(line);
+	      f2 = new TFile(eff_dir);
+	    }
+	  
 	  TVectorD *reco_eff_val = (TVectorD*)f2->Get("val");
 	  TVectorD *reco_stat_lo = (TVectorD*)f2->Get("err_lo");
 	  TVectorD *reco_stat_hi = (TVectorD*)f2->Get("err_hi");

@@ -16,6 +16,9 @@ double mass_window_syst(RooWorkspace& ws, int channel, double pt_min, double pt_
 //input example: calculate_bin_syst --channel 1 --syst signal_pdf --ptmin 30 --ptmax 35 --ymin 0.00 --ymax 2.25
 int main(int argc, char** argv)
 {
+  //list to calculate the combined_syst
+  std::vector<std::string> syst_list = {"signal_pdf","cb_pdf","mass_window"};
+
   int channel = 1;
   TString syst = "";
   double pt_min = -1;
@@ -86,12 +89,34 @@ int main(int argc, char** argv)
   ///////////////////////////////////////////////////
   std::cout << "processing subsample: " << pt_min << " < " << "pt" << " < " << pt_max << " and " << y_min << " < " << "|y|" << " < " << y_max << std::endl;
   
-  //read nominal signal yield
-  TString in_file_name = TString::Format(VERSION) + "/signal_yield_root/" + channel_to_ntuple_name(channel) + "/yield_" + channel_to_ntuple_name(channel) + "_pt_from_" + TString::Format("%d_to_%d", (int)pt_min, (int)pt_max) + "_y_from_" + TString::Format("%.2f_to_%.2f", y_min, y_max) + ".root";
+  //////////////////////////////
+  //read nominal signal yield//
+  /////////////////////////////
+  TString bins_str = "_pt_from_" + TString::Format("%d_to_%d", (int)pt_min, (int)pt_max) + "_y_from_" + TString::Format("%.2f_to_%.2f", y_min, y_max);
 
-  std::cout << "read :" << in_file_name << std::endl;
+  TString in_file_name = TString::Format(VERSION) + "/signal_yield_root/" + channel_to_ntuple_name(channel) + "/yield_" + channel_to_ntuple_name(channel) + bins_str + ".root";
+
+  std::cout << "reading nominal yield from : " << in_file_name << std::endl;
 
   TFile* fin = new TFile(in_file_name);
+
+  //to be used to run commands
+  TString command = "";
+  TString opt = "";
+
+  if(fin->IsZombie())
+    {
+      std::cout << "The nominal yield file " << in_file_name << " was not found." << std::endl;
+      std::cout << "No problem, it will be calculated" << std::endl;
+
+      command = "calculate_bin_yield";
+      opt = " --channel " + TString::Format("%d", channel) + " --ptmin " + TString::Format("%d", (int)pt_min) + " --ptmax " + TString::Format("%d", (int)pt_max) + " --ymin " + TString::Format("%.2f", y_min) + " --ymax " + TString::Format("%.2f", y_max);
+      command += opt;
+
+      gSystem->Exec(command);
+      fin = new TFile(in_file_name);
+    }
+
   TVectorD *in_val = (TVectorD*)fin->Get("val");
   TVectorD *in_err_lo = (TVectorD*)fin->Get("err_lo");
   TVectorD *in_err_hi = (TVectorD*)fin->Get("err_hi");
@@ -103,26 +128,63 @@ int main(int argc, char** argv)
   //debug:
   std::cout << "nominal_yield: " << nominal_yield.getVal() << " err_lo: " << nominal_yield.getAsymErrorLo() << " err_hi: " << nominal_yield.getAsymErrorHi() << std::endl;
 
-  //calculate syst yield
-  double signal_res = 0;
+  TString syst_dir = TString::Format(VERSION) + "/signal_yield_root/syst/" + channel_to_ntuple_name(channel) + "/";
   
-  if(syst == "mass_window")
-    signal_res = mass_window_syst(*ws, channel, pt_min, pt_max, y_min, y_max, nominal_yield.getVal(), data_selection_input_file);
-  else
-    if(syst == "signal_pdf" || syst == "cb_pdf")
-      signal_res = pdf_syst(*ws, channel, pt_min, pt_max, y_min, y_max, nominal_yield.getVal(), syst);
-    
-  //calculate the diff in absolute value, i.e. from 0 to 1
-  double absolute_syst_val;
-  absolute_syst_val = fabs(nominal_yield.getVal() - signal_res)/nominal_yield.getVal();
+  //absolute value of syst, i.e. from 0 to 1
+  double absolute_syst_val = -1; //set to -1 as default, should be replaced below by a specific syst or the combined syst
 
+  //cicle to calculate combined_syst
+  if(syst == "combined_syst")
+    {
+      double sqrt_err = 0;
+
+      for(int k=0; k<(int)syst_list.size(); k++)
+        {
+	  TString f_name = syst_dir + syst_list[k] + "_" + channel_to_ntuple_name(channel) + bins_str + ".root";
+	  TFile* f_syst = new TFile(f_name);
+	  
+	  if(f_syst->IsZombie())
+	    {
+	      std::cout << "The file with " << syst_list[k] << " was not found." << std::endl;
+	      std::cout << "No problem, it will be calculated" << std::endl;
+	      
+	      command = "calculate_bin_syst --syst " + syst_list[k];
+	      opt = " --channel " + TString::Format("%d", channel) + " --ptmin " + TString::Format("%d", (int)pt_min) + " --ptmax " + TString::Format("%d", (int)pt_max) + " --ymin " + TString::Format("%.2f", y_min) + " --ymax " + TString::Format("%.2f", y_max);
+	      command += opt;
+
+	      gSystem->Exec(command);
+	      f_syst = new TFile(f_name);
+	    }
+
+	  TVectorD *in_err_hi = (TVectorD*)f_syst->Get("err_hi");
+          delete f_syst;
+	  
+	  sqrt_err += pow(in_err_hi[0][0],2);
+	}
+
+      absolute_syst_val = sqrt(sqrt_err);
+    }
+  else
+    {
+      //calculate syst yield
+      double signal_res = 0;
+      
+      if(syst == "mass_window")
+	signal_res = mass_window_syst(*ws, channel, pt_min, pt_max, y_min, y_max, nominal_yield.getVal(), data_selection_input_file);
+      else
+	if(syst == "signal_pdf" || syst == "cb_pdf")
+	  signal_res = pdf_syst(*ws, channel, pt_min, pt_max, y_min, y_max, nominal_yield.getVal(), syst);
+      
+      absolute_syst_val = fabs(nominal_yield.getVal() - signal_res)/nominal_yield.getVal();
+    }
+  
   //debug:
   std::cout << "absolute_syst_val: " << absolute_syst_val << std::endl;
 
   //write to file with syst name
-  TString yield_file_name = TString::Format(VERSION) + "/signal_yield_root/syst/" + channel_to_ntuple_name(channel) + "/" + syst + "_" + channel_to_ntuple_name(channel) + "_pt_from_" + TString::Format("%d_to_%d", (int)pt_min, (int)pt_max) + "_y_from_" + TString::Format("%.2f_to_%.2f", y_min, y_max) + ".root";
+  TString syst_file_name = syst_dir + syst + "_" + channel_to_ntuple_name(channel) + bins_str + ".root";
   
-  TFile* yield_file = new TFile(yield_file_name,"recreate");
+  TFile* syst_file = new TFile(syst_file_name,"recreate");
   
   TVectorD val(1);
   TVectorD err_lo(1);
@@ -136,8 +198,8 @@ int main(int argc, char** argv)
   err_lo.Write("err_lo");
   err_hi.Write("err_hi");
 
-  yield_file->Close();
-  delete yield_file; 
+  syst_file->Close();
+  delete syst_file; 
 }//end
 
 double pdf_syst(RooWorkspace& ws, int channel, double pt_min, double pt_max, double y_min, double y_max, double nominal_yield, TString syst)

@@ -108,7 +108,7 @@ int main(int argc, char** argv)
     }
   
   //read syst vector
-  read_vector(measure, channel, syst, var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, syst_array[0], syst_err_lo[0], syst_err_hi[0]);
+  read_vector(channel, syst, var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, syst_array[0], syst_err_lo[0], syst_err_hi[0]);
   
   //to plot the systematic errors
   for(int j=0; j<n_var2_bins; j++)

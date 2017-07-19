@@ -87,7 +87,8 @@ RooRealVar* prefilter_efficiency(int channel, double pt_min, double pt_max, doub
 RooRealVar* reco_efficiency(int channel, double pt_min, double pt_max, double y_min, double y_max);
 RooRealVar* branching_fraction(int channel);
 
-void read_vector(TString measure, int channel, TString vector, TString var1_name , TString var2_name, int n_var1_bins, int n_var2_bins,  double* var1_bins, double* var2_bins, double* array, double* err_lo = NULL, double* err_hi = NULL);
+//void read_vector(TString measure, int channel, TString vector, TString var1_name , TString var2_name, int n_var1_bins, int n_var2_bins,  double* var1_bins, double* var2_bins, double* array, double* err_lo = NULL, double* err_hi = NULL);
+void read_vector(int channel, TString vector, TString var1_name , TString var2_name, int n_var1_bins, int n_var2_bins,  double* var1_bins, double* var2_bins, double* array, double* err_lo = NULL, double* err_hi = NULL);
 void print_table(TString title, int n_var1_bins, int n_var2_bins, TString var1_name, TString var2_name, double* var1_bin_edges, double* var2_bin_edges, double* array, double* stat_err_lo, double* stat_err_hi, double* syst_err_lo = NULL, double* syst_err_hi = NULL);
 void latex_table(std::string filename, int n_col, int n_lin, std::vector<std::string> col_name, std::vector<std::string> labels, std::vector<std::vector<double> > numbers, std::string caption);
 
@@ -1044,7 +1045,7 @@ RooRealVar* branching_fraction(int channel)
   
   return b_fraction;
 }
-
+/*
 void read_vector(TString measure, int channel, TString vector, TString var1_name , TString var2_name, int n_var1_bins, int n_var2_bins,  double* var1_bins, double* var2_bins, double* array, double* err_lo, double* err_hi)
 {
   //input_file_name
@@ -1126,9 +1127,127 @@ void read_vector(TString measure, int channel, TString vector, TString var1_name
       delete fin;
     }
 }
+*/
 
-void plot_eff(TString measure, TString eff_name, int channel, int n_var1_bins, TString var2_name, double var2_min, double var2_max, TString x_axis_name, TString b_title, double* var1_bin_centre, double* var1_bin_centre_lo, double* var1_bin_centre_hi, double* eff_array, double* eff_err_lo_array, double* eff_err_hi_array)
-{  
+void read_vector(int channel, TString vector, TString var1_name , TString var2_name, int n_var1_bins, int n_var2_bins,  double* var1_bins, double* var2_bins, double* array, double* err_lo, double* err_hi)
+{
+  //input_file_name
+  TString bins_str = "";
+  TString in_file_name = "";
+  TString dir = TString::Format(VERSION) + "/";
+
+  if(vector == "yield")
+      dir += "signal_yield_root/";
+  else
+    if(vector == "combined_syst" || vector == "signal_pdf" || vector == "cb_pdf" || vector == "mass_window")
+      dir += "signal_yield_root/syst/";
+    else
+      if(vector == "preeff" || vector == "recoeff" || vector == "totaleff")
+	dir += "efficiencies_root/";
+  
+  dir += channel_to_ntuple_name(channel) + "/";
+  
+  for(int j=0; j<n_var2_bins; j++)
+    {
+      for(int i=0; i<n_var1_bins; i++)
+	{
+	  //file_name
+	  if(var1_name == "pt")
+	    bins_str = TString::Format("pt_from_%d_to_%d_y_from_%.2f_to_%.2f", (int)var1_bins[i], (int)var1_bins[i+1], var2_bins[j], var2_bins[j+1]);
+	  else
+	    bins_str = TString::Format("pt_from_%d_to_%d_y_from_%.2f_to_%.2f", (int)var2_bins[j], (int)var2_bins[j+1], var1_bins[i], var1_bins[i+1]);
+	  
+	  in_file_name = dir + vector + "_" + channel_to_ntuple_name(channel) + "_" + bins_str + ".root";
+	  
+	  //debug
+	  std::cout << "Reading: " << in_file_name << std::endl;
+	  
+	  //open file
+	  TFile* fin = new TFile(in_file_name);
+	  
+	  if(fin->IsZombie())
+	    {
+	      std::cout << "The file " << in_file_name << " was not found." << std::endl;
+	      std::cout << "No problem, the " << vector << " for the bin with " << bins_str << " will be calculated" << std::endl;
+	      
+	      ///////////////////////////////
+	      //calculate yield or eff syst//
+	      ///////////////////////////////
+
+	      TString line = "";
+	      TString command = "calculate_bin_";
+	      TString opt = "";
+
+	      TString pt_min;
+	      TString pt_max;
+	      TString y_min;
+	      TString y_max;
+	      
+	      if(var1_name == "pt")
+                {
+		  pt_min = TString::Format("%d", (int)var1_bins[i]);
+		  pt_max = TString::Format("%d", (int)var1_bins[i+1]);
+		  y_min = TString::Format("%.2f", var2_bins[j]);
+		  y_max = TString::Format("%.2f", var2_bins[j+1]);
+                }
+              else
+                {
+                  pt_min = TString::Format("%d", (int)var2_bins[j]);
+                  pt_max = TString::Format("%d", (int)var2_bins[j+1]);
+                  y_min = TString::Format("%.2f", var1_bins[i]);
+                  y_max = TString::Format("%.2f", var1_bins[i+1]);
+                }
+
+              opt = " --channel " + TString::Format("%d", channel) + " --ptmin " + pt_min + " --ptmax " + pt_max + " --ymin " +  y_min + " --ymax " + y_max;
+
+              if(vector == "yield")
+                {
+                  command += "yield";
+                  line = command + opt;
+                }
+              else
+                if(vector == "preeff" || vector == "recoeff" || vector == "totaleff")
+                  {
+                    command += "eff";
+                    line = command + opt + " --eff " + vector;
+                  }
+                else
+                  if(vector == "combined_syst" || vector == "signal_pdf" || vector == "cb_pdf" || vector == "mass_window")
+                    {
+                      command += "syst";
+                      line = command + opt + " --syst " + vector;
+                    }
+	      
+              gSystem->Exec(line);
+	      //////////////////////////////////////////////////////////////////////////////////	      
+
+	      fin = new TFile(in_file_name);
+	    }
+	    
+	    TVectorD *in_val = (TVectorD*)fin->Get("val");
+	    
+	    //copy to output_array
+	    *(array + j*n_var1_bins + i) = in_val[0][0];
+	    
+	    if(err_lo != NULL && err_hi != NULL)
+	      {
+		TVectorD *in_err_lo = (TVectorD*)fin->Get("err_lo");
+		TVectorD *in_err_hi = (TVectorD*)fin->Get("err_hi");
+
+		//copy to output_array
+		*(err_lo + j*n_var1_bins + i) = in_err_lo[0][0];
+		*(err_hi + j*n_var1_bins + i) = in_err_hi[0][0];
+	      }
+	    	    
+	    delete fin;
+	    delete in_val;
+	}
+    }
+}
+	    
+
+  void plot_eff(TString measure, TString eff_name, int channel, int n_var1_bins, TString var2_name, double var2_min, double var2_max, TString x_axis_name, TString b_title, double* var1_bin_centre, double* var1_bin_centre_lo, double* var1_bin_centre_hi, double* eff_array, double* eff_err_lo_array, double* eff_err_hi_array)
+  {  
   TCanvas ce;
   TGraphAsymmErrors* graph_pre_eff = new TGraphAsymmErrors(n_var1_bins, var1_bin_centre, eff_array, var1_bin_centre_lo, var1_bin_centre_hi, eff_err_lo_array, eff_err_hi_array);
   
