@@ -65,7 +65,7 @@ int main(int argc, char** argv)
 
   double* var1_bins = NULL;
   double* var2_bins = NULL;
-
+  
   TString measure = "ratio";
   
   setup_bins(measure, 0, bins, &var1_name, &n_var1_bins, &var2_name, &n_var2_bins, &var1_bins, &var2_bins);
@@ -185,9 +185,6 @@ int main(int argc, char** argv)
 	{
 	  ratio_array[j][i]  = yield[1][j][i] / yield[0][j][i];
 	  ratio_array[j][i]  *= pow(10,j);
-
-	  ratio_err_lo[j][i] = ratio_array[j][i] * sqrt(pow(yield_err_lo[0][j][i]/yield[0][j][i],2) + pow(yield_err_lo[1][j][i]/yield[1][j][i],2));
-	  ratio_err_hi[j][i] = ratio_array[j][i] * sqrt(pow(yield_err_hi[0][j][i]/yield[0][j][i],2) + pow(yield_err_hi[1][j][i]/yield[1][j][i],2));
           
 	  ratio_syst_sqrt_lo[j][i] = pow(yield_syst_lo[0][j][i],2) + pow(yield_syst_lo[1][j][i],2);
           ratio_syst_sqrt_hi[j][i] = pow(yield_syst_hi[0][j][i],2) + pow(yield_syst_hi[1][j][i],2);
@@ -198,6 +195,9 @@ int main(int argc, char** argv)
 	      ratio_syst_sqrt_lo[j][i] += pow(ratio_eff_err_lo[j][i]/ratio_eff[j][i],2) + pow(b_fraction_err[0]/b_fraction[0],2) + pow(b_fraction_err[1]/b_fraction[1],2);
               ratio_syst_sqrt_hi[j][i] += pow(ratio_eff_err_hi[j][i]/ratio_eff[j][i],2) + pow(b_fraction_err[0]/b_fraction[0],2) + pow(b_fraction_err[1]/b_fraction[1],2);
             }
+	  
+	  ratio_err_lo[j][i] = ratio_array[j][i] * sqrt(pow(yield_err_lo[0][j][i]/yield[0][j][i],2) + pow(yield_err_lo[1][j][i]/yield[1][j][i],2));
+	  ratio_err_hi[j][i] = ratio_array[j][i] * sqrt(pow(yield_err_hi[0][j][i]/yield[0][j][i],2) + pow(yield_err_hi[1][j][i]/yield[1][j][i],2));
 
           ratio_syst_lo[j][i]  = ratio_array[j][i] * sqrt(ratio_syst_sqrt_lo[j][i]);
           ratio_syst_hi[j][i]  = ratio_array[j][i] * sqrt(ratio_syst_sqrt_hi[j][i]);

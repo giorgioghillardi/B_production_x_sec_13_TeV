@@ -73,13 +73,17 @@ int main(int argc, char** argv)
   double var1_bin_edges_lo[n_var2_bins][n_var1_bins];
   double var1_bin_edges_hi[n_var2_bins][n_var1_bins];
   
-  double x_sec[n_var2_bins][n_var1_bins];
-  double x_sec_err_lo[n_var2_bins][n_var1_bins];
-  double x_sec_err_hi[n_var2_bins][n_var1_bins];
+  double yield[n_var2_bins][n_var1_bins];
+  double yield_err_lo[n_var2_bins][n_var1_bins];
+  double yield_err_hi[n_var2_bins][n_var1_bins];
 
   double totaleff[n_var2_bins][n_var1_bins];
   double totaleff_err_lo[n_var2_bins][n_var1_bins];
   double totaleff_err_hi[n_var2_bins][n_var1_bins];
+
+  double x_sec[n_var2_bins][n_var1_bins];
+  double x_sec_err_lo[n_var2_bins][n_var1_bins];
+  double x_sec_err_hi[n_var2_bins][n_var1_bins];
 
   double yield_syst[n_var2_bins][n_var1_bins];
   double yield_syst_lo[n_var2_bins][n_var1_bins];
@@ -92,6 +96,9 @@ int main(int argc, char** argv)
   double x_sec_syst_hi[n_var2_bins][n_var1_bins];
     
   RooRealVar* branch = branching_fraction(channel);
+  double b_fraction = branch->getVal();
+  double b_fraction_err = branch->getError();
+  
 
   TString x_axis_name = "";
   if(var1_name =="pt")
@@ -113,14 +120,14 @@ int main(int argc, char** argv)
       b_title = "Bs";
       break;
     }
-  
+
   //read data to calculate bin mean
   TString data_selection_input_file = TString::Format(BASE_DIR) + "selected_myloop_new_data_" + channel_to_ntuple_name(channel) + "_with_cuts.root";
   RooWorkspace* ws = new RooWorkspace("ws","Bmass");
-
+  
   set_up_workspace_variables(*ws,channel);
   read_data(*ws, data_selection_input_file,channel);
-
+  
   //calculate the mean values and bin size of var1 and var2
   for(int j=0; j<n_var2_bins; j++)
     {
@@ -147,14 +154,7 @@ int main(int argc, char** argv)
 	var2_bin_size[0]=1;
       }
   
-  TString vector = "";
-  
-  if(eff)
-    vector = "x_sec";
-  else
-    vector = "yield";
-  
-  read_vector(channel, vector, var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, x_sec[0], x_sec_err_lo[0], x_sec_err_hi[0]);
+  read_vector(channel, "yield", var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, yield[0], yield_err_lo[0], yield_err_hi[0]);
 
   if(eff)
     read_vector(channel, "totaleff", var1_name , var2_name, n_var1_bins, n_var2_bins, var1_bins, var2_bins, totaleff[0], totaleff_err_lo[0], totaleff_err_hi[0]);
@@ -174,46 +174,37 @@ int main(int argc, char** argv)
 	      yield_syst_hi[j][i] = 0;
 	    }
 	}
-  
-  
-  //to correct the yield for bin size
-  if(!eff)
-    {
-      for(int j=0; j<n_var2_bins; j++)
-	{
-	  for(int i=0; i<n_var1_bins; i++)
-	    {
-	      bin_size = var1_bin_size[i] * var2_bin_size[j];
-	  
-	      x_sec[j][i] = (x_sec[j][i] / bin_size) * pow(10,j);
-	      x_sec_err_lo[j][i] = (x_sec_err_lo[j][i] / bin_size) * pow(10,j);
-	      x_sec_err_hi[j][i] = (x_sec_err_hi[j][i] / bin_size) * pow(10,j);
-	      
-	      x_sec_syst_lo[j][i] = (yield_syst_lo[j][i] / bin_size) * pow(10,j);
-	      x_sec_syst_hi[j][i] = (yield_syst_hi[j][i] / bin_size) * pow(10,j);
-	    }
-	}
-    }
-  else
-    {
-      for(int j=0; j<n_var2_bins; j++)
-	{
-	  for(int i=0; i<n_var1_bins; i++)
-	    {
-	      x_sec[j][i] *=  (1e-9) * pow(10,j);
-	      x_sec_err_lo[j][i] *= (1e-9) * pow(10,j);
-	      x_sec_err_hi[j][i] *= (1e-9) * pow(10,j);
 
-	      x_sec_syst_sqrt_lo[j][i] = pow(branch->getError()/branch->getVal(),2) + pow(totaleff_err_lo[j][i]/totaleff[j][i],2) + pow(0.04,2) + pow(yield_syst[j][i],2);
-	      x_sec_syst_sqrt_hi[j][i] = pow(branch->getError()/branch->getVal(),2) + pow(totaleff_err_hi[j][i]/totaleff[j][i],2) + pow(0.04,2) + pow(yield_syst[j][i],2);
-	      
-	      x_sec_syst_lo[j][i] = x_sec[j][i] * sqrt(x_sec_syst_sqrt_lo[j][i]);
-	      x_sec_syst_hi[j][i] = x_sec[j][i] * sqrt(x_sec_syst_sqrt_hi[j][i]);
-	    }
-	}
+  //to calculate x_sec
+  for(int j=0; j<n_var2_bins; j++)
+    {
+      for(int i=0; i<n_var1_bins; i++)
+        {
+	  bin_size = var1_bin_size[i] * var2_bin_size[j];
+	  
+	  x_sec[j][i] = (yield[j][i] / bin_size) * pow(10,j);
+          
+          x_sec_syst_sqrt_lo[j][i] = pow(yield_syst_lo[j][i],2);
+          x_sec_syst_sqrt_hi[j][i] = pow(yield_syst_hi[j][i],2);
+
+          if(eff)
+            {
+              x_sec[j][i] /= (2 * totaleff[j][i] * b_fraction);
+	      x_sec[j][i] *= (1e-9); //the 1e-9 factor is just for scale in the final plot
+
+              x_sec_syst_sqrt_lo[j][i] += pow(totaleff_err_lo[j][i]/totaleff[j][i],2) + pow(b_fraction_err/b_fraction,2) + pow(0.04,2);  //the 4% is from Luminosity
+	      x_sec_syst_sqrt_hi[j][i] += pow(totaleff_err_hi[j][i]/totaleff[j][i],2) + pow(b_fraction_err/b_fraction,2) + pow(0.04,2);
+            }
+
+          x_sec_err_lo[j][i] = x_sec[j][i] * sqrt(pow(yield_err_lo[j][i]/yield[j][i],2));
+	  x_sec_err_hi[j][i] = x_sec[j][i] * sqrt(pow(yield_err_hi[j][i]/yield[j][i],2));
+	  
+          x_sec_syst_lo[j][i]  = x_sec[j][i] * sqrt(x_sec_syst_sqrt_lo[j][i]);
+          x_sec_syst_hi[j][i]  = x_sec[j][i] * sqrt(x_sec_syst_sqrt_hi[j][i]);
+        }
     }
   
-  //plot of the cross section
+  //to plot x_sec
   TCanvas cz;
   
   double leg_x2 = 0.98;
@@ -329,9 +320,5 @@ int main(int argc, char** argv)
 
   //cross section
   print_table("CROSS SECTION", n_var1_bins, n_var2_bins, var1_name, var2_name, var1_bins, var2_bins, x_sec[0], x_sec_err_lo[0], x_sec_err_hi[0], x_sec_syst_lo[0], x_sec_syst_hi[0]);
-
-  //branching fraction
-  std::cout << "branching fraction: " << branch->getVal() << std::endl;
-  std::cout << std::endl;
   
-}//end of calculate_x_sec
+}//end
