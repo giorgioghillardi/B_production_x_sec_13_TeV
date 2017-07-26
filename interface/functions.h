@@ -135,6 +135,9 @@ void set_up_workspace_variables(RooWorkspace& w, int channel, double mass_min, d
       case 6:
 	mass_min = 5.3; mass_max = 6.3;
 	break;
+      case 7:
+	mass_min = 5.9; mass_max = 6.9;
+        break;
       }
     }
 
@@ -193,6 +196,10 @@ void build_pdf(RooWorkspace& w, int channel, std::string choice, std::string cho
   case 6:
     mass_peak = LAMBDAB_MASS;
     break;
+  case 7:
+    mass_peak = BC_MASS;
+    break;
+
   }
   
   double n_signal_initial = data->sumEntries(TString::Format("abs(mass-%g)<0.015",mass_peak)) - data->sumEntries(TString::Format("abs(mass-%g)<0.030&&abs(mass-%g)>0.015",mass_peak,mass_peak));

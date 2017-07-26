@@ -106,7 +106,7 @@ int main(int argc, char** argv)
 
 	root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_25ns_promptreco_v4/Charmonium/Run2015D-Bfinder-promptreco-v4/160315_105743/0000/Bfinder_25ns_*.root");
 	root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_25ns_promptreco_v4/Charmonium/Run2015D-Bfinder-promptreco-v4/160315_105743/0001/Bfinder_25ns_*.root");
-	root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_25ns_promptreco_v4/Charmonium/Run2015D-Bfinder-promptreco-v4/160315_105743/0002/Bfinder_25ns_*.root");
+        root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_25ns_promptreco_v4/Charmonium/Run2015D-Bfinder-promptreco-v4/160315_105743/0002/Bfinder_25ns_*.root");
 	
 	HltTree->Add("/gstore/t3cms/store/user/martinsg/Bfinder_25ns_promptreco_v1/Charmonium/Run2015D-Bfinder-promptreco-v1/160309_114238/0000/Bfinder_25ns_*.root");
 
@@ -228,8 +228,8 @@ int main(int argc, char** argv)
       particle_flow_number.push_back(0);
     
     particle_flow_number[0]= n_entries;
-    
-    for (int evt=0; evt<n_entries; evt++)
+    for (int evt=0; evt< n_entries; evt++)   
+    //for (int evt=0; evt<n_entries; evt++)
       {
 	if (evt%percent==0 || evt==n_entries-1) printf("processing %d/%d (%.2f%%).\n",evt,n_entries-1,(double)evt/(double)(n_entries-1)*100.);
         
@@ -329,7 +329,11 @@ int main(int argc, char** argv)
 	      case 6:
 		if (b_type != 8 && b_type!=9) continue; // skip any non lambda
 		break;
-	      }
+	     
+              case 7:
+                if (b_type !=2) continue; // skip any non Bc to Jps Pi
+                break;
+                }
 	    
 	    if(run_on_mc)
 	      particle_flow_number[1]++;
@@ -631,12 +635,13 @@ int main(int argc, char** argv)
 	    v_lerr2.SetZ(bvtx_err.z()*bvtx_err.z()+PV_err.z()*PV_err.z());
             
 	    // B hadron mass for normalization of proper decay time
-	    double default_bmass = BP_MASS; // B+ channels (type 1 or 2)
+	    double default_bmass = BP_MASS; // B+ channels (type 1)
 	    if (b_type==3 || b_type==4 || b_type==5) default_bmass = B0_MASS; // B0 channels
 	    if (b_type==6 || b_type==7) default_bmass = BS_MASS; // Bs channels
 	    if (b_type==8 || b_type==9) default_bmass = LAMBDAB_MASS; // Lambdab channels
-            
-	    TVector3 v_p = v4_b.Vect();
+            if (b_type==2) default_bmass = BC_MASS; // Bc channels
+	    
+            TVector3 v_p = v4_b.Vect();
 	    TVector3 v_p2(v_p.x()*v_p.x(),v_p.y()*v_p.y(),v_p.z()*v_p.z());
 
 	    br->ctau3d = v_l.Dot(v_p)*default_bmass/v_p.Mag2();

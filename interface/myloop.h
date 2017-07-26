@@ -12,7 +12,7 @@
 #define BP_MASS      5.27926
 #define B0_MASS      5.27958
 #define BS_MASS      5.36677
-#define BC_MASS      6.2756
+#define BC_MASS      6.2749
 #define LAMBDAB_MASS 5.6195
 
 // HLT paths to be booked

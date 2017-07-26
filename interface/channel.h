@@ -25,6 +25,9 @@ TString channel_to_ntuple_name(int channel)
   case 6:
     ntuple_name="ntlambda";
     break;
+  case 7:
+    ntuple_name="ntpi";
+    break;
  }
   return ntuple_name;
 }
