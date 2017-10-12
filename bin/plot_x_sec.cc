@@ -8,6 +8,7 @@
 // channel = 4: Bs -> J/psi phi
 // channel = 5: Jpsi + pipi
 // channel = 6: Lambda_b -> Jpsi + Lambda
+// channel = 7: Bc -> J/psi Pi
 //-----------------------------------------------------------------
 
 //input example: plot_x_sec --channel 1 --bins pt_y --eff 1 --syst 0
@@ -119,10 +120,17 @@ int main(int argc, char** argv)
     case 4:
       b_title = "Bs";
       break;
+    case 7:
+      b_title = "Bc";
+      break;
     }
 
   //read data to calculate bin mean
-  TString data_selection_input_file = TString::Format(BASE_DIR) + "selected_myloop_new_data_" + channel_to_ntuple_name(channel) + "_with_cuts.root";
+
+TString data_selection_input_file = "/lstore/cms/balves/Jobs/LIP_Meeting_Dataset/2016_selected_datantkp_with_cuts.root";
+  
+ //TString data_selection_input_file = TString::Format(BASE_DIR)+"myloop_new_data_" + channel_to_ntuple_name(channel) + "_with_cuts.root";
+
   RooWorkspace* ws = new RooWorkspace("ws","Bmass");
   
   set_up_workspace_variables(*ws,channel);
@@ -187,13 +195,24 @@ int main(int argc, char** argv)
           x_sec_syst_sqrt_lo[j][i] = pow(yield_syst_lo[j][i],2);
           x_sec_syst_sqrt_hi[j][i] = pow(yield_syst_hi[j][i],2);
 
-          if(eff)
-            {
-              x_sec[j][i] /= (2 * totaleff[j][i] * b_fraction);
-	      x_sec[j][i] *= (1e-9); //the 1e-9 factor is just for scale in the final plot
+         
+	      //the 1e-9 factor is just for scale in the final plot
 
-              x_sec_syst_sqrt_lo[j][i] += pow(totaleff_err_lo[j][i]/totaleff[j][i],2) + pow(b_fraction_err/b_fraction,2) + pow(0.04,2);  //the 4% is from Luminosity
-	      x_sec_syst_sqrt_hi[j][i] += pow(totaleff_err_hi[j][i]/totaleff[j][i],2) + pow(b_fraction_err/b_fraction,2) + pow(0.04,2);
+         
+	  x_sec[j][i] *= (1e-9);
+
+          x_sec_syst_sqrt_lo[j][i] +=   pow(b_fraction_err/b_fraction,2) + pow(0.04,2) + pow(0.0254,2);  //the 4% is from Luminosity
+	  x_sec_syst_sqrt_hi[j][i] +=  pow(b_fraction_err/b_fraction,2) + pow(0.04,2 )+ pow(0.0254,2);
+            
+       
+      if(eff)
+            {
+
+	  x_sec[j][i] /= (2 * totaleff[j][i] * b_fraction*LUMINOSITY);//0.186 is the efficiency
+
+
+              x_sec_syst_sqrt_lo[j][i] += pow(totaleff_err_lo[j][i]/totaleff[j][i],2) + pow(b_fraction_err/b_fraction,2) + pow(0.04,2)+pow(0.0254,2);  //the 4% is from Luminosity
+	      x_sec_syst_sqrt_hi[j][i] += pow(totaleff_err_hi[j][i]/totaleff[j][i],2) + pow(b_fraction_err/b_fraction,2) + pow(0.04,2)+pow(0.0254,2);
             }
 
           x_sec_err_lo[j][i] = x_sec[j][i] * sqrt(pow(yield_err_lo[j][i]/yield[j][i],2));
@@ -205,7 +224,7 @@ int main(int argc, char** argv)
     }
   
   //to plot x_sec
-  TCanvas cz;
+  TCanvas cz ;
   
   double leg_x2 = 0.98;
   double leg_x1 = leg_x2 - 0.25;
@@ -214,7 +233,7 @@ int main(int argc, char** argv)
 
   TLegend *leg = new TLegend (leg_x1, leg_y1, leg_x2, leg_y2);
   
-  TLatex * tex = new TLatex(0.69,0.91,TString::Format("%.2f fb^{-1} (13 TeV)",LUMINOSITY));
+  TLatex * tex = new TLatex(0.69,0.91,TString::Format("%.2f  fb^{-1} (13 TeV)",LUMINOSITY));
   tex->SetNDC(kTRUE);
   tex->SetLineWidth(2);
   tex->SetTextSize(0.04);
@@ -247,10 +266,10 @@ int main(int argc, char** argv)
       TGraphAsymmErrors* graph = new TGraphAsymmErrors(n_var1_bins, var1_bin_means[j], x_sec[j], var1_bin_edges_lo[j], var1_bin_edges_hi[j], x_sec_err_lo[j], x_sec_err_hi[j]);
 
       TString x_sec_title = b_title;
-      if(eff)
+       if(eff)
         x_sec_title += " differential cross section";
-      else
-        x_sec_title += " signal yield";
+       else
+	 x_sec_title += " signal yield";
 
       graph->SetTitle(x_sec_title);
       
@@ -262,8 +281,10 @@ int main(int argc, char** argv)
       if(j==0) 
 	{
 	  graph->GetXaxis()->SetTitle(x_axis_name);
+	  if(eff)
 	  graph->GetYaxis()->SetTitle("d#sigma/dp_{T} [#mub/GeV]");
-	  
+	  else
+           graph->GetYaxis()->SetTitle("d#N/dp_{T} ");
 	  //to set the range of the plot, it takes the min and max value of cross section.
 	  if(n_var2_bins > 1)
             graph->GetYaxis()->SetRangeUser(0.1*x_sec_min, 10*x_sec_max);
@@ -318,7 +339,9 @@ int main(int argc, char** argv)
   //To show the values of cross section or signal yield and the errors at the end, like a table/
   //////////////////////////////////////////////////////////////////////////////////////////////
 
+
   //cross section
   print_table("CROSS SECTION", n_var1_bins, n_var2_bins, var1_name, var2_name, var1_bins, var2_bins, x_sec[0], x_sec_err_lo[0], x_sec_err_hi[0], x_sec_syst_lo[0], x_sec_syst_hi[0]);
   
+  cz.Draw();
 }//end

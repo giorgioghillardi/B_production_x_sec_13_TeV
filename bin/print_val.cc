@@ -8,6 +8,7 @@
 // channel = 4: Bs -> J/psi phi
 // channel = 5: Jpsi + pipi
 // channel = 6: Lambda_b -> Jpsi + Lambda
+// channel = 7: Bc -> J/psi Pi
 //-----------------------------------------------------------------
 
 //input example: display_val --measure x_sec --file input_file.root

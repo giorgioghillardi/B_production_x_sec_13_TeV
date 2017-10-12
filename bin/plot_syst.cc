@@ -8,6 +8,7 @@
 // channel = 4: Bs -> J/psi phi
 // channel = 5: Jpsi + pipi
 // channel = 6: Lambda_b -> Jpsi + Lambda
+// channel = 7: Bc -> J/psi Pi
 //-----------------------------------------------------------------
 
 void plot_syst(TString measure, TString syst, int channel, int n_var1_bins, TString var2_name, double var2_min, double var2_max, TString x_axis_name, TString b_title, double* var1_bin_centre, double* var1_bin_centre_lo, double* var1_bin_centre_hi, double* syst_array);
@@ -94,6 +95,9 @@ int main(int argc, char** argv)
       break;
     case 4:
       b_title = "Bs";
+      break;
+    case 7:
+      b_title = "Bc";
       break;
     default:
       break;

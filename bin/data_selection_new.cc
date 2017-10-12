@@ -10,6 +10,7 @@ using namespace RooFit;
 // channel = 4: Bs -> J/psi phi
 // channel = 5: Jpsi + pipi
 // channel = 6: Lambda_b -> Jpsi + Lambda
+// channel = 7: Bc -> J/psi Pi
 
 //input example: data_selection --channel 1 --input /some/place/file.root --output /some/place
 int main(int argc, char** argv)
@@ -37,7 +38,12 @@ int main(int argc, char** argv)
       if(argument == "--output")
         {
           convert << argv[++i];
-          convert >> output_dir;
+
+
+
+
+
+        convert >> output_dir;
         }
     }
 

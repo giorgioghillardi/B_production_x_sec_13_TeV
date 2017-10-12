@@ -8,6 +8,7 @@
 // channel = 4: Bs -> J/psi phi
 // channel = 5: Jpsi + pipi
 // channel = 6: Lambda_b -> Jpsi + Lambda
+// channel = 7: Bc -> J/psi Pi
 //-----------------------------------------------------------------
 
 //input example: calculate_bin_eff --channel 1 --eff preeff --ptmin 10 --ptmax 20 --ymin 0.00 --ymax 0.50
@@ -57,9 +58,9 @@ int main(int argc, char** argv)
 	}
     }
   
-  if(eff_name == "")
+  if(eff_name != "preeff" && eff_name != "recoeff" && eff_name != "totaleff")
     {
-      std::cout << "Error: Please indicate the efficiency." << std::endl;
+      std::cout << "Error: Please indicate the efficiency (preeff or recoeff or totaleff)" << std::endl;
       return 0;
     }
   

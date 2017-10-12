@@ -8,6 +8,7 @@
 // channel = 4: Bs -> J/psi phi
 // channel = 5: Jpsi + pipi
 // channel = 6: Lambda_b -> Jpsi + Lambda
+// channel = 7: Bc -> J/psi K+
 //-----------------------------------------------------------------
 
 double pdf_syst(RooWorkspace& ws, int channel, double pt_min, double pt_max, double y_min, double y_max, double nominal_yield, TString syst);
@@ -76,7 +77,8 @@ int main(int argc, char** argv)
   dir_list.push_back(static_cast<const char*>(TString::Format(VERSION) + "/mass_fits/syst/" + channel_to_ntuple_name(channel)));
   create_dir(dir_list);
 
-  TString data_selection_input_file = TString::Format(BASE_DIR) + "selected_myloop_new_data_" + channel_to_ntuple_name(channel) + "_with_cuts.root";
+  TString data_selection_input_file ="/lstore/cms/balves/Jobs/Full_Dataset_2016/2016_data_ntkp_with_cuts.root";
+// TString::Format(BASE_DIR) + "selected_myloop_new_data_" + channel_to_ntuple_name(channel) + "_with_cuts.root";
   RooWorkspace* ws = new RooWorkspace("ws","Bmass");
   
   //set up mass, pt and y variables inside ws  
@@ -257,6 +259,7 @@ double pdf_syst(RooWorkspace& ws, int channel, double pt_min, double pt_max, dou
     {
       if(fabs(yield_syst[i] - nominal_yield) > max_diff)
 	{
+
 	  max_diff = fabs(yield_syst[i] - nominal_yield);
 	  i_max = i;
 	}

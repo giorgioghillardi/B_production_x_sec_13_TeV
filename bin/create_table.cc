@@ -8,6 +8,7 @@
 // channel = 4: Bs -> J/psi phi
 // channel = 5: Jpsi + pipi
 // channel = 6: Lambda_b -> Jpsi + Lambda
+// channel = 7: Bc -> J/psi Pi
 //-----------------------------------------------------------------
 
 //input example: create_table --measure x_sec --channel 1 --bins pt --vector yield

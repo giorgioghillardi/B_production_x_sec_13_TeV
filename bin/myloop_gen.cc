@@ -46,7 +46,7 @@ int main(int argc, char** argv)
       std::cout << "The option --channel can be used to choose a channel. Example myloop_gen --channel 2" << std::endl;
     }
   
-  TChain *root = new TChain("demo/root");
+  TChain *root = new TChain("analysis/root");
   
   switch(channel)
     {
@@ -55,12 +55,12 @@ int main(int argc, char** argv)
       if(bfilter)
 	{
 	  //for Bfilter processed with Bfinder_mc.cc
-	  root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_mc_Bu_Bfilter_v1/BuToJpsiKV2_BFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_mc_Bu_Bfilter_v1/160812_095709/0000/Bfinder_mc_*.root");
+	  root->Add("/gstore/t3cms/store/user/bfontana/Bfinder_Bp_MC2016/BuToJpsiK_BMuonFilter_SoftQCDnonD_TuneCUEP8M1_13TeV-pythia8-evtgen/Pincopallino_Bp/170920_100321/0000/bfinder_*.root");
 	}
       else
 	{
 	  //for BMuonfilter processed with Bfinder_mc.cc
-	  root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_test_v2/BuToJpsiKV2_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_test_v2/160811_210322/0000/Bfinder_mc_*.root");
+	  root->Add("/gstore/t3cms/store/user/bfontana/Bfinder_Bp_MC2016_nocuts/BuToJpsiK_SoftQCDnonD_TuneCUEP8M1_13TeV-pythia8-evtgen/Pincopallino/170921_152917/0000/bfinder_*.root");
 	}
       break;
     case 2:

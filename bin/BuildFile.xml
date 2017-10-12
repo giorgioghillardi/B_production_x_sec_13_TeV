@@ -7,6 +7,12 @@
 <environment>
   <bin name="myloop_gen"   file="myloop_gen.cc"></bin>
   <bin name="myloop_new"   file="myloop_new.cc"></bin>
+  <bin name="myloopD_new"   file="myloopD_new.cc"></bin>
+  <bin name="myloopF_new"   file="myloopF_new.cc"></bin>
+  <bin name="myloopG_new"   file="myloopG_new.cc"></bin>
+  <bin name="myloopB_new"   file="myloopB_new.cc"></bin>
+  <bin name="myloopC_new"   file="myloopC_new.cc"></bin>
+  <bin name="myloopE_new"   file="myloopE_new.cc"></bin>
   <bin name="reduce_mc"   file="reduce_mc_tree.cc"></bin>
   <bin name="swap"   file="k_pi_swap.cc"></bin>
   <bin name="data_selection"   file="data_selection_new.cc"></bin>

@@ -26,7 +26,7 @@
 #include "TMath.h"
 using namespace RooFit;
 
-#define BASE_DIR "/lstore/cms/brunogal/input_for_B_production_x_sec_13_TeV/"
+#define BASE_DIR "/exper-sw/cmst3/cmssw/users/gghillar/CMSSW_7_4_15/src/UserCode/B_production_x_sec_13_TeV/"
 
 //-----------------------------------------------------------------
 // Definition of channel #
@@ -36,6 +36,7 @@ using namespace RooFit;
 // channel = 4: Bs -> J/psi phi
 // channel = 5: Jpsi + pipi
 // channel = 6: Lambda_b -> Jpsi + Lambda
+// channel = 7: Bc -> J/psi Pi
 
 //input example: reduce_mc --channel 1 --mc 1 --gen 1 --input /some/place/
 int main(int argc, char** argv)
@@ -135,6 +136,9 @@ int main(int argc, char** argv)
 	  _nt5->Fill(br.mass,br.pt,br.eta,br.y,br.mu1pt,br.mu1eta,br.mu2pt,br.mu2eta);
 	  break;
 	case 6:
+	  _nt6->Fill(br.mass,br.pt,br.eta,br.y,br.mu1pt,br.mu1eta,br.mu2pt,br.mu2eta);
+	  break;
+	case 7:
 	  _nt6->Fill(br.mass,br.pt,br.eta,br.y,br.mu1pt,br.mu1eta,br.mu2pt,br.mu2eta);
 	  break;
 	}

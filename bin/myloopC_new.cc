@@ -75,9 +75,8 @@ int main(int argc, char** argv)
 	  default:
 	  case 1:
 	    //for BMuonFilter processed with Bfinder_mc	    
-	    root->Add(" /home/t3cms/gghillar/code/CMSSW_8_0_22/src/Bfinder/bfinder.root");
-	   HltTree->Add(" /home/t3cms/gghillar/code/CMSSW_8_0_22/src/Bfinder/bfinder.root");  
-//HltTree->Add("/gstore/t3cms/store/user/bfontana/Bfinder_Bp_MC2016/BuToJpsiK_BMuonFilter_SoftQCDnonD_TuneCUEP8M1_13TeV-pythia8-evtgen/Pincopallino_Bp/170920_100321/0000/bfinder_15.root");
+	    root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_test_v2/BuToJpsiKV2_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_test_v2/160811_210322/0000/Bfinder_mc_*.root");
+	    HltTree->Add("/gstore/t3cms/store/user/martinsg/Bfinder_test_v2/BuToJpsiKV2_BMuonFilter_TuneCUEP8M1_13TeV-pythia8-evtgen/crab_Bfinder_test_v2/160811_210322/0000/Bfinder_mc_*.root");
 	    break;
 
 	  case 2:
@@ -100,16 +99,15 @@ int main(int argc, char** argv)
 	  case 6:
 	    break;
 	  case 7:
-	    root->Add("/gstore/t3cms/store/user/gghillar/Bfinder_Bp_MC2016_v2/BuToJpsiK_SoftQCDnonD_TuneCUEP8M1_13TeV-pythia8-evtgen/Bfinder_RunIISpring16DR80-premix_withHLT_80X_mcRun2_asymptotic_v14-v1/170911_112947/0000/bfinder_*.root");
-	      HltTree->Add("/gstore/t3cms/store/user/gghillar/Bfinder_Bp_MC2016_v2/BuToJpsiK_SoftQCDnonD_TuneCUEP8M1_13TeV-pythia8-evtgen/Bfinder_RunIISpring16DR80-premix_withHLT_80X_mcRun2_asymptotic_v14-v1/170911_112947/0000/bfinder_*.root");
+	    root->Add("/gstore/t3cms/store/user/gghillar/Bfinder_BcMC2016/BcToJPsiBcPt8Y2p5_MuNoCut_13TeV-bcvegpy2-pythia8/Bfinder_Run2016D-23Sep2016-v1/170818_185252/0000/bfinder_*.root");
+	      HltTree->Add("/gstore/t3cms/store/user/gghillar/Bfinder_BcMC2016/BcToJPsiBcPt8Y2p5_MuNoCut_13TeV-bcvegpy2-pythia8/Bfinder_Run2016D-23Sep2016-v1/170818_185252/0000/bfinder_*.root");
 
 	  }
       }
     else
       { //the data contains all the B's from the different channels. 
 	//the first is the D dataset and it's in another folder since we try as first with only  this one
-	
-        /*root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_25ns_promptreco_v1/Charmonium/Run2015D-Bfinder-promptreco-v1/160309_114238/0000/Bfinder_25ns_147.root"); //2015 data test
+	/*root->Add("/gstore/t3cms/store/user/martinsg/Bfinder_25ns_promptreco_v1/Charmonium/Run2015D-Bfinder-promptreco-v1/160309_114238/0000/Bfinder_25ns_147.root"); //2015 data test
 	//HltTree->Add("/gstore/t3cms/store/user/martinsg/Bfinder_25ns_promptreco_v1/Charmonium/Run2015D-Bfinder-promptreco-v1/160309_114238/0000/Bfinder_25ns_147.root");
 	root->Add("/gstore/t3cms/store/user/gghillar/Bfinder_25ns_promptreco_v1/Charmonium/Bfinder_Run2016D-23Sep2016-v1/170811_133948/0000/bfinder_147.root"); //2016 data test
 
@@ -118,7 +116,7 @@ int main(int argc, char** argv)
 	*/ 
 
  
-       root->Add("/gstore/t3cms/store/user/gghillar/Bfinder_25ns_promptreco_v1/Charmonium/Bfinder_Run2016D-23Sep2016-v1/170811_133948/0000/bfinder_*.root");
+	/* root->Add("/gstore/t3cms/store/user/gghillar/Bfinder_25ns_promptreco_v1/Charmonium/Bfinder_Run2016D-23Sep2016-v1/170811_133948/0000/bfinder_*.root");
        root->Add("/gstore/t3cms/store/user/gghillar/Bfinder_25ns_promptreco_v1/Charmonium/Bfinder_Run2016D-23Sep2016-v1/170811_133948/0001/bfinder_*.root");
        root->Add("/gstore/t3cms/store/user/gghillar/Bfinder_25ns_promptreco_v1/Charmonium/Bfinder_Run2016D-23Sep2016-v1/170811_133948/0002/bfinder_*.root");
        
@@ -130,11 +128,11 @@ int main(int argc, char** argv)
         root->Add("/gstore/t3cms/store/user/gghillar/Bfinder_Run2016/B/Charmonium/Bfinder_Run2016B-23Sep2016-v3/170811_175216/0004/bfinder_*.root");
         root->Add("/gstore/t3cms/store/user/gghillar/Bfinder_Run2016/B/Charmonium/Bfinder_Run2016B-23Sep2016-v3/170811_175216/0005/bfinder_*.root");
 	
-
+	*/
 	root->Add("/gstore/t3cms/store/user/gghillar/Bfinder_Run2016/C/Charmonium/Bfinder_Run2016C-23Sep2016-v1/170811_175516/0000/bfinder_*.root");
 	root->Add("/gstore/t3cms/store/user/gghillar/Bfinder_Run2016/C/Charmonium/Bfinder_Run2016C-23Sep2016-v1/170811_175516/0001/bfinder_*.root"); 
 	
-	
+	/*
 	root->Add("/gstore/t3cms/store/user/gghillar/Bfinder_Run2016/E/Charmonium/Bfinder_Run2016E-23Sep2016-v1/170811_175735/0000/bfinder_*.root");
 	root->Add("/gstore/t3cms/store/user/gghillar/Bfinder_Run2016/E/Charmonium/Bfinder_Run2016E-23Sep2016-v1/170811_175735/0001/bfinder_*.root");
 	root->Add("/gstore/t3cms/store/user/gghillar/Bfinder_Run2016/E/Charmonium/Bfinder_Run2016E-23Sep2016-v1/170811_175735/0002/bfinder_*.root");
@@ -169,12 +167,12 @@ int main(int argc, char** argv)
 
 
 
-
+	*/
 
 	HltTree->Add("/gstore/t3cms/store/user/gghillar/Bfinder_Run2016/C/Charmonium/Bfinder_Run2016C-23Sep2016-v1/170811_175516/0000/bfinder_*.root");
 	HltTree->Add("/gstore/t3cms/store/user/gghillar/Bfinder_Run2016/C/Charmonium/Bfinder_Run2016C-23Sep2016-v1/170811_175516/0001/bfinder_*.root"); 
 
-	
+	/*
 	HltTree->Add("/gstore/t3cms/store/user/gghillar/Bfinder_Run2016/E/Charmonium/Bfinder_Run2016E-23Sep2016-v1/170811_175735/0000/bfinder_*.root");
 	HltTree->Add("/gstore/t3cms/store/user/gghillar/Bfinder_Run2016/E/Charmonium/Bfinder_Run2016E-23Sep2016-v1/170811_175735/0001/bfinder_*.root");
 	HltTree->Add("/gstore/t3cms/store/user/gghillar/Bfinder_Run2016/E/Charmonium/Bfinder_Run2016E-23Sep2016-v1/170811_175735/0002/bfinder_*.root");
@@ -188,7 +186,7 @@ int main(int argc, char** argv)
 	HltTree->Add("/gstore/t3cms/store/user/gghillar/Bfinder_Run2016/G/Charmonium/Bfinder_Run2016G-23Sep2016-v1/170811_180434/0001/bfinder_*.root");
 	HltTree->Add("/gstore/t3cms/store/user/gghillar/Bfinder_Run2016/G/Charmonium/Bfinder_Run2016G-23Sep2016-v1/170811_180434/0002/bfinder_*.root");
 	HltTree->Add("/gstore/t3cms/store/user/gghillar/Bfinder_Run2016/G/Charmonium/Bfinder_Run2016G-23Sep2016-v1/170811_180434/0003/bfinder_*.root");
-        HltTree->Add("/gstore/t3cms/store/user/gghillar/Bfinder_Run2016/G/Charmonium/Bfinder_Run2016G-23Sep2016-v1/170811_180434/0004/bfinder_*.root");  
+        HltTree->Add("/gstore/t3cms/store/user/gghillar/Bfinder_Run2016/G/Charmonium/Bfinder_Run2016G-23Sep2016-v1/170811_180434/0004/bfinder_*.root");  */
 	
 
       }
@@ -329,33 +327,18 @@ int main(int argc, char** argv)
 	//clear the vector that stores the selected bees in each event
 	selected_bees.clear();
 	
-	
-
 	// Start of BInfo loop
 	for (int bidx = 0; bidx < BInfo->size; bidx++)//bidx is the index that will run over the Binfo
 	  {
 	    int b_type = BInfo->type[bidx];
 	    
 	    //the indices to run over the Binfo. These are used to identify the signal when running on MC.
-	    
-	    ujidx =  BInfo->rfuj_index[bidx]; 
+	    ujidx = BInfo->rfuj_index[bidx]; 
 	    tk1idx = BInfo->rftk1_index[bidx];
 	    tk2idx = BInfo->rftk2_index[bidx];
 	    mu1idx = BInfo->uj_rfmu1_index[ujidx];
 	    mu2idx = BInfo->uj_rfmu2_index[ujidx];
-                                                       
 		
-
-/*		ujidx = GenInfo->da1[bidx];			
-	      tk1idx  = GenInfo->da2[bidx];
-	      tk2idx  = GenInfo->da1[bidx];
-	      mu1idx  = GenInfo->da1[ujidx];
-	      mu2idx  = GenInfo->da2[ujidx];
-
-							*/
-		
-std::cout<<"TrakInfoPdg"<<GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]<<std::endl;
-
 	    switch(channel) //to translate the channel to the type. type is defined in Bfinder to destinguish the BParticles candidate
 	      {
 	      default:
@@ -364,33 +347,14 @@ std::cout<<"TrakInfoPdg"<<GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]<<std:
 		//to select the reconstructed Bees that we save. This way we only save signal.
 		if (run_on_mc && mc_truth)
 		  {
-		    
-		   // if (abs(GenInfo->pdgId[bidx]) != 521) continue;
 		    if (abs(GenInfo->pdgId[MuonInfo->geninfo_index[mu1idx]]) != 13) continue; //skip any mu that was not generated as a mu+-
 		    if (abs(GenInfo->pdgId[MuonInfo->geninfo_index[mu2idx]]) != 13) continue; //skip any mu that was not generated as a mu+-
 		    if (GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]] != GenInfo->mo1[MuonInfo->geninfo_index[mu2idx]]) continue; //skip if the two muons don't have the same index for the mother particle
 		    if (abs(GenInfo->pdgId[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]) != 443) continue; //skip if the mother of the muons is not jpsi, this is redundant, in principle all come from jpsi
-		    //if (abs(GenInfo->pdgId[GenInfo->da2[bidx]]) != 321) continue;
-		    //if (abs(GenInfo->pdgId[GenInfo->da1[bidx]]) != 443) continue;
-		    
-		     if (abs(GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]) != 321) continue; //skip any tk that was not generated as a K+-
-		     if (GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]] != GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]]) continue; //skip if the index of the mother of the track is not the same as  mother of the jpsi
-		     if (abs(GenInfo->pdgId[GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]]]) != 521) continue; //skip anything that is not a B+-. probably redundant at this point in the decay chain. but it is reasonable to keep it.
-		  
-		   }
-
-		/*  
-     	
-		
-	      
-	      
-	      if (abs(GenInfo->pdgId[bidx])!=521) continue;	 // not B+
-	      if (abs(GenInfo->pdgId[ujidx])!=443) continue;  // not J/psi
-	      if (abs(GenInfo->pdgId[tk1idx])!=321) continue;  // not K+-
-	      if (abs(GenInfo->pdgId[mu1idx])!=13) continue;  	// not mu+-
-		if (abs(GenInfo->pdgId[mu2idx])!=13) continue; //  not mu+-
-		  */							
-
+		    if (abs(GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]) != 321) continue; //skip any tk that was not generated as a K+-
+		    if (GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]] != GenInfo->mo1[TrackInfo->geninfo_index[tk1idx]]) continue; //skip if the index of the mother of the track is not the same as  mother of the jpsi
+		    if (abs(GenInfo->pdgId[GenInfo->mo1[GenInfo->mo1[MuonInfo->geninfo_index[mu1idx]]]]) != 521) continue; //skip anything that is not a B+-. probably redundant at this point in the decay chain. but it is reasonable to keep it.
+		  }
 		break;
 
 	      case 2:
@@ -541,19 +505,11 @@ std::cout<<"TrakInfoPdg"<<GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]<<std:
 		
 		//-----------------------------------------------------------------
 		// Basic track selections
-		if (b_type==1) // k
+		if (b_type==1 || b_type==2) // k, pi
 		  {
 		    //double tptcut = b_type==2?2.3:1.6; //CHECK!!!
 		    //if (TrackInfo->pt[tk1idx]<= tptcut) continue; //was 0.8
-		    if (TrackInfo->pt[tk1idx]<=1.6) continue; //was 0.8
-		    if (fabs(TrackInfo->eta[tk1idx])>=2.5) continue;
-		    if (TrackInfo->chi2[tk1idx]/TrackInfo->ndf[tk1idx]>=5.) continue;
-		    if (TrackInfo->striphit[tk1idx]+TrackInfo->pixelhit[tk1idx]<5) continue;
-		  }
-		if ( b_type==2) // pi
-		  {
-		
-		    if (TrackInfo->pt[tk1idx]<=2.3) continue; 
+		    if (TrackInfo->pt[tk1idx]<=2.3) continue; //was 0.8
 		    if (fabs(TrackInfo->eta[tk1idx])>=2.5) continue;
 		    if (TrackInfo->chi2[tk1idx]/TrackInfo->ndf[tk1idx]>=5.) continue;
 		    if (TrackInfo->striphit[tk1idx]+TrackInfo->pixelhit[tk1idx]<5) continue;
@@ -859,7 +815,6 @@ std::cout<<"TrakInfoPdg"<<GenInfo->pdgId[TrackInfo->geninfo_index[tk1idx]]<<std:
 	             else
 		       {if (br->hltbook[ HLT_DoubleMu4_JpsiTrk_Displaced_v1]&&br->hltbook[ HLT_DoubleMu4_JpsiTrk_Displaced_v2]&&br->hltbook[ HLT_DoubleMu4_JpsiTrk_Displaced_v3]&&br->hltbook[ HLT_DoubleMu4_JpsiTrk_Displaced_v4]&&br->hltbook[HLT_DoubleMu4_JpsiTrk_Displaced_v5]&&br->hltbook[ HLT_DoubleMu4_JpsiTrk_Displaced_v6]) continue;}
 		     //is looking for all HLT version that we have on DATA
-		    
 												
 
                 	if(run_on_mc)

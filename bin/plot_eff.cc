@@ -8,6 +8,7 @@
 // channel = 4: Bs -> J/psi phi
 // channel = 5: Jpsi + pipi
 // channel = 6: Lambda_b -> Jpsi + Lambda
+// channel = 7: Bc -> J/psi Pi
 //-----------------------------------------------------------------
 
 //input example: plot_eff --measure x_sec --channel 1 --bins pt_y --eff preeff
@@ -93,6 +94,9 @@ int main(int argc, char** argv)
       break;
     case 4:
       b_title = "Bs";
+      break;
+    case 7:
+      b_title = "Bc";
       break;
     }
   
