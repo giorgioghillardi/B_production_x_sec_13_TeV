@@ -1,4 +1,4 @@
-# B_production_x_ssec_13_TeV
+# B_production_x_sec_13_TeV
 Files for studies on B particle (see the list in interface/channels.h)
 
 MADE IN LIP OF LISBOA FROM GREAT PEOPLE
