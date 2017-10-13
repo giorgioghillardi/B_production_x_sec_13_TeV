@@ -1,7 +1,7 @@
 # B_production_x_sec_13_TeV
 Files for studies on B particle (see the list in interface/channels.h)
 
-MADE IN LIP OF LISBOA FROM GREAT PEOPLE
+MADE IN LIP OF LISBOA 
 
 
 The analysis start from the output of Bfinder the other project in my repository (https://github.com/giorgioghillardi/Bfinder)
